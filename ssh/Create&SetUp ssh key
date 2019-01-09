@@ -10,7 +10,12 @@ defaults(){
 	ssh_key_path="/home/pimaker/.ssh/" && echo "default ssh_key_path = $ssh_key_path"
 }
 
-change_defaults() {
+enableRootLogin () {
+	sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+	sudo service ssh restart
+}
+
+change_defaults () {
 #TODO
 echo ""
 }
