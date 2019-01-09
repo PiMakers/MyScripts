@@ -13,6 +13,7 @@
 
 set -e
 
+checkRoot () {
 if [ $EUID != 0 ]; then
 	echo "this script must be run as root"
 	echo ""
@@ -20,6 +21,7 @@ if [ $EUID != 0 ]; then
 	echo "sudo "$0
 	exit $exit_code
 fi
+}
 
 set_defaults() {
 IS_RASPBIAN_LITE=0
@@ -33,11 +35,12 @@ AP_SSID="PubHubAP"
 AP_PASSPHRASE="12345678"
 #"${4}"
 ROOT=$(dirname "$0")
-}
+OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
+
 
 # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
-sed -i '/export LC_ALL=C/d' /home/pi/.bashrc && echo "export LC_ALL=C" >> /home/pi/.bashrc
-
+sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo "export LC_ALL=C" >> $HOME/.bashrc
+}
 
 remove_unused() {
 err=$(apt -y purge libreoffice* minecraft-pi wolfram-engine scratch* 2>&1) 		|| echo "ERROR: $err"
@@ -57,7 +60,7 @@ update_upgrade(){
 # Install dependencies
 Install_dependencies() {
   echo "Installing dependences (dnsmasq hostapd arp-scan nfs-kernel-server codeblocks haveged) ..."
-  sudo apt -y install dnsmasq hostapd arp-scan nfs-kernel-server codeblocks haveged
+  sudo apt -y install dnsmasq hostapd arp-scan nfs-kernel-server codeblocks haveged curl
   sudo service hostapd stop && sudo service dnsmasq stop
   echo "Done!"			
 }
@@ -66,8 +69,9 @@ Install_dependencies() {
 Install_OF_dependencies() {
   echo "Installing OF dependences ..."
 BASE_URL="https://raw.githubusercontent.com/openframeworks/openFrameworks/master/scripts/linux"
-curl -l ${BASE_URL}/debian/install_dependencies.sh | sed 's/apt-get/apt-get -y/' | sudo bash -s
-curl -l ${BASE_URL}/debian/install_codecs.sh | sed 's/apt-get/apt-get -y/' | sudo bash -s
+OS=$(cat  /etc/os-release | grep '^ID=' | sed s/^'ID='//) && echo "OS=$OS"
+curl -l ${BASE_URL}/$OS/install_dependencies.sh | sed 's/apt-get/apt-get -y/' | sudo bash -s
+curl -l ${BASE_URL}/$OS/install_codecs.sh | sed 's/apt-get/apt-get -y/' | sudo bash -s
   echo "Done!"
 }
 
@@ -247,18 +251,19 @@ $cmd sudo apt install -y nfs-kernel-server nfs-common hostapd dnsmasq
 }
 
 
+# checkRoot
 # set_defaults
-remove_unused
-update_upgrade
-Install_dependencies
-Install_OF_dependencies
-cd $RPI_ROOT/usr/lib
-relativeSoftLinks
-cd $RPI_ROOT/usr/lib/arm-linux-gnueabihf
-relativeSoftLinks
-cd $RPI_ROOT/usr/lib/gcc/arm-linux-gnueabihf/6
-relativeSoftLinks # maybe not nessery
-#silent_boot
+# remove_unused
+# update_upgrade
+# Install_dependencies
+# Install_OF_dependencies
+# cd $RPI_ROOT/usr/lib
+# relativeSoftLinks
+# cd $RPI_ROOT/usr/lib/arm-linux-gnueabihf
+# relativeSoftLinks
+# cd $RPI_ROOT/usr/lib/gcc/arm-linux-gnueabihf/6
+# relativeSoftLinks # maybe not nessery
+# silent_boot
 
 #create_virtual_interface
 #configure_dnsmasq
