@@ -1,0 +1,27 @@
+########################################################
+#
+# https://gist.github.com/alexpchin/dc91e723d4db5018fef8
+#
+########################################################
+
+##Create remote repo with curl
+# curl -u 'USER' https://api.github.com/user/repos -d '{"name":"REPO"}'
+curl -u '$GIT_USER' https://api.github.com/user/repos -d '{"name":"$NEW_REPONAME"}
+
+##Create a new repository on the command line
+
+mkdir $NEW_REPONAME
+cd $NEW_REPONAME
+echo "# $NEW_REPONAME" >> README.md
+# touch README.md
+git init
+git add README.md
+git commit -m "first commit"
+
+
+
+##Or Push an existing repository from the command line
+
+git remote add origin git@github.com:$GIT_USER/$NEW_REPONAME.git
+git push -u origin master
+
