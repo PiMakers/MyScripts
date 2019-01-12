@@ -21,9 +21,9 @@ echo ""
 }
 
 ssh_key_copy(){
-option="$@" 
+options="$@" 
 
-	ssh-copy-id $option -i $ssh_key_path$ssh_keyname $login@$target_ip || \
+	ssh-copy-id $options -i $ssh_key_path$ssh_keyname $login@$target_ip || \
 	ssh-keygen -f "/home/pimaker/.ssh/known_hosts" -R $target_ip || \
 	echo "copyKey error"
 }
