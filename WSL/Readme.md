@@ -68,3 +68,9 @@ ADD TO userconfig
 }
 
 # https://www.reddit.com/r/bashonubuntuonwindows/comments/6ysgn4/guide_to_xfce4_install_in_wsl_for_advanced_noobs/
+
+# ssh -X highd@192.168.0.3 "wsl.exe bash --login -c 'DISPLAY=:0 make -C /mnt/i/DataNTFS/OF/openFrameworks/examples/3d/3DModelLoaderExample'"
+
+
+
+
