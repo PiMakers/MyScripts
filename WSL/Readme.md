@@ -53,3 +53,18 @@ Install x11-apps
 sudo apt-get install x11-apps
 Run xeyes
 A new window will open, containing a pair of eyes that will follow your mouse movements.
+
+ADD TO userconfig
+
+{
+    "terminal.integrated.shell.windows": "C:\\msys64\\usr\\bin\\bash.exe",
+    "terminal.integrated.shellArgs.windows": [
+        "--login",
+    ],
+    "terminal.integrated.env.windows": {
+        "CHERE_INVOKING": "1",
+        "MSYSTEM": "MINGW32",
+    },
+}
+
+# https://www.reddit.com/r/bashonubuntuonwindows/comments/6ysgn4/guide_to_xfce4_install_in_wsl_for_advanced_noobs/
