@@ -71,6 +71,10 @@ ADD TO userconfig
 
 # ssh -X highd@192.168.0.3 "wsl.exe bash --login -c 'DISPLAY=:0 make -C /mnt/i/DataNTFS/OF/openFrameworks/examples/3d/3DModelLoaderExample'"
 
+## How to run the native Ubuntu desktop on Windows 10
+#https://www.zdnet.com/article/how-to-run-run-the-native-ubuntu-desktop-on-windows-10/
+sudo sed -i 's/<listen>.*<\/listen>/<listen>tcp:host=localhost,port=0<\/listen>/' /etc/dbus-1/session.conf
 
-
+##Ubuntu 18.04, DBUS Fix Instructions with Troubleshooting
+https://www.reddit.com/r/bashonubuntuonwindows/comments/9lpc0o/ubuntu_1804_dbus_fix_instructions_with/s
 
