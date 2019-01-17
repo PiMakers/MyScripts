@@ -27,6 +27,7 @@ fi
 
 ROOT=$( cd "$(dirname "$0")" ; pwd -P )
 echo -e " ROOT = $ROOT\n PROGNAME = $PROGNAME\n PROGDIR = $PROGDIR\n ARGS = $ARGS\n"
+TEMP_FOLDER=/tmp
 cd $ROOT
 
 # MY_IP=$(hostname -I | sed 's/ .*//')
@@ -57,8 +58,8 @@ fi
 return 0
 }
 
-RPI_ROOT=${ROOT}/rpifs/rootfs
-RPI_BOOT=${ROOT}/rpifs/boot
+RPI_ROOT=${ROTEMP_FOLDEROT}/rpifs/rootfs
+RPI_BOOT=${TEMP_FOLDER}/rpifs/boot
 
 #umount ${RPI_BOOT} ${RPI_ROOT} || true
 mount_latest_img() {
@@ -116,12 +117,12 @@ echo "chroot_raspbian: Bye-bye...."
 
 latest_version
 get_latest_image
-mount_latest_img $LATEST_VERSION.img || echo "error mounting $LATEST_VERSION.img"
-chroot_raspbian
+#mount_latest_img $LATEST_VERSION.img || echo "error mounting $LATEST_VERSION.img"
+#chroot_raspbian
 
-sudo umount -lv ${RPI_BOOT} || echo "could not umount RPI_BOOT ($RPI_BOOT)"
-sudo umount -lv ${RPI_ROOT} || echo "could not umount $RPI_ROOT"
-sudo losetup -d $LOOP_DEVICE || echo "could not umount losetup -d $LOOP_DEVICE"
+#sudo umount -lv ${RPI_BOOT} || echo "could not umount RPI_BOOT ($RPI_BOOT)"
+#sudo umount -lv ${RPI_ROOT} || echo "could not umount $RPI_ROOT"
+#sudo losetup -d $LOOP_DEVICE || echo "could not umount losetup -d $LOOP_DEVICE"
 
 echo "exited normally" && exit 0
 

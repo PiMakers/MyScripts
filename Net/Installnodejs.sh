@@ -7,6 +7,12 @@
 #!/bin/bash
 set -e
 
+detectSyystem () {
+    uname -a
+}
+
+tmp=${sed '/^ID=/!d; s/^ID=//'  /etc/os-release} && echo "$tmp" || exit
+
 ARCH=armv6l
 VERSION=latest ## should be etc: latest,  v7.2.1, or latest-v7.x
 
