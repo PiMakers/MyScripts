@@ -11,8 +11,8 @@ detectSyystem () {
     uname -a
 }
 
-tmp=${sed '/^ID=/!d; s/^ID=//'  /etc/os-release} && echo "$tmp" || exit
-
+tmp=$(sed '/^ID=/!d; s/^ID=//'  /etc/os-release) && echo "$tmp" || exit
+exit 111
 ARCH=armv6l
 VERSION=latest ## should be etc: latest,  v7.2.1, or latest-v7.x
 
