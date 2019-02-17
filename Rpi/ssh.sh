@@ -2,7 +2,7 @@
 set -e
 
 defaults(){
-	target_ip="proxy52.remot3.it" && echo "default target ip = $target_ip"	
+	target_ip="tiremote.local" && echo "default target ip = $target_ip"
 	login="pi"&& echo "default login name = $login"
 	passwd="raspi" && echo "default password = $passwd"
 	ssh_keyname="PiMaker@NUC" && echo "default ssh_keyname = $ssh_keyname"

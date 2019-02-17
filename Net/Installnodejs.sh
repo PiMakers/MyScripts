@@ -11,8 +11,8 @@ detectSyystem () {
     uname -a
 }
 
-tmp=$(sed '/^ID=/!d; s/^ID=//'  /etc/os-release) && echo "$tmp" || exit
-exit 111
+tmp=$(sed '/^ID=/!d; s/^ID=//'  /etc/os-release) && [ "$tmp" = "raspbian" ] || ( echo -e "RunThisScript on raspbian" && exit 111 )
+
 ARCH=armv6l
 VERSION=latest ## should be etc: latest,  v7.2.1, or latest-v7.x
 
@@ -27,14 +27,14 @@ sudo tar -xvf /tmp/${NODE_JS} -C /tmp/
 sudo mv /tmp/${NODE_JS:: -7} /opt/nodejs
 
 # Remove existing symlinks
-sudo unlink /usr/bin/node;
-sudo unlink /usr/sbin/node;
-sudo unlink /sbin/node;
-sudo unlink /usr/local/bin/node;
-sudo unlink /usr/bin/npm;
-sudo unlink /usr/sbin/npm;
-sudo unlink /sbin/npm;
-sudo unlink /usr/local/bin/npm;
+sudo unlink /usr/bin/node || true
+sudo unlink /usr/sbin/node || true
+sudo unlink /sbin/node || true
+sudo unlink /usr/local/bin/node || true
+sudo unlink /usr/bin/npm || true
+sudo unlink /usr/sbin/npm || true
+sudo unlink /sbin/npm || true
+sudo unlink /usr/local/bin/npm || true
 
 # Create symlinks to node && npm
 sudo ln -s /opt/nodejs/bin/node /usr/bin/node;

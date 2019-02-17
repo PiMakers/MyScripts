@@ -23,24 +23,36 @@
 # side with your wifi particulars, then configure the access point with a password you can give out to your
 # guests.  When the party's over, change the access point password.
 
+#!/bin/bash
 set -e
-
-if [ $EUID != 0 ]; then
-	echo "this script must be run as root !!!"
-	echo ""
-	echo "usage:"
-	echo "sudo "$0
-	exit 1
-fi
 
 INSTALL=-1
 PROGNAME="$0"
 ROOT=$(dirname "$0")
 
+check_root() {
+    # Must be root to install the hotspot
+    echo ":::"
+    if [[ $EUID -eq 0 ]];then
+        echo "::: You are root - OK"
+    else
+        echo "::: sudo will be used for the install."
+        # Check if it is actually installed
+        # If it isn't, exit because the install cannot complete
+        if [[ $(dpkg-query -s sudo) ]];then
+            export SUDO="sudo"
+            export SUDOE="sudo -E"
+        else
+            echo "::: Please install sudo or run this as root."
+            exit 1
+        fi
+    fi
+}
+
 
 select_mode() {
 PS3='Please enter your choice: '
-options=("Install" "Uninstall" "Quit")
+options=( "Install" "Uninstall" "Quit" )
 # options+=( "More_Choises1" "More_Choises2" ... )
 # unset options[0]
 # options[2]="pocok"
@@ -231,13 +243,13 @@ if [ "$1" == 1 ];then
    cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
  fi
 cat > /etc/hostapd/hostapd.conf << EOF
-# PubHub
+# PiMaker
 
 ctrl_interface=/var/run/hostapd
 ctrl_interface_group=0
 interface=uap0
 driver=nl80211
-ssid=+PubHub+
+ssid=T.I.Remote
 hw_mode=g
 channel=13
 # wmm_enabled=0
@@ -245,7 +257,7 @@ macaddr_acl=0
 auth_algs=1
 ignore_broadcast_ssid=0
 wpa=2
-wpa_passphrase=12345678
+wpa_passphrase=TI159550
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
@@ -303,6 +315,7 @@ iptables-save > /etc/iptables/rules.v4
 
 select_mode
 [ "$INSTALL" > -1 ] || ( echo "INSTALL = $INSTALL" && exit 2 )
+exit 0
 
 create_udev_rule ${INSTALL}
 configure_interface $INSTALL
