@@ -5,8 +5,11 @@
 #### set -e
 #!/bin/bash
 
-##### dependency 18.04 sudo apt install qemu-user-static
+##### dependency 18.04
+# sudo apt install qemu-user-static
+# ? sudo apt install qemu-utils ?
 # qemu-img resize -f raw /home/pimaker/Downloads/2018-11-13-raspbian-stretch.img +2G
+# sudo parted /dev/loop11 resizepart 2 100%
  
 set -e
 
@@ -90,7 +93,7 @@ return 0
 
 #umount ${RPI_BOOT} ${RPI_ROOT} || true
 mount_latest_img() {
-export LOOP_DEVICE=$(sudo losetup -f)
+export LOOP_DEVICE=$(${SUDO} losetup -f)
 [[ ! -z "$1" ]] && err=$(${SUDO} losetup $LOOP_DEVICE $1) || (echo "$err" && return 1)
 ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE "
 start_sector=$(${SUDO} fdisk -l ${LOOP_DEVICE} | sed "/${LOOP_DEVICE//[\/]/\\/}p2/!d; s/  */ /g; s/[^ ]*. //; s/ .*//") #| cut -d " " -f 2
@@ -99,7 +102,7 @@ echo "start_sector =${start_sector}"
 mkdir -p ${RPI_BOOT} ${RPI_ROOT}   || echo "error create ${RPI_BOOT} "
 #${SUDO} mount -n ${LOOP_DEVICE}p1 ${RPI_BOOT} || echo "error mounting ${RPI_BOOT}" 
 #${SUDO} mount -n ${LOOP_DEVICE}p2 ${RPI_ROOT} || echo "error mounting ${RPI_ROOT}"
-${SUDO} losetup -d $LOOP_DEVICE
+#${SUDO} losetup -d $LOOP_DEVICE
 }
 
 clean_up() {
