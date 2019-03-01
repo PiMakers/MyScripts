@@ -4,6 +4,8 @@
 # SETTING UP A RASPBERRY PI AS AN ACCESS POINT IN A STANDALONE NETWORK (NAT)
 # https://www.raspberrypi.org/documentation/configuration/wireless/access-point.md#internet-sharing
 
+# # https://github.com/billz/raspap-webgui/
+
 
 # Running the Raspberry Pi 3 as a Wifi client (station e.g.:STA) and access point (AP) from the single built-in wifi.
 
@@ -216,8 +218,8 @@ if [ "$1" == 1 ];then
 cat > /etc/dnsmasq.conf << EOF
 bogus-priv                                 # PubHub
 domain-needed                              # PubHub
-interface=lo,uap0                          # PubHub
-no-dhcp-interface=lo,wlan0                 # PubHub
+interface=lo,wlan0                          # PubHub
+#no-dhcp-interface=lo,wlan0                 # PubHub
 bind-interfaces                            # PubHub
 server=8.8.8.8                             # PubHub
 dhcp-range=10.3.141.50,10.3.141.255,12h    # PubHub

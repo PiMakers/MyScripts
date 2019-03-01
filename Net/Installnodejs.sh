@@ -4,6 +4,11 @@
 ##############################################
 
 
+# linux 18.04.
+# sudo apt update && # sudo apt upgrade
+# sudo apt install npm node-gyp nodejs-dev libssl1.0-dev
+# sudo apt autoclean && sudo apt clean && sudo apt autoremove
+
 #!/bin/bash
 set -e
 

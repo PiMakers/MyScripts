@@ -4,19 +4,22 @@
 # https://github.com/github/hub
 #
 ########################################################
+GIT_USER=PiMakers
+NEW_REPONAME=$(basename $PWD)
 
 ##Create remote repo with curl
 # curl -u 'USER' https://api.github.com/user/repos -d '{"name":"REPO"}'
-curl -u '$GIT_USER' https://api.github.com/user/repos -d '{"name":"$NEW_REPONAME"}
+curl -u "${GIT_USER}" https://api.github.com/user/repos -d "{\"name\":\""${NEW_REPONAME}"\"}"
 
 ##Create a new repository on the command line
 
-mkdir $NEW_REPONAME
-cd $NEW_REPONAME
+# mkdir $NEW_REPONAME
+# cd $NEW_REPONAME
 echo "# $NEW_REPONAME" >> README.md
 # touch README.md
 git init
-git add README.md
+git add .
+#git add README.md
 git commit -m "first commit"
 
 
@@ -26,3 +29,20 @@ git commit -m "first commit"
 git remote add origin git@github.com:$GIT_USER/$NEW_REPONAME.git
 git push -u origin master
 
+#temp:
+
+warning: adding embedded git repository: local_addons/ofxHID
+hint: You've added another git repository inside your current repository.
+hint: Clones of the outer repository will not contain the contents of
+hint: the embedded repository and will not know how to obtain it.
+hint: If you meant to add a submodule, use:
+hint:
+hint:   git submodule add <url> local_addons/ofxHID
+hint:
+hint: If you added this path by mistake, you can remove it from the
+hint: index with:
+hint:
+hint:   git rm --cached local_addons/ofxHID
+hint:
+hint: See "git help submodule" for more information.
+warning: adding embedded git repository: local_addons/ofxIO
