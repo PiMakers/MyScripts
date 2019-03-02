@@ -32,6 +32,15 @@ INSTALL=-1
 PROGNAME="$0"
 ROOT=$(dirname "$0")
 
+#  AP_IP=10.3.141.1
+# ${LEASE_TIME}
+[ -z ${SSID} ] && SSID="Ste@diAP"
+[ -z $AP_IP ] && AP_IP="10.0.0.1"
+[ -z $LEASE_TIME ] && LEASE_TIME="12d"  # infinite
+echo "AP_IP=${AP_IP}"
+echo "LEASE_TIME=${LEASE_TIME}"
+echo "SSID=${SSID}"
+
 check_root() {
     # Must be root to install the hotspot
     echo ":::"
@@ -51,43 +60,42 @@ check_root() {
     fi
 }
 
-
 select_mode() {
-PS3='Please enter your choice: '
-options=( "Install" "Uninstall" "Quit" )
-# options+=( "More_Choises1" "More_Choises2" ... )
-# unset options[0]
-# options[2]="pocok"
-# arr=( "${arr[@]:0:2}" "new_element" "${arr[@]:2}" )
-select opt in "${options[@]}"
-do
-    case $opt in
-        "Install")
-            echo "Installing $PROGNAME ..."
-            INSTALL=1
-            break 
-            ;;
-        "Uninstall")
-            echo "Uninstalling $PROGNAME ..."
-            INSTALL=0
-            break 
-            ;;
-        "Quit")
-            break
-            ;;
-        *) echo "invalid option $REPLY";;
-    esac
-done
+    PS3='Please enter your choice: '
+    options=( "Install" "Uninstall" "Quit" )
+    # options+=( "More_Choises1" "More_Choises2" ... )
+    # unset options[0]
+    # options[2]="pocok"
+    # arr=( "${arr[@]:0:2}" "new_element" "${arr[@]:2}" )
+    select opt in "${options[@]}"
+    do
+        case $opt in
+            "Install")
+                echo "Installing $PROGNAME ..."
+                INSTALL=1
+                break 
+                ;;
+            "Uninstall")
+                echo "Uninstalling $PROGNAME ..."
+                INSTALL=0
+                break 
+                ;;
+            "Quit")
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
 }
 
 
 ## Install requred packages for DNS, Access Point and Firewall rules.
 install_dependencies() {
-apt-get update
-apt-get install -y hostapd dnsmasq # iptables-persistent
-## Since the configuration files are not ready yet, turn the new software off as follows:
-# systemctl stop dnsmasq
-# systemctl stop hostapd
+    apt-get update
+    apt-get install -y hostapd dnsmasq # iptables-persistent
+    ## Since the configuration files are not ready yet, turn the new software off as follows:
+    # systemctl stop dnsmasq
+    # systemctl stop hostapd
 }
 
 is_interface() {
@@ -108,144 +116,148 @@ get_new_macaddr() {
     local MAC_ADDRESS NEW_MAC_ADDRESS LAST_BYTE i
     MAC_ADDRESS=$(get_macaddr "$1")
     LAST_BYTE=$(printf %d 0x${MAC_ADDRESS##*:})
-#    mutex_lock
+    #mutex_lock
     for i in {1..255}; do
         NEW_MAC_ADDRESS="${MAC_ADDRESS%:*}:$(printf %02x $(( ($LAST_BYTE + $i) % 256 )))"
         (get_all_macaddrs | grep "$NEW_MAC_ADDRESS" > /dev/null 2>&1) || break
     done
-#    mutex_unlock
+    #mutex_unlock
     echo $NEW_MAC_ADDRESS
 }
 
 ## add/remove soft AP device
 create_udev_rule(){
-#TODO change macaddress
-# MAC_ADDRESS=$(get_macaddr $WIFI_INTERFACE)
-# NEW_MAC_ADDRESS=$(get_new_macaddr $WIFI_INTERFACE)
-# bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
-#SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \\
-#  RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \\
-#  RUN+="/bin/ip link set ap0 address ${NEW_MAC_ADDRESS}"
-#EOF
+    #TODO change macaddress
+    # MAC_ADDRESS=$(get_macaddr $WIFI_INTERFACE)
+    # NEW_MAC_ADDRESS=$(get_new_macaddr $WIFI_INTERFACE)
+    # bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
+    #SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \\
+    #  RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \\
+    #  RUN+="/bin/ip link set ap0 address ${NEW_MAC_ADDRESS}"
+    #EOF
 
-local file_name="/etc/udev/rules.d/90-wireless.rules"
-if [ "$1" == 1 ];then
-cat > ${file_name} << EOF
-# PubHub
+    local file_name="/etc/udev/rules.d/90-wireless.rules"
+    if [ "$1" == 1 ];then
+        cat > ${file_name} << EOF
+# PiMaker®
 
 ACTION=="add", SUBSYSTEM=="ieee80211", KERNEL=="phy0", \\
- RUN+="/sbin/iw phy %k interface add uap0 type __ap"
+RUN+="/sbin/iw phy %k interface add uap0 type __ap"
 EOF
- echo "${file_name} created"
-else [ -f "${file_name}" ]
- rm "${file_name}"
- echo "${file_name} removed"
-fi
+        echo "${file_name} created"
+    else [ -f "${file_name}" ]
+        rm "${file_name}"
+        echo "${file_name} removed"
+    fi
 
-# udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj" || exit 
-# udevadm trigger --attr-match=subsystem=net || exit
-# service dhcpcd restart
+    # udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj" || exit 
+    # udevadm trigger --attr-match=subsystem=net || exit
+    # service dhcpcd restart
 }
 
 
 ## configure/unconfigure soft AP interface
 configure_interface() {
-local file_name="/etc/network/interfaces.d/PubHubAP"
-if [ "$1" == 1 ];then
-cat > ${file_name} << EOF
-# PubHub
+    local file_name="/etc/network/interfaces.d/PubHubAP"
+    if [ "$1" == 1 ];then
+        cat > ${file_name} << EOF
+# PiMaker®
 
 allow-hotplug uap0
 auto uap0
 iface uap0 inet static
-      address 10.3.141.1
+#     address 10.3.141.1
+      address ${AP_IP}
       netmask 255.255.255.0
 EOF
- echo "${file_name} created"
-elif [ -f "${file_name}" ]; then
- rm "${file_name}" || ( echo "ERROR: remove ${file_name}" && exit 11)
- echo "${file_name} removed"
-fi
+        echo "${file_name} created"
+    elif [ -f "${file_name}" ]; then
+        rm "${file_name}" || ( echo "ERROR: remove ${file_name}" && exit 11)
+        echo "${file_name} removed"
+    fi
 }
 
 ## patch dhcpcd-hook to restore STA after hostapd inited.
 patch_10_wpa_supplicant(){
-local file_name="/lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant"
-[ -f $file_name ] || (echo "ERROR: No $file_name"; exit 11)
-sed -i '/# PubHub/d' $file_name
-if [ "$1" == 1 ];then
- sed -i '/DEPARTED)/a \        NOCARRIER)\      wpa_supplicant_stop; wpa_supplicant_start;;\t\t\t# PubHub\
-        *)\              syslog info "PubHUb: reason = $reason interface = $interface";; # PubHub' $file_name
-# TODO check if wait.conf ( rm /etc/systemd/system/dhcpcd.service.d/wait.conf )
- echo "$file_name patched !"
-else
- echo "$file_name recovered !"
-fi
+    local file_name="/lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant"
+    [ -f $file_name ] || (echo "ERROR: No $file_name"; exit 11)
+    sed -i '/# PiMaker®/d' $file_name
+    if [ "$1" == 1 ];then
+        sed -i '/DEPARTED)/a \        NOCARRIER)\      wpa_supplicant_stop; wpa_supplicant_start;;\t\t\t# PiMaker®\
+                *)\              syslog info "PubHUb: reason = $reason interface = $interface";; # PiMaker®' $file_name
+        # TODO check if wait.conf ( rm /etc/systemd/system/dhcpcd.service.d/wait.conf )
+        echo "$file_name patched !"
+    else
+        echo "$file_name recovered \!"
+    fi
 }
 
 ## Set up the client wifi STA on wlan0.
 # TODO make encription
 add_wpa_supplicant_conf() {
-if [ "$1" == 1 ];then
- if [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
-   cp /etc/wpa_supplicant/wpa_supplicant.conf ${ROOT}/BackUp/wpa_supplicant.conf.orig 
- fi
-cat > /etc/wpa_supplicant/wpa_supplicant.conf << EOF
-# PubHub
+    if [ "$1" == 1 ];then
+        if [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
+            cp /etc/wpa_supplicant/wpa_supplicant.conf ${ROOT}/BackUp/wpa_supplicant.conf.orig 
+        fi
+    #TODO encrypt psk
+    cat > /etc/wpa_supplicant/wpa_supplicant.conf << EOF
+# PiMaker®
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
 country=HU
-  
+
 network={
-    ssid="Ste@diAP"
+    #ssid="Ste@diAP"
+    ssid=${SSID}
     psk="AsdfghjklkjhgfdsAsdfghjkl"
     key_mgmt=WPA-PSK
 }
 EOF
-echo "Setting up the client wifi (STA) on wlan0."
-elif [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
- cp ${ROOT}/BackUp/wpa_supplicant.conf.orig /etc/wpa_supplicant/wpa_supplicant.conf
-else
-  echo "Something went Wrong Setting up the client wifi (STA) on wlan0."
-fi
+    echo "Setting up the client wifi (STA) on wlan0."
+    elif [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
+    cp ${ROOT}/BackUp/wpa_supplicant.conf.orig /etc/wpa_supplicant/wpa_supplicant.conf
+    else
+    echo "Something went Wrong Setting up the client wifi (STA) on wlan0."
+    fi
 }
 
 configure_dnsmasq() {
-if [ "$1" == 1 ];then
- if [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
-   cp /etc/dnsmasq.conf ${ROOT}/BackUp/dnsmasq.conf.orig
- fi
-cat > /etc/dnsmasq.conf << EOF
-bogus-priv                                 # PubHub
-domain-needed                              # PubHub
-interface=lo,wlan0                          # PubHub
-#no-dhcp-interface=lo,wlan0                 # PubHub
-bind-interfaces                            # PubHub
-server=8.8.8.8                             # PubHub
-dhcp-range=10.3.141.50,10.3.141.255,12h    # PubHub
+    if [ "$1" == 1 ];then
+    if [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
+    cp /etc/dnsmasq.conf ${ROOT}/BackUp/dnsmasq.conf.orig
+    fi
+    cat > tmp << EOF
+bogus-priv                                                  # PiMaker®
+domain-needed                                               # PiMaker®
+interface=lo,wlan0                                          # PiMaker®
+#no-dhcp-interface=lo,wlan0                                 # PiMaker®
+bind-interfaces                                             # PiMaker®
+server=8.8.8.8                                              # PiMaker®
+dhcp-range=${AP_IP%:*}:50,${AP_IP%:*}:255,${LEASE_TIME}     # PiMaker®
+#dhcp-range=10.3.141.50,10.3.141.255,12h                    # PiMaker®
 
-# IP Forward (yes)                         # PubHub
-# dhcp-option=19,1                         # PubHub
+# IP Forward (yes)                                          # PiMaker®
+# dhcp-option=19,1                                          # PiMaker®
 
-# Source Routing (yes)                     # PubHub
-# dhcp-option=20,1                         # PubHub
+# Source Routing (yes)                                      # PiMaker®
+# dhcp-option=20,1                                          # PiMaker®
 EOF
-echo "configuring dnsmasq..."
-elif [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
-    cp ${ROOT}/BackUp/dnsmasq.conf.orig /etc/dnsmasq.conf
-else 
-    echo "Somthing went Wrong configuring dnsmasq"
-fi
+    echo "configuring dnsmasq..."
+    elif [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
+        cp ${ROOT}/BackUp/dnsmasq.conf.orig /etc/dnsmasq.conf
+    else 
+        echo "Somthing went Wrong configuring dnsmasq"
+    fi
 }
 
 ## /etc/hostapd/hostapd.conf
 configure_hostapd() {
-if [ "$1" == 1 ];then
- if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
-   cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
- fi
-cat > /etc/hostapd/hostapd.conf << EOF
-# PiMaker
+    if [ "$1" == 1 ];then
+    if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
+    cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
+    fi
+    cat > /etc/hostapd/hostapd.conf << EOF
+# PiMaker®
 
 ctrl_interface=/var/run/hostapd
 ctrl_interface_group=0
@@ -264,53 +276,54 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
-echo "configuring hostapd..."
-elif [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
-    cp ${ROOT}/BackUp/hostapd.conf.orig /etc/hostapd/hostapd.conf
-else 
-    echo "Somthing went Wrong configuring hostapd"
-fi
+    echo "configuring hostapd..."
+    elif [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
+        cp ${ROOT}/BackUp/hostapd.conf.orig /etc/hostapd/hostapd.conf
+    else 
+        echo "Somthing went Wrong configuring hostapd"
+    fi
 }
 
 ## patch /etc/default/hostapd
 default_hostapd() {
-local file_name="/etc/default/hostapd"
-sed -i '/# PubHub/d' $file_name
-if [ "$1" == 1 ];then
-cat >> $file_name << EOF
-DAEMON_CONF="/etc/hostapd/hostapd.conf"    # PubHub
+    local file_name="/etc/default/hostapd"
+    sed -i '/# PiMaker®/d' $file_name
+    if [ "$1" == 1 ];then
+    cat >> $file_name << EOF
+DAEMON_CONF="/etc/hostapd/hostapd.conf"    # PiMaker®
 EOF
- echo "$file_name patched"
-else
- echo "$file_name restored"
-fi
+    echo "$file_name patched"
+    else
+    echo "$file_name restored"
+    fi
 }
 
 patch_dhcpcd_conf() {
-local file_name="/etc/dhcpcd.conf"
-sed -i '/# PubHub/d' $file_name
-if [ "$1" == 1 ];then
-cat >> $file_name << EOF
-denyinterfaces uap0    # PubHub
+    local file_name="/etc/dhcpcd.conf"
+    sed -i '/# PiMaker®/d' $file_name
+    if [ "$1" == 1 ];then
+        cat >> $file_name << EOF
+denyinterfaces uap0    # PiMaker®
 EOF
- echo "$file_name patched"
-else
- echo "$file_name restored"
-fi
+        echo "$file_name patched"
+    else
+        echo "$file_name restored"
+    fi
 }
 
 ## Bridge AP to cient side
 Bridge_AP_to_cient() {
-# echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-# sysctl -w net.ipv4.ip_forward=1
-# sudo iptables -t nat -D  POSTROUTING -o eth0 -j MASQUERADE
-# iptables-restore < /etc/iptables.ipv4.nat # PubHub
-# sed "/$pattern/s/^#*/$exp2/g" $file_name #(pattern="net.ipv4.ip_forward=1"; exp2="" to uncomment, exp2="#" to comment out; file_name="/etc/sysctl.conf")
-local append_or_del="-A"
-[ "$INSTALL" == 1 ] || append_or_del="-D"
-echo ${INSTALL} > /proc/sys/net/ipv4/ip_forward
-iptables -t nat ${append_or_del} POSTROUTING -s 10.3.141.0/24 ! -d 10.3.141.0/24 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+    # echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+    # sudo sysctl -w net.ipv4.ip_forward=1
+    # sudo iptables -t nat -D  POSTROUTING -o eth0 -j MASQUERADE
+    # iptables-restore < /etc/iptables.ipv4.nat # PiMaker®
+    # sed "/$pattern/s/^#*/$exp2/g" $file_name #(pattern="net.ipv4.ip_forward=1"; exp2="" to uncomment, exp2="#" to comment out; file_name="/etc/sysctl.conf")
+    local append_or_del="-A"
+    [ "$INSTALL" == 1 ] || append_or_del="-D"
+    #echo ${INSTALL} > /proc/sys/net/ipv4/ip_forward
+    #iptables -t nat ${append_or_del} POSTROUTING -s 10.3.141.0/24 ! -d 10.3.141.0/24 -j MASQUERADE
+    iptables -t nat ${append_or_del} POSTROUTING -s ${AP_IP}/24 ! -d ${AP_IP}/24 -j MASQUERADE
+    iptables-save > /etc/iptables/rules.v4
 }
 
 
