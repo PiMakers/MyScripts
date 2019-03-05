@@ -138,7 +138,9 @@ ${SUDO} cat /etc/wpa_supplicant/wpa_supplicant.conf
 # Install the packages you need for DNS, Access Point and Firewall rules.
 apt update || echo "HHHHHHOOOOOOOPPPPPPPP"
 apt install -y hostapd dnsmasq iptables-persistent || echo "HHHHHHOOOOOOOPPPPPPPP"
-apt autoremove autoclean clean
+apt autoremove 
+apt autoclean
+apt clean
 
 cat > /etc/hostapd/hostapd.conf << EOF
 # PubHub
