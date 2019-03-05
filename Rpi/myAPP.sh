@@ -35,11 +35,16 @@ ROOT=$(dirname "$0")
 #  AP_IP=10.3.141.1
 # ${LEASE_TIME}
 [ -z ${SSID} ] && SSID="Ste@diAP"
+[ -z ${WPA_PASSWD} ] && WPA_PASSWD="Pepe374189"
 [ -z $AP_IP ] && AP_IP="10.0.0.1"
 [ -z $LEASE_TIME ] && LEASE_TIME="12d"  # infinite
+
+echo "SSID=${SSID}"
+echo "WPA_PASSWD=${WPA_PASSWD}"
 echo "AP_IP=${AP_IP}"
 echo "LEASE_TIME=${LEASE_TIME}"
-echo "SSID=${SSID}"
+sleep 2
+
 
 check_root() {
     # Must be root to install the hotspot
@@ -263,7 +268,7 @@ ctrl_interface=/var/run/hostapd
 ctrl_interface_group=0
 interface=uap0
 driver=nl80211
-ssid=T.I.Remote
+ssid=${SSID}
 hw_mode=g
 channel=13
 # wmm_enabled=0
@@ -271,7 +276,7 @@ macaddr_acl=0
 auth_algs=1
 ignore_broadcast_ssid=0
 wpa=2
-wpa_passphrase=TI159550
+wpa_passphrase=${WPA_PASSWD}
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP

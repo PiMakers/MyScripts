@@ -57,6 +57,7 @@ NEW_HOSTNAME=new_hostname
 #enable ssh
 ${SUDO} touch /boot/ssh
 
+    ${SUDO} bash -c 'echo "pi:ß{NEW_LOGIN_PASSWD}" | chpasswd'
 #set hostname
 CURRENT_HOSTNAME=$(${SUDO} cat /etc/hostname | tr -d " \t\n\r")
 ${SUDO} bash -c 'echo $NEW_HOSTNAME > /etc/hostname'
