@@ -44,9 +44,9 @@ get_new_macaddr() {
 }
 
 backup_everything() {
-cp /lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant $ROOT_DIR/BackUp/10-wpa_supplicant
-cp /etc/hostapd/hostapd.conf $ROOT_DIR/BackUp/hostapd.conf
-cp /etc/dnsmasq.conf $ROOT_DIR/BackUp/dnsmasq.conf
+[ -f $ROOT_DIR/BackUp/10-wpa_supplicant ] && cp /lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant $ROOT_DIR/BackUp/10-wpa_supplicant
+[ -f $ROOT_DIR/BackUp/hostapd.conf ] && cp /etc/hostapd/hostapd.conf $ROOT_DIR/BackUp/hostapd.conf
+[ -f $ROOT_DIR/BackUp/dnsmasq.conf ] && cp /etc/dnsmasq.conf $ROOT_DIR/BackUp/dnsmasq.conf
 
 }
 
@@ -119,7 +119,7 @@ EOF
 
 create_files
 
-cat > /etc/wpa_supplicant/wpa_supplicant.conf << EOF
+${SUDO} bash -c 'cat > /etc/wpa_supplicant/wpa_supplicant.conf' << EOF
 # PubHub
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 country=HU
@@ -133,7 +133,7 @@ network={
 }
 EOF
 #wpa_cli reconfigure
-cat /etc/wpa_supplicant/wpa_supplicant.conf
+${SUDO} cat /etc/wpa_supplicant/wpa_supplicant.conf
 
 # Install the packages you need for DNS, Access Point and Firewall rules.
 apt update || echo "HHHHHHOOOOOOOPPPPPPPP"

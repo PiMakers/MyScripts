@@ -26,6 +26,7 @@
 # guests.  When the party's over, change the access point password.
 
 #!/bin/bash
+
 set -e
 
 INSTALL=-1
