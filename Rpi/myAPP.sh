@@ -329,7 +329,7 @@ Bridge_AP_to_cient() {
 
 
 select_mode
-[ "$INSTALL" > -1 ] || ( echo "INSTALL = $INSTALL" && exit 2 )
+[ "${INSTALL}" ] || ( echo "INSTALL = $INSTALL" && exit 2 )
 exit 0
 
 create_udev_rule ${INSTALL}
