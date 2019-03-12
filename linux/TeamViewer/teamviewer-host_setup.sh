@@ -1,11 +1,14 @@
 #!/bin/bash
 
 [ -z TEAMVIEWER_PASSWD ] && TEAMVIEWER_PASSWD=passwd
+echo "TEAMVIEWER_PASSWDs=$TEAMVIEWER_PASSWD"
 
 sudo cp src/teamviewer.list /etc/apt/sources.list.d/teamviewer.list
 sudo apt-key add src/TeamViewer2017.asc
 sudo apt update
-sudo apt install teamviewer-host
+sudo apt install teamviewer-host -y
+
+teamviewer --daemon restart
 
 #get teamviewer id
 teamviewer info

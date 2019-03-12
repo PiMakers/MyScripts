@@ -34,17 +34,19 @@ PROGNAME="$0"
 ROOT=$(dirname "$0")
 
 #  AP_IP=10.3.141.1
-# ${LEASE_TIME}
-[ -z ${SSID} ] && SSID="Ste@diAP"
-[ -z ${WPA_PASSWD} ] && WPA_PASSWD="Pepe374189"
+[ -z ${WIFI_SSID} ] && WIFI_SSID="Ste@diAP"
+[ -z ${WIFI_PASSWD} ] && WIFI_PASSWD="Pepe374189"
+
 [ -z $AP_IP ] && AP_IP="10.0.0.1"
+[ -z ${AP_SSID} ] && AP_SSID="PiMakerNet®"
 [ -z $LEASE_TIME ] && LEASE_TIME="12d"  # infinite
 
-echo "SSID=${SSID}"
-echo "WPA_PASSWD=${WPA_PASSWD}"
+[ -z $WIRT_IFACE ] && WIRT_IFACE=uap
+
+echo "WIFI_SSID=${WIFI_SSID}"
+echo "WIFI_PASSWD=${WIFI_PASSWD}"
 echo "AP_IP=${AP_IP}"
 echo "LEASE_TIME=${LEASE_TIME}"
-sleep 2
 
 
 check_root() {
@@ -68,7 +70,7 @@ check_root() {
 
 select_mode() {
     PS3='Please enter your choice: '
-    options=( "Install" "Uninstall" "Quit" )
+    options=( "Install" "Uninstall" 'Library mode' "Quit" )
     # options+=( "More_Choises1" "More_Choises2" ... )
     # unset options[0]
     # options[2]="pocok"
@@ -86,14 +88,22 @@ select_mode() {
                 INSTALL=0
                 break 
                 ;;
+            "Library mode")
+                echo "Using $PROGNAME as prog. library..."
+                INSTALL=2
+                break
+                ;;
             "Quit")
                 break
                 ;;
-            *) echo "invalid option $REPLY";;
+            *) 
+                echo "invalid option $REPLY"
+                echo "Using $PROGNAME as prog. library..."
+                break
+                ;;
         esac
     done
 }
-
 
 ## Install requred packages for DNS, Access Point and Firewall rules.
 install_dependencies() {
@@ -132,7 +142,7 @@ get_new_macaddr() {
 }
 
 ## add/remove soft AP device
-create_udev_rule(){
+create_udev_rule() {
     #TODO change macaddress
     # MAC_ADDRESS=$(get_macaddr $WIFI_INTERFACE)
     # NEW_MAC_ADDRESS=$(get_new_macaddr $WIFI_INTERFACE)
@@ -144,21 +154,26 @@ create_udev_rule(){
 
     local file_name="/etc/udev/rules.d/90-wireless.rules"
     if [ "$1" == 1 ];then
-        cat > ${file_name} << EOF
+    #${SUDO} bash -c 'cat > ${file_name}' << EOF
+    ${SUDO} bash -c 'cat > /etc/udev/rules.d/90-wireless.rules' << EOF
 # PiMaker®
 
 ACTION=="add", SUBSYSTEM=="ieee80211", KERNEL=="phy0", \\
-RUN+="/sbin/iw phy %k interface add uap0 type __ap"
+RUN+="/sbin/iw phy %k interface add ${WIRT_IFACE} type __ap"
 EOF
         echo "${file_name} created"
-    else [ -f "${file_name}" ]
-        rm "${file_name}"
-        echo "${file_name} removed"
+    else
+        if [ -f "${file_name}" ]; then 
+            ${SUDO} rm "${file_name}" && \
+            echo "${file_name} removed"
+        fi
     fi
 
-    # udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj" || exit 
-    # udevadm trigger --attr-match=subsystem=net || exit
-    # service dhcpcd restart
+    ${SUDO} service networking stop
+    ${SUDO} udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj"
+    ${SUDO} udevadm trigger --attr-match=subsystem=net || echo "clean jjjjjjjjjjjjjjjj"
+    ${SUDO} service networking start
+    ${SUDO} service dhcpcd restart
 }
 
 
@@ -214,8 +229,8 @@ country=HU
 
 network={
     #ssid="Ste@diAP"
-    ssid=${SSID}
-    psk="AsdfghjklkjhgfdsAsdfghjkl"
+    ssid=${WIFI_SSID}
+    psk=${WIFI_PASSPWD}
     key_mgmt=WPA-PSK
 }
 EOF
@@ -259,17 +274,17 @@ EOF
 ## /etc/hostapd/hostapd.conf
 configure_hostapd() {
     if [ "$1" == 1 ];then
-    if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
-    cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
+        if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
+        cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
     fi
-    cat > /etc/hostapd/hostapd.conf << EOF
+    ${SUDO} bash -c 'cat > /etc/hostapd/hostapd.conf' << EOF
 # PiMaker®
 
 ctrl_interface=/var/run/hostapd
 ctrl_interface_group=0
 interface=uap0
 driver=nl80211
-ssid=${SSID}
+ssid=${AP_SSID}
 hw_mode=g
 channel=13
 # wmm_enabled=0
@@ -277,7 +292,7 @@ macaddr_acl=0
 auth_algs=1
 ignore_broadcast_ssid=0
 wpa=2
-wpa_passphrase=${WPA_PASSWD}
+wpa_passphrase=${WIFI_PASSWD}
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
@@ -288,6 +303,7 @@ EOF
     else 
         echo "Somthing went Wrong configuring hostapd"
     fi
+    echo "Done!"
 }
 
 ## patch /etc/default/hostapd
@@ -306,9 +322,9 @@ EOF
 
 patch_dhcpcd_conf() {
     local file_name="/etc/dhcpcd.conf"
-    sed -i '/# PiMaker®/d' $file_name
+    ${SUDO} sed -i '/# PiMaker®/d' $file_name
     if [ "$1" == 1 ];then
-        cat >> $file_name << EOF
+        ${SUDO} bash -c 'cat >> $file_name' << EOF
 denyinterfaces uap0    # PiMaker®
 EOF
         echo "$file_name patched"
@@ -334,6 +350,7 @@ Bridge_AP_to_cient() {
 
 
 
+check_root
 select_mode
 [ "${INSTALL}" ] || ( echo "INSTALL = $INSTALL" && exit 2 )
 exit 0

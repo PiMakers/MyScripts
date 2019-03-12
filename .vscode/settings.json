@@ -1,2 +1,16 @@
 {
+    "git.confirmSync": false,
+    "git.autofetch": true,
+    "terminal.integrated.rendererType": "dom",
+    "files.exclude": {
+        "**/.git": false,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/obj": true
+    },
+    "terminal.integrated.confirmOnExit": true,
+    "terminal.integrated.drawBoldTextInBrightColors": false,
+    "terminal.integrated.copyOnSelection": true
 }

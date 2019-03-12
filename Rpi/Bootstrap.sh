@@ -47,12 +47,11 @@ export LC_LOCAL=C
 readonly PROGNAME=$(basename $0)
 readonly PROGDIR=$(readlink -m $(dirname $0))
 readonly ARGS="$@"
-RASPBIAN_TYPE="" # full / lite / ""
+#RASPBIAN_TYPE="full_" # full / lite / ""
 # exit 1
 
 for  arg in ${ARGS}  
 do
-
 if [ "$arg" == "lite" ]; then
  export RASPBIAN_TYPE="lite_"
   else if [ "$arg" == "full" ]; then
@@ -100,40 +99,44 @@ get_latest_image() {
     else 
     echo "$LATEST_VERSION.img found!"
     fi
-    echo "Making a copy in ${TEMP_DIR} ..."
-    ${SUDO} cp $LATEST_VERSION.img /tmp/$LATEST_VERSION.img && echo "Using copy!"
-    cd ${TEMP_DIR}
 }
 
-#umount ${RPI_BOOT} ${RPI_ROOT} || true
-mount_latest_img() {
-    #RESIZED=1
-    [ ! -f "$1" ] && exit
-    [[ $( expr $(stat -c %s $1) / 1024 / 1024) < 5120 ]] && qemu-img resize -f raw "$1" +2G && RESIZED=1
-    export LOOP_DEVICE=$(${SUDO} losetup -f)
+# resize $1=image_name $ $2 +/- size G/M
+resize_image() {
+    RESIZED=0
+    [ ! -f "$1" ] && [ -z "$2" ] && echo "Not resized!!!!" && return
+    #[[ ${RESIZE} == 1 ]] && [[ $( expr $(stat -c %s $1) / 1024 / 1024) < 5120 ]] && \
+    ${SUDO} qemu-img resize -f raw "$1" +2G && RESIZED=1
+    LOOP_DEVICE=$(${SUDO} losetup -f)
     ${SUDO} losetup $LOOP_DEVICE $1
     OLD_DISKID="$(${SUDO} fdisk -l "$LOOP_DEVICE" | sed -n 's/Disk identifier: 0x\([^ ]*\)/\1/p')"
     ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE "
     #end_sector=$(${SUDO} fdisk -l -o End $LOOP_DEVICE | sed '$!d')
     #echo "end_sector =${end_sector}"
     #[ ${RESIZED} ] && 
-    ${SUDO} parted "$LOOP_DEVICE" u s resizepart 2 100%
-    [[ ${RESIZED} == 1 ]] && \
+    [[ ${RESIZED} == 1 ]] && ${SUDO} parted "$LOOP_DEVICE" u s resizepart 2 100% && \
     ${SUDO} e2fsck -f -y -v -C 0 ${LOOP_DEVICE}p2 1>/dev/null && \
     ${SUDO} resize2fs -p ${LOOP_DEVICE}p2 #|| ( echo "partitionERROR" && exit )
     DISKID="$(${SUDO} fdisk -l "${LOOP_DEVICE}" | sed -n 's/Disk identifier: 0x\([^ ]*\)/\1/p')"
 
     end_sector=$(${SUDO} fdisk -l -o End $LOOP_DEVICE | sed '$!d')
     echo "end_sector =${end_sector}"
+    # fix_partuuid
+    echo "olD: ${OLD_DISKID}\n new : ${DISKID}"
+    [[ ${RESIZED} == 1 ]] && ( ${SUDO} sed -i "s/${OLD_DISKID}/${DISKID}/g" ${RPI_ROOT}/etc/fstab && \
+    ${SUDO} sed -i "s/${OLD_DISKID}/${DISKID}/" ${RPI_BOOT}/cmdline.txt )
+    ${SUDO} losetup -d $LOOP_DEVICE
+    RESIZED=1
+}
 
-
+#umount ${RPI_BOOT} ${RPI_ROOT} || true
+mount_image() {
+    LOOP_DEVICE=$(${SUDO} losetup -f)
+    ${SUDO} losetup $LOOP_DEVICE $1
+    ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE "
     mkdir -p ${RPI_BOOT} ${RPI_ROOT}   || echo "error create ${RPI_BOOT} "
     ${SUDO} mount -n ${LOOP_DEVICE}p1 ${RPI_BOOT} || echo "error mounting ${RPI_BOOT}"
     ${SUDO} mount -n ${LOOP_DEVICE}p2 ${RPI_ROOT} || echo "error mounting ${RPI_ROOT}"
-    # fix_partuuid
-    echo "olD: ${OLD_DISKID}\n new : ${DISKID}"
-    ${SUDO} sed -i "s/${OLD_DISKID}/${DISKID}/g" ${RPI_ROOT}/etc/fstab
-    ${SUDO} sed -i "s/${OLD_DISKID}/${DISKID}/" ${RPI_BOOT}/cmdline.txt
 }
 
 clean_up() {
@@ -156,13 +159,15 @@ clean_up() {
 }
 
 chroot_raspbian () {
-    trap clean_up SIGINT
-    mount_latest_img $LATEST_VERSION.img
+    trap clean_up SIGINT 2
+    [ -z $1 ] || LATEST_VERSION=$1
+    echo "LATEST_VERSION=$LATEST_VERSION.img" && \
+    mount_image ${LATEST_VERSION}.img
     # sleep 100
     ${SUDO} cp /usr/bin/qemu-arm-static ${RPI_ROOT}/usr/bin/qemu-arm-static
     ${SUDO} cp /etc/resolv.conf ${RPI_ROOT}/etc/resolv.conf
     ${SUDO} cp -r ~/MyScripts ${RPI_ROOT}/home/pi/
-    ${SUDO} touch /boot/PiMaker.log
+#    ${SUDO} touch /boot/PiMaker.log
     #${SUDO} mkdir -p ${RPI_ROOT}/mnt/LinuxData
 
     cd ${RPI_ROOT}
@@ -180,7 +185,7 @@ chroot_raspbian () {
     USER=pi
     HOME=/home/${USER}
     #err=$(${SUDO} chroot . $cmd) || echo "ERROR:  $err !!!!!!!!!!!"  
-    ${SUDO} chroot --userspec=pi:root . #$cmd || echo "ERROR:  $err !!!!!!!!!!!"
+    ${SUDO} chroot --userspec=pi:root . || echo "ERROR:  $err !!!!!!!!!!!" #$cmd || echo "ERROR:  $err !!!!!!!!!!!"
     USER=${OLD_USER}
     HOME=/home/${OLD_USER}
     cd
@@ -200,10 +205,10 @@ chroot_raspbian () {
     echo "chroot_raspbian: Bye-bye...."
 
     read -p "Save changes? (y/any)" IMG_NAME
-    [[ ${IMG_NAME} == "y" ]] || exit 1
+    [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
     read -p "Type an name for new img: " IMG_NAME
 #    mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
-    mv  ${TEMP_DIR}/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
+    ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
     echo "Image saved as $(dirname $PWD)/${LATEST_VERSION}_${IMG_NAME}.img"
     #chown ${USER}:${USER} ${NEW_IMG_NAME}
     #read -p "Write SD card ? (y any)" IMG_NAME
@@ -223,16 +228,18 @@ exit 101
 }
 
 check_root
-install_dependencies
-latest_version
-get_latest_image
-chroot_raspbian
+# install_dependencies
+ latest_version
+ get_latest_image
+ chroot_raspbian #"${HOME}/2018-11-13-raspbian-stretch_T.I.img"
+# chroot_raspbian #"${HOME}/2018-11-13-raspbian-stretch_T.I.img"
+# clean_up
 
 echo "exited normally"
 
-exit 0
+# exit 0
 
-
+more() {
 # enable ssh
 touch ${RPI_BOOT}/ssh
 
@@ -279,3 +286,5 @@ umount ${RPI_BOOT} ${RPI_ROOT} && sudo losetup -d $LOOP_DEVICE
 NEW_IMG_NAME=modded_$(date +"%H%M%S")${IMG_NAME}
 mv  ${IMG_NAME} ${NEW_IMG_NAME}
 chown ${USER}:${USER} ${NEW_IMG_NAME}
+
+}

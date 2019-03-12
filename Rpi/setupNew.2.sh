@@ -14,12 +14,14 @@
 set -e
 
 CHECK_ROOT=1
-UPDATE=1
+UPDATE=0
+SSH_SH=0 # TODO Not works !!!!!!!!!!!!!!!!
 
 setup=""
 
-[ $CHECK_ROOT == 1 ] && setup+="check_root"
-[ $UPDATE == 1 ] && setup+="\nupdate"
+[ $CHECK_ROOT == 1 ] && setup+='check_root'
+[ $UPDATE == 1 ] && setup+=' update'
+[ $SSH_SH == 1 ] && setup+=" $(. ssh.sh)"
 
 check_root() {
     # Must be root to install the hotspot
@@ -41,9 +43,13 @@ check_root() {
 }
 
 update() {
-    ${SUDO} apt update
+    ${SUDO} apt update && ${SUDO} apt upgrade -y
+    ${SUDO} apt autoremove && ${SUDO} apt autoclean && ${SUDO} apt clean
 }
 
 
 
-${setup}
+for command in $setup
+do 
+    echo "command: $command" && "${command}"
+done

@@ -90,7 +90,56 @@ is_ssh() {
   fi
 }
 
-silent_boot_to_CLI(){
+# silent_boot https://scribles.net/silent-boot-on-raspbian-stretch-in-console-mode/
+silent_boot_to_CLI () {
+    echo "Creating backup dirs..."
+    echo "PROGNAME= $0"
+    BACKUP_DIR=/etc/PiMaker®/BackUp
+    ${SUDO} mkdir -p ${BACKUP_DIR} 2>/dev/null
+    
+    echo -e "1. Set boot to console mode (vs. grafical.target)\n"
+    ${SUDO} systemctl set-default multi-user.target
+#    ${SUDO} sed -i '/^ExecStart=/ s/--no clear/--skip-login --noclear --noissue --login-options "-f pi"/' /lib/systemd/system/getty@.service
+    echo "2. Remove autologin message by modify autologin service\n"
+#    ${SUDO} raspi-config nonint do_boot_behaviour B2
+   
+   # sudo rm /etc/systemd/system/getty.target.wants/getty@tty1.service
+      ${SUDO} ln -fs /etc/systemd/system/autologin@.service /lib/systemd/system/getty.target.wants/getty@tty1.service
+      AUTO_LOGIN_USER=pi
+      ${SUDO} bash -c 'cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf' << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --noissue --noclear --skip-login --login-options "-f ${AUTO_LOGIN_USER}" %I ${TERM}
+EOF
+
+    echo "3. Disabling \“Welcome to PIXEL” splash...\"\n"
+    ${SUDO} systemctl mask plymouth-start.service
+
+    echo "4. Removing Rainbow Screen...\n"
+
+    ${SUDO} grep '^disable_splash' /boot/config.txt || \
+    ${SUDO} grep '# disable_splash' /boot/config.txt && \
+    ${SUDO} sed -i '/^# disable_splash/ s/# //' /boot/config.txt || \
+        ( ${SUDO}  bash -c 'echo -e "\n# Disable rainbow image at boot\t\t#PubHub" >> /boot/config.txt' && \
+        ${SUDO}  bash -c 'echo -e "disable_splash=1\t\t\t#PubHub" >> /boot/config.txt' )
+
+    echo "5. Removing: Raspberry Pi logo and blinking cursor\n Adding: 'loglevel=3' from/to /boot/cmdline.txt"
+    echo -e "by adding \"logo.nologo vt.global_cursor_default=0\" at the end of the line in \"/boot/cmdline.txt\".\n"
+	   ${SUDO} grep 'logo.nologo' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ logo.nologo/' /boot/cmdline.txt
+      ${SUDO} sed -i 's/ vt.global_cursor_default=0//' /boot/cmdline.txt
+      ${SUDO} sed -i 's/$/ vt.global_cursor_default=0/' /boot/cmdline.txt
+    # remove boot messages:
+      ${SUDO} sed -i 's/ loglevel=[01245]//; s/$/ loglevel=3/' /boot/cmdline.txt
+    
+    echo "6. Removing login message\n"
+    ${SUDO} touch ~/.hushlogin
+}
+
+
+silent_boot_to_CLIXXX () {
+   echo "backUp"
+   ${SUDO} mkdir -p /etc/
+   [ -f ]
    echo -e "1. Set autologin to CLI without any message\n"
       #${SUDO} sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/autologin@.service
       # /etc/systemd/system/getty@tty1.service.d/autologin.conf ExecStart=-/sbin/agetty --autologin pi --noclear %I xterm-256color
@@ -115,12 +164,10 @@ EOF
    echo "by adding \"logo.nologo vt.global_cursor_default=0\" at the end of the line in \"/boot/cmdline.txt\".\n"
       ${SUDO} grep 'logo.nologo' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ logo.nologo/' /boot/cmdline.txt
       ${SUDO} grep 'vt.global_cursor_default=0' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ vt.global_cursor_default=0/' /boot/cmdline.txt
-      IS_RASPBIAN_LITE && echo "Raspbian Lite detected!!\n" && \
-      (${SUDO} grep 'loglevel=3' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ loglevel=3/' /boot/cmdline.txt) || echo "Raspbian Lite Not Detected!!\n"
+     (${SUDO} grep 'loglevel=[012345]' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ loglevel=3/' /boot/cmdline.txt) || echo "Raspbian Lite Not Detected!!\n"
 
    echo "5. Removing login message\n"
-      touch ~/.hushlogin
-
+      ${SUDO} touch ~/.hushlogin
 }
 
 do_about() {
@@ -137,4 +184,5 @@ you have heavily customised your installation.\
 #is_raspbian_strech
 check_root
 #do_about
-silent_boot_to_CLI
+#silent_boot_to_CLI
+silent_boot_to_CLIXXX
