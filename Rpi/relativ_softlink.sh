@@ -1,15 +1,13 @@
 #!/bin/bash
 set -e
 set -o pipefail
-# trap any script errors and exit
-trap "trapError" ERR
 
 #export ROOT=/mnt/LinuxData/RpiCross3
 #export RPI_ROOT=$ROOT/RpiClean_Rootfs
 
-export ROOT=/opt/Cross
-export RPI_ROOT=/opt/PiTopDevRootfs
-export RPI_ROOT=/opt/Rpi3DevRootfs
+#export ROOT=/opt/Cross
+#export RPI_ROOT=/opt/PiTopDevRootfs
+#export RPI_ROOT=/opt/Rpi3DevRootfs
 
 mkdir -p $RPI_ROOT
 
@@ -19,6 +17,7 @@ trapError() {
 	cat formula.log
 	exit 1
 }
+
 
 installPackages(){
     IS_UBUNTU=`uname -a | grep Ubuntu > /dev/null; echo $?`
@@ -78,6 +77,8 @@ relativeSoftLinks(){
 echo "+++++ make everything compact in : $ROOT +++++ $PWD"
 
 cd $( cd "$(dirname "$0")" ; pwd -P )
+# trap any script errors and exit
+trap "trapError" ERR
 #installPackages
 #createRaspbianImg
 #cd $ROOT

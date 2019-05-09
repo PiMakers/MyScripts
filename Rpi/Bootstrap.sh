@@ -87,7 +87,8 @@ download_latest_raspbian() {
 }
 
 get_latest_image() {
-    cd ${HOME}/Downloads || cd ${TEMP_DIR}
+    [ -d "${HOME}/Downloads" ] || mkdir ${HOME}/Downloads && cd ${HOME}/Downloads
+#    cd ${TEMP_DIR}
     if [ ! -f $LATEST_VERSION.img ]; then
     echo -e "$LATEST_VERSION.img not found.\nSearching for $LATEST_VERSION.zip ..."
     if [ ! -f $LATEST_VERSION.zip ]; then
@@ -159,14 +160,15 @@ clean_up() {
 }
 
 chroot_raspbian () {
-    trap clean_up SIGINT 2
+    trap clean_up SIGINT 2 EXIT
     [ -z $1 ] || LATEST_VERSION=$1
     echo "LATEST_VERSION=$LATEST_VERSION.img" && \
     mount_image ${LATEST_VERSION}.img
     # sleep 100
     ${SUDO} cp /usr/bin/qemu-arm-static ${RPI_ROOT}/usr/bin/qemu-arm-static
     ${SUDO} cp /etc/resolv.conf ${RPI_ROOT}/etc/resolv.conf
-    ${SUDO} cp -r ~/MyScripts ${RPI_ROOT}/home/pi/
+
+    err=$(${SUDO} cp -r ${PROGDIR}/../../MyScripts ${RPI_ROOT}/home/pi/)  || echo "$err"
 #    ${SUDO} touch /boot/PiMaker.log
     #${SUDO} mkdir -p ${RPI_ROOT}/mnt/LinuxData
 
@@ -178,7 +180,7 @@ chroot_raspbian () {
     ${SUDO} mount --bind /sys ${RPI_ROOT}/sys/
     ${SUDO} mount --bind ${RPI_BOOT} ${RPI_ROOT}/boot/
     #${SUDO} mount --bind /mnt/LinuxData ${RPI_ROOT}/mnt/LinuxData
-    cmd='/home/pi/MyScripts/Rpi/temp.sh'
+    err=$(cmd='/home/pi/MyScripts/Rpi/temp.sh' ) || echo "$err"
     OLD_USER=${USER}
     OLD_HOME=${HOME}
     SUDO_USER=pi
@@ -194,7 +196,7 @@ chroot_raspbian () {
 
     ${SUDO} rm ${RPI_ROOT}/usr/bin/qemu-arm-static
     ${SUDO} rm ${RPI_ROOT}/etc/resolv.conf 
-    ${SUDO} rm -r ${RPI_ROOT}/home/pi/MyScripts
+    err=${SUDO} rm -r ${RPI_ROOT}/home/pi/MyScripts || echo $err
     #${SUDO} rm ${RPI_ROOT}/home/pi/temp.sh
     sync
     ${SUDO} umount -lv ${RPI_BOOT}
@@ -205,7 +207,7 @@ chroot_raspbian () {
     echo "chroot_raspbian: Bye-bye...."
 
     read -p "Save changes? (y/any)" IMG_NAME
-    [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
+    [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${LATEST_VERSION}.img && exit 101
     read -p "Type an name for new img: " IMG_NAME
 #    mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
     ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"

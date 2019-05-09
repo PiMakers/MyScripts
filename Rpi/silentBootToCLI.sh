@@ -138,8 +138,9 @@ EOF
 
 silent_boot_to_CLIXXX () {
    echo "backUp"
-   ${SUDO} mkdir -p /etc/
-   [ -f ]
+   BACKUP_DIR=/etc/PiMaker®/BackUp
+   [ -d $BACKUP_DIR ] || ${SUDO} mkdir -p ${BACKUP_DIR} 2>/dev/null   
+
    echo -e "1. Set autologin to CLI without any message\n"
       #${SUDO} sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/autologin@.service
       # /etc/systemd/system/getty@tty1.service.d/autologin.conf ExecStart=-/sbin/agetty --autologin pi --noclear %I xterm-256color
@@ -184,5 +185,5 @@ you have heavily customised your installation.\
 #is_raspbian_strech
 check_root
 #do_about
-#silent_boot_to_CLI
-silent_boot_to_CLIXXX
+silent_boot_to_CLI
+#silent_boot_to_CLIXXX

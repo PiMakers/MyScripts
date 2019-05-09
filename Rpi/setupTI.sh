@@ -56,8 +56,8 @@ NEW_HOSTNAME=TIremote
 
 #set hostname
 CURRENT_HOSTNAME=$(${SUDO} cat /etc/hostname | tr -d " \t\n\r")
-${SUDO} bash -c "echo ${NEW_HOSTNAME} > /etc/hostname"
-${SUDO} sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
+${SUDO} -E bash -c "echo ${NEW_HOSTNAME} > /etc/hostname"
+${SUDO} -E sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
 
 # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
 [ -z $SUDO_USER ] && IS_CHROOT=0 || IS_CHROOT=1
@@ -235,6 +235,6 @@ configure_dhcpcd
 configure_dnsmasq
 configure_hostapd
 silent_boot_to_CLI
-install_app
+#install_app
 echo "T.I.App install done"
 #create_virtual_interface

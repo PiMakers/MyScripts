@@ -1,0 +1,14 @@
+bogus-priv                                                  # PiMaker®
+domain-needed                                               # PiMaker®
+interface=lo,wlan0                                          # PiMaker®
+#no-dhcp-interface=lo,wlan0                                 # PiMaker®
+bind-interfaces                                             # PiMaker®
+server=8.8.8.8                                              # PiMaker®
+dhcp-range=10.0.0.1:50,10.0.0.1:255,12d     # PiMaker®
+#dhcp-range=10.3.141.50,10.3.141.255,12h                    # PiMaker®
+
+# IP Forward (yes)                                          # PiMaker®
+# dhcp-option=19,1                                          # PiMaker®
+
+# Source Routing (yes)                                      # PiMaker®
+# dhcp-option=20,1                                          # PiMaker®

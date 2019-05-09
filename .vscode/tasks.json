@@ -1,0 +1,95 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "group": "build",
+            "windows": {
+                "command": "powershell"
+            },
+            "linux": {
+                "command": "bash"
+            },
+            "args": [
+                "-c",
+                "'make Debug'"
+            ],
+            "options": {
+                "env": {
+                    "PLATFORM_ARCH": "armv6l",
+                    "OF_ROOT":"/mnt/LinuxData/OF/openFrameworks",
+                    "TOOLCHAIN_ROOT":"${OF_ROOT}/scripts/apothecary/scripts/linuxarmv6l/rpi_toolchain"
+                }
+            }
+        },
+        {
+            "label": "RPI Cross build",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "windows": {
+                "command": "powershell"
+            },
+            "linux": {
+                "command": "bash"
+            },
+            "args": [
+                "-c",
+                "'PLATFORM_ARCH=armv6l c TOOLCHAIN_ROOT=/mnt/LinuxData/OF/openFrameworks/scripts/apothecary/scripts/linuxarmv6l/rpi_toolchain RPI_ROOT=/opt/RpiRootfs make Debug'"
+            ]
+        },
+        {
+            "label": "RPI3 Cross build",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "windows": {
+                "command": "powershell"
+            },
+            "linux": {
+                "command": "bash"
+            },
+            "args": [
+                "-c",
+                "'PLATFORM_ARCH=armv7l GST_VERSION=1.0 TOOLCHAIN_ROOT=/mnt/LinuxData/OF/openFrameworks/scripts/apothecary/scripts/linuxarmv6l/rpi_toolchain RPI_ROOT=/opt/RpiRootfs PLATFORM_VARIANT=raspberry2 make Debug'"
+            ]
+        },
+        {
+            "label": "build & run",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "windows": {
+                "command": "powershell"
+            },
+            "linux": {
+                "command": "bash"
+            },
+            "args": [
+                "-c",
+                "'make run'"
+            ]
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "windows": {
+                "command": "powershell"
+            },
+            "linux": {
+                "command": "bash"
+            },
+            "args": [
+                "-c",
+                "'make clean'"
+            ]
+        }
+    ]
+}

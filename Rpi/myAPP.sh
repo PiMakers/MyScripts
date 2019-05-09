@@ -27,12 +27,16 @@
 
 #!/bin/bash
 
-set -e
+#set -e
 
 INSTALL=-1
-PROGNAME="$0"
-ROOT=$(dirname "$0")
+echo S0="$0"
+PROGNAME="$0" || echo Sourced
+ROOT=$(dirname "$0") || echo Sourced
 
+BACKUP_DIR=/etc/PiMaker®
+
+# set -e
 #  AP_IP=10.3.141.1
 [ -z ${WIFI_SSID} ] && WIFI_SSID="Ste@diAP"
 [ -z ${WIFI_PASSWD} ] && WIFI_PASSWD="Pepe374189"
@@ -107,8 +111,8 @@ select_mode() {
 
 ## Install requred packages for DNS, Access Point and Firewall rules.
 install_dependencies() {
-    apt-get update
-    apt-get install -y hostapd dnsmasq # iptables-persistent
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y hostapd dnsmasq # iptables-persistent
     ## Since the configuration files are not ready yet, turn the new software off as follows:
     # systemctl stop dnsmasq
     # systemctl stop hostapd
@@ -151,16 +155,24 @@ create_udev_rule() {
     #  RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \\
     #  RUN+="/bin/ip link set ap0 address ${NEW_MAC_ADDRESS}"
     #EOF
+    ## add virtual interface WIRT_IFACE=uap0
+    # sudo iw phy0 interface add ${WIRT_IFACE} type __ap
+    # sudo service networking restart
+    # iwconfig
 
-    local file_name="/etc/udev/rules.d/90-wireless.rules"
+    ## remove
+    # sudo iw ${WIRT_IFACE} del
+
+    export file_name="/etc/udev/rules.d/90-wireless.rules"
     if [ "$1" == 1 ];then
-    #${SUDO} bash -c 'cat > ${file_name}' << EOF
-    ${SUDO} bash -c 'cat > /etc/udev/rules.d/90-wireless.rules' << EOF
+#   ${SUDO} bash -c 'cat > /etc/udev/rules.d/90-wireless.rules' << EOF    
+    ${SUDOE} bash -c 'cat > ${file_name} << EOF
+ 
 # PiMaker®
 
 ACTION=="add", SUBSYSTEM=="ieee80211", KERNEL=="phy0", \\
 RUN+="/sbin/iw phy %k interface add ${WIRT_IFACE} type __ap"
-EOF
+EOF'
         echo "${file_name} created"
     else
         if [ -f "${file_name}" ]; then 
@@ -174,6 +186,7 @@ EOF
     ${SUDO} udevadm trigger --attr-match=subsystem=net || echo "clean jjjjjjjjjjjjjjjj"
     ${SUDO} service networking start
     ${SUDO} service dhcpcd restart
+    ${SUDO} iwconfig
 }
 
 
@@ -181,7 +194,7 @@ EOF
 configure_interface() {
     local file_name="/etc/network/interfaces.d/PubHubAP"
     if [ "$1" == 1 ];then
-        cat > ${file_name} << EOF
+        ${SUDOE} bash -c 'cat > ${file_name} << EOF
 # PiMaker®
 
 allow-hotplug uap0
@@ -190,7 +203,7 @@ iface uap0 inet static
 #     address 10.3.141.1
       address ${AP_IP}
       netmask 255.255.255.0
-EOF
+EOF'
         echo "${file_name} created"
     elif [ -f "${file_name}" ]; then
         rm "${file_name}" || ( echo "ERROR: remove ${file_name}" && exit 11)
@@ -200,12 +213,12 @@ EOF
 
 ## patch dhcpcd-hook to restore STA after hostapd inited.
 patch_10_wpa_supplicant(){
-    local file_name="/lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant"
-    [ -f $file_name ] || (echo "ERROR: No $file_name"; exit 11)
-    sed -i '/# PiMaker®/d' $file_name
+    file_name="/lib/dhcpcd/dhcpcd-hooks/10-wpa_supplicant"
+    [ -f $file_name ] || (echo "ERROR: No ${file_name}"; exit 11)
+    ${SUDOE} bash -c "sed -i '/# PiMaker®/d' ${file_name}"
     if [ "$1" == 1 ];then
-        sed -i '/DEPARTED)/a \        NOCARRIER)\      wpa_supplicant_stop; wpa_supplicant_start;;\t\t\t# PiMaker®\
-                *)\              syslog info "PubHUb: reason = $reason interface = $interface";; # PiMaker®' $file_name
+        ${SUDOE} bash -c "sed -i '/DEPARTED)/a \        NOCARRIER)\      wpa_supplicant_stop; wpa_supplicant_start;;\t\t\t# PiMaker®\
+                *)\              syslog info "PubHUb: reason = $reason interface = $interface";; # PiMaker®' $file_name"
         # TODO check if wait.conf ( rm /etc/systemd/system/dhcpcd.service.d/wait.conf )
         echo "$file_name patched !"
     else
@@ -217,26 +230,31 @@ patch_10_wpa_supplicant(){
 # TODO make encription
 add_wpa_supplicant_conf() {
     if [ "$1" == 1 ];then
-        if [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
-            cp /etc/wpa_supplicant/wpa_supplicant.conf ${ROOT}/BackUp/wpa_supplicant.conf.orig 
+        if [ ! -d ${BACKUP_DIR} ];then
+            ${SUDO} mkdir -p /etc/PiMaker®
+        fi    
+        if [ -f ${BACKUP_DIR}/wpa_supplicant.conf.orig ]; then
+            cp /etc/wpa_supplicant/wpa_supplicant.conf ${BACKUP_DIR}/wpa_supplicant.conf.orig 
         fi
     #TODO encrypt psk
-    cat > /etc/wpa_supplicant/wpa_supplicant.conf << EOF
+    [ -z ${WIFI_SSID} ] && WIFI_SSID="Ste@diAP"
+    [ -z ${WIFI_PASSWD} ] || WIFI_PASSWD="Pepe374189"
+
+    ${SUDO} bash -c 'cat > /etc/wpa_supplicant/wpa_supplicant.conf' << EOF
 # PiMaker®
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
 country=HU
 
 network={
-    #ssid="Ste@diAP"
     ssid=${WIFI_SSID}
     psk=${WIFI_PASSPWD}
     key_mgmt=WPA-PSK
 }
 EOF
     echo "Setting up the client wifi (STA) on wlan0."
-    elif [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
-    cp ${ROOT}/BackUp/wpa_supplicant.conf.orig /etc/wpa_supplicant/wpa_supplicant.conf
+    elif [ -f ${BACKUP_DIR}/wpa_supplicant.conf.orig ]; then
+    cp ${BACKUP_DIR}/wpa_supplicant.conf.orig /etc/wpa_supplicant/wpa_supplicant.conf
     else
     echo "Something went Wrong Setting up the client wifi (STA) on wlan0."
     fi
@@ -244,8 +262,8 @@ EOF
 
 configure_dnsmasq() {
     if [ "$1" == 1 ];then
-    if [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
-    cp /etc/dnsmasq.conf ${ROOT}/BackUp/dnsmasq.conf.orig
+    if [ -f ${BACKUP_DIR}/dnsmasq.conf.orig ]; then
+    cp /etc/dnsmasq.conf ${BACKUP_DIR}/dnsmasq.conf.orig
     fi
     cat > tmp << EOF
 bogus-priv                                                  # PiMaker®
@@ -264,8 +282,8 @@ dhcp-range=${AP_IP%:*}:50,${AP_IP%:*}:255,${LEASE_TIME}     # PiMaker®
 # dhcp-option=20,1                                          # PiMaker®
 EOF
     echo "configuring dnsmasq..."
-    elif [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
-        cp ${ROOT}/BackUp/dnsmasq.conf.orig /etc/dnsmasq.conf
+    elif [ -f ${BACKUP_DIR}/dnsmasq.conf.orig ]; then
+        cp ${BACKUP_DIR}/dnsmasq.conf.orig /etc/dnsmasq.conf
     else 
         echo "Somthing went Wrong configuring dnsmasq"
     fi
@@ -273,10 +291,13 @@ EOF
 
 ## /etc/hostapd/hostapd.conf
 configure_hostapd() {
-    if [ "$1" == 1 ];then
-        if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
-        cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
-    fi
+    if [[ "$1" == 1 ]];then
+        if [ ! -f ${BACKUP_DIR}/hostapd.conf.orig ]; then
+            if [ -f /etc/hostapd/hostapd.conf ]; then
+                cp /etc/hostapd/hostapd.conf ${BACKUP_DIR}/hostapd.conf.orig
+            fi
+        fi
+#    fi
     ${SUDO} bash -c 'cat > /etc/hostapd/hostapd.conf' << EOF
 # PiMaker®
 
@@ -298,8 +319,10 @@ wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
     echo "configuring hostapd..."
-    elif [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
-        cp ${ROOT}/BackUp/hostapd.conf.orig /etc/hostapd/hostapd.conf
+#    if [ "$1" == 0 ];then
+    echo "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
+    elif [[ -f ${BACKUP_DIR}/hostapd.conf.orig ]]; then
+        cp ${BACKUP_DIR}/hostapd.conf.orig /etc/hostapd/hostapd.conf
     else 
         echo "Somthing went Wrong configuring hostapd"
     fi
@@ -309,7 +332,7 @@ EOF
 ## patch /etc/default/hostapd
 default_hostapd() {
     local file_name="/etc/default/hostapd"
-    sed -i '/# PiMaker®/d' $file_name
+    sed -i '/DAEMON_CONF/d' $file_name
     if [ "$1" == 1 ];then
     cat >> $file_name << EOF
 DAEMON_CONF="/etc/hostapd/hostapd.conf"    # PiMaker®
@@ -321,8 +344,8 @@ EOF
 }
 
 patch_dhcpcd_conf() {
-    local file_name="/etc/dhcpcd.conf"
-    ${SUDO} sed -i '/# PiMaker®/d' $file_name
+    export file_name="/etc/dhcpcd.conf"
+    ${SUDO} -E sed -i '/# PiMaker®/d' $file_name
     if [ "$1" == 1 ];then
         ${SUDO} bash -c 'cat >> $file_name' << EOF
 denyinterfaces uap0    # PiMaker®
@@ -352,9 +375,10 @@ Bridge_AP_to_cient() {
 
 check_root
 select_mode
-[ "${INSTALL}" ] || ( echo "INSTALL = $INSTALL" && exit 2 )
-exit 0
+# [ "${INSTALL}" = 1 ] || ( echo "INSTALL = $INSTALL" && exit 2 )
 
+
+install() {
 create_udev_rule ${INSTALL}
 configure_interface $INSTALL
 patch_10_wpa_supplicant ${INSTALL}
@@ -365,7 +389,9 @@ default_hostapd ${INSTALL}
 patch_dhcpcd_conf ${INSTALL}
 # Bridge_AP_to_cient ${INSTALL}
 # exit 111
+}
 
+# install
 
 ## REBOOT!
 #    reboot

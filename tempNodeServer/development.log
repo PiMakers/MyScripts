@@ -1,0 +1,22 @@
+Log of fsck -C -a -T -t ext4 /dev/sda2 
+Fri Mar  8 06:31:06 2019
+
+/dev/sda2: recovering journal
+/dev/sda2: Clearing orphaned inode 2229304 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229288 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2492581 (uid=1000, gid=1000, mode=040700, size=4096)
+/dev/sda2: Clearing orphaned inode 2390026 (uid=1000, gid=1000, mode=0100600, size=4194304)
+/dev/sda2: Clearing orphaned inode 1310809 (uid=1000, gid=1000, mode=0140775, size=0)
+/dev/sda2: Clearing orphaned inode 2232222 (uid=1000, gid=1000, mode=0100644, size=32768)
+/dev/sda2: Clearing orphaned inode 2229643 (uid=1000, gid=1000, mode=0100600, size=19292)
+/dev/sda2: Clearing orphaned inode 2229283 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229281 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229284 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229282 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229275 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229269 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: Clearing orphaned inode 2229279 (uid=1000, gid=1000, mode=0100644, size=15605)
+/dev/sda2: clean, 321261/3637248 files, 10319774/14522368 blocks
+
+Fri Mar  8 06:31:06 2019
+----------------

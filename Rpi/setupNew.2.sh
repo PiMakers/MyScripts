@@ -13,15 +13,16 @@
 
 set -e
 
-CHECK_ROOT=1
-UPDATE=0
-SSH_SH=0 # TODO Not works !!!!!!!!!!!!!!!!
+# CHECK_ROOT=0
+# UPDATE=0
+# SSH_SH=0 # TODO Not works !!!!!!!!!!!!!!!!
 
 setup=""
 
-[ $CHECK_ROOT == 1 ] && setup+='check_root'
-[ $UPDATE == 1 ] && setup+=' update'
-[ $SSH_SH == 1 ] && setup+=" $(. ssh.sh)"
+# CHECK_ROOT
+[ ! -z $CHECK_ROOT ] && [ $CHECK_ROOT == 1 ] && setup+='check_root'
+[ ! -z $UPDATE ] && [ $UPDATE == "true" ] && setup+=' update'
+[ ! -z $SSH_SH ] && [ $SSH_SH == 1 ] && setup+=" $(. ssh.sh)"
 
 check_root() {
     # Must be root to install the hotspot

@@ -28,7 +28,7 @@ check_root() {
         else
             echo "::: Please install sudo or run this as root."
             exit 1
-fi
+        fi
     fi
 }
 ################
@@ -41,29 +41,35 @@ error () {
 set_defaults() {
 IS_RASPBIAN_LITE=0
 MAC_ADDRESS="$(cat /sys/class/net/wlan0/address)" || error ${MAC_ADDRESS}
-CLIENT_SSID="Ste@diAP"
+[ ! -z ${WIFI_SSID} ] || WIFI_SSID="Ste@diAP" && export WIFI_SSID=${WIFI_SSID}
 #"${1}"
-CLIENT_PASSPHRASE="AsdfghjklkjhgfdsAsdfghjkl"
+[ ! -z ${WIFI_PASSWD} ] || WIFI_PASSWD="Pepe374189" && export WIFI_PASSWD=${WIFI_PASSWD}
 #"${2}"
 AP_SSID="PubHubAP"
 #"${3}"
 AP_PASSPHRASE="12345678"
 #"${4}"
-ROOT=$(dirname "$0")
+ROOT=$(dirname "$0") || ROOT=${HOME}
 OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
 IS_CHROOTED=$(echo "${SUDO_COMMAND}" | grep -qv chroot; echo "$?")
-NEW_HOSTNAME=new_hostname
+[ ! -z ${NEW_HOSTNAME} ] || NEW_HOSTNAME=new_hostname && export ${NEW_HOSTNAME}
 
 #enable ssh
-${SUDO} touch /boot/ssh
 
-    ${SUDO} bash -c 'echo "pi:ß{NEW_LOGIN_PASSWD}" | chpasswd'
+${SUDO} touch /boot/ssh
+    
 #set hostname
-CURRENT_HOSTNAME=$(${SUDO} cat /etc/hostname | tr -d " \t\n\r")
-${SUDO} bash -c 'echo $NEW_HOSTNAME > /etc/hostname'
-${SUDO} sed -i "s/127.0.1.1.*$CURRENT_HOSTNAME/127.0.1.1\t$NEW_HOSTNAME/g" /etc/hosts
+export CURRENT_HOSTNAME=$(${SUDO} cat /etc/hostname | tr -d " \t\n\r")
+${SUDOE} bash -c 'echo ${NEW_HOSTNAME} > /etc/hostname'
+${SUDOE} sed -i "s/127.0.1.1.*${CURRENT_HOSTNAME}/127.0.1.1\t${NEW_HOSTNAME}/g" /etc/hosts
 # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
 sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo "export LC_ALL=C" >> $HOME/.bashrc
+}
+
+change_passwd() {
+    [ -z "$1" ] || NEW_LOGIN_PASSWD="$1"
+    export NEW_LOGIN_PASSWD=${NEW_LOGIN_PASSWD}
+    ${SUDOE} bash -c 'echo "pi:${NEW_LOGIN_PASSWD}" | chpasswd'
 }
 
 remove_unused() {
@@ -92,41 +98,38 @@ Install_dependencies () {
 
 # Install OF dependencies
 Install_OF_dependencies() {
-  echo "Installing OF dependences ..."
-BASE_URL="https://raw.githubusercontent.com/openframeworks/openFrameworks/master/scripts/linux"
-    OS=$(cat  /etc/os-release | grep '^ID=' | sed s/^'ID='//) && [ $OS=="raspbian" ] && OS="debian"
-    curl -l -v ${BASE_URL}/${OS}/install_dependencies.sh | sed 's/apt-get/apt-get -y/' | ${SUDO} bash -s
-    curl -l ${BASE_URL}/${OS}/install_codecs.sh | sed 's/apt-get/apt-get -y/' | ${SUDO} bash -s
-    
-  echo "Done!"
+    echo "Installing OF dependences ..."
+        BASE_URL="https://raw.githubusercontent.com/openframeworks/openFrameworks/master/scripts/linux"
+        OS=$(cat  /etc/os-release | grep '^ID=' | sed s/^'ID='//) && [ $OS=="raspbian" ] && OS="debian"
+        curl -l -v ${BASE_URL}/${OS}/install_dependencies.sh | sed 's/apt-get/apt-get -y/' | ${SUDO} bash -s
+        curl -l ${BASE_URL}/${OS}/install_codecs.sh | sed 's/apt-get/apt-get -y/' | ${SUDO} bash -s
+    echo "Done!"
 }
 
 # Make absolut path to relativ (for cross rootfs)
 relativeSoftLinks(){
-#TODO make this multi threaded
-local path=('/usr/lib' '/usr/lib/arm-linux-gnueabihf')
-#path+=' /usr/lib/gcc/arm-linux-gnueabihf/6' # not shure not good !!
-for lnk in ${path[@]}; do
-echo "changeing links to relative in $lnk ..."
- cd ${lnk}
-    for link in $(ls -la | grep "\-> /" | sed "s/.* \([^ ]*\) \-> \/\(.*\)/\1->\/\2/g"); do 
-        lib=$(echo $link | sed "s/\(.*\)\->\(.*\)/\1/g"); 
-        link=$(echo $link | sed "s/\(.*\)\->\(.*\)/\2/g"); 
-        ${SUDO} rm $lib
-        ${SUDO} ln -s ../../..$link $lib 
-    done
+    #TODO make this multi threaded
+    local path=('/usr/lib' '/usr/lib/arm-linux-gnueabihf')
+    #path+=' /usr/lib/gcc/arm-linux-gnueabihf/6' # not shure not good !!
+    for lnk in ${path[@]}; do
+    echo "changeing links to relative in $lnk ..."
+    cd ${lnk}
+        for link in $(ls -la | grep "\-> /" | sed "s/.* \([^ ]*\) \-> \/\(.*\)/\1->\/\2/g"); do 
+            lib=$(echo $link | sed "s/\(.*\)\->\(.*\)/\1/g"); 
+            link=$(echo $link | sed "s/\(.*\)\->\(.*\)/\2/g"); 
+            ${SUDO} rm $lib
+            ${SUDO} ln -s ../../..$link $lib 
+        done
 
-    for f in *; do 
-        error=$(grep " \/lib/" $f > /dev/null 2>&1; echo $?) 
-        if [ $error -eq 0 ]; then 
-            ${SUDO} sed -i "s/ \/lib/ ..\/..\/..\/lib/g" $f
-            ${SUDO} sed -i "s/ \/usr/ ..\/..\/..\/usr/g" $f
-        fi
+        for f in *; do 
+            error=$(grep " \/lib/" $f > /dev/null 2>&1; echo $?) 
+            if [ $error -eq 0 ]; then 
+                ${SUDO} sed -i "s/ \/lib/ ..\/..\/..\/lib/g" $f
+                ${SUDO} sed -i "s/ \/usr/ ..\/..\/..\/usr/g" $f
+            fi
+        done
     done
-done
 }
-
-
 
 # install_createAP
 install_createAP() {
@@ -164,8 +167,8 @@ silent_boot() {
             #${SUDO} sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/getty@tty1.service.d/autologin.conf
             # Login to CLI
             ${SUDO} raspi-config nonint do_boot_behaviour B1 # B1 console; B2 console Autologin; B3 Desktop; B4 Desktop Autologin 
-#            ${SUDO} systemctl set-default multi-user.target
-#            ${SUDO} ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
+            #${SUDO} systemctl set-default multi-user.target
+            #${SUDO} ln -fs /lib/systemd/system/getty@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
             ${SUDO} bash -c 'echo -e "[Service]\nExecStart=\nExecStart=-/sbin/agetty --skip-login --noclear --noissue --login-options "-f pi" %I $TERM" > /etc/systemd/system/getty@tty1.service.d/autologin.conf'
 
         echo "2. Disabling \“Welcome to PIXEL” splash...\"\n"
@@ -178,14 +181,14 @@ silent_boot() {
 
 
         echo "4. Removing: Raspberry Pi logo and blinking cursor\n Adding: 'loglevel=3' from/to /boot/cmdline.txt"
-echo "by adding \"logo.nologo vt.global_cursor_default=0\" at the end of the line in \"/boot/cmdline.txt\".\n"
+        echo "by adding \"logo.nologo vt.global_cursor_default=0\" at the end of the line in \"/boot/cmdline.txt\".\n"
             ${SUDO} grep 'logo.nologo' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ logo.nologo/' /boot/cmdline.txt
             ${SUDO} grep 'vt.global_cursor_default=0' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ vt.global_cursor_default=0/' /boot/cmdline.txt
-    IS_RASPBIAN_LITE && echo "Raspbian Lite detected!!\n" && \
+            IS_RASPBIAN_LITE && echo "Raspbian Lite detected!!\n" && \
             (${SUDO} grep 'loglevel=3' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ loglevel=3/' /boot/cmdline.txt) || echo "Raspbian Lite Not Detected!!\n"
 
         echo "5. Removing login message\n"
-touch ~/.hushlogin
+            ${SUDO} touch ~/.hushlogin
 
     
     }
@@ -252,9 +255,12 @@ ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
 
 network={
-    ssid="${CLIENT_SSID}"
-    psk="${CLIENT_PASSPHRASE}"
+    ssid="${WIFI_SSID}"
+    psk="${WIFI_PASSWD}"
     id_str="AP1"
+    # tls_disable_tlsv1_0=1
+    # tls_disable_tlsv1_1=1
+    # openssl_ciphers=DEFAULT@SECLEVEL=2
 }
 EOF
 
@@ -309,7 +315,7 @@ $cmd ${SUDO} apt install -y nfs-kernel-server nfs-common hostapd dnsmasq
 
 # Required components!!!
 check_root
-set_defaults
+#set_defaults
 
 # Optional components:
 
@@ -318,7 +324,7 @@ set_defaults
 # Install_dependencies
 # Install_OF_dependencies
 # relativeSoftLinks
-silent_boot
+# silent_boot
 
 #create_virtual_interface
 #configure_dnsmasq

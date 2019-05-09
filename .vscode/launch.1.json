@@ -1,0 +1,92 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/bin/bash",
+            "args": [
+                "-c",
+                "make -C ${workspaceFolder} RunDebug"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "OF_ROOT",
+                    "value": "/mnt/LinuxData/OF/openFrameworks"
+                }
+            ],
+            "externalConsole": true,
+            "preLaunchTask": "build",
+            "linux": {
+                "MIMode": "gdb"
+            },
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "windows": {
+                "MIMode": "gdb"
+            }
+        },
+        {
+            "name": "RPI3 Cross Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/bin/bash",
+            "args": [
+                "-c",
+                "ssh -X pi@PiTopDev.local 'xterm -T ${workspaceFolderBasename}_armv7l -e' make -C ${workspaceFolder} RunDebug PLATFORM_ARCH='armv7l' GST_VERSION='1.0'"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "OF_ROOT",
+                    "value": "/mnt/LinuxData/OF/openFrameworks"
+                }
+            ],
+            "externalConsole": true,
+            "preLaunchTask": "RPI3 Cross build",
+            "linux": {
+                "MIMode": "gdb"
+            },
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "windows": {
+                "MIMode": "gdb"
+            }
+        },
+        {
+            "name": "RPI Cross Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/bin/bash",
+            "args": [
+                "-c",
+                "ssh -X pi@PiTopDev.local 'lxterminal -T ${workspaceFolderBasename}_armv6l -e' make -C ${workspaceFolder} RunDebug PLATFORM_ARCH='armv6l' GST_VERSION='1.0'"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "OF_ROOT",
+                    "value": "/mnt/LinuxData/OF/openFrameworks"
+                }
+            ],
+            "externalConsole": false,
+            "preLaunchTask": "RPI Cross build",
+            "linux": {
+                "MIMode": "gdb"
+            },
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "windows": {
+                "MIMode": "gdb"
+            }
+        }
+    ]
+}

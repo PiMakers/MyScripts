@@ -10,3 +10,6 @@ MYSYs2: ADD TO userconfig/workspace_config
         "MSYSTEM": "MINGW32",
     },
 }
+
+# install code on raspberry
+curl -s https://packagecloud.io/install/repositories/headmelted/codebuilds/script.deb.sh | sudo bash
