@@ -235,7 +235,7 @@ check_root
 # install_dependencies
  latest_version
  get_latest_image
- chroot_raspbian #"/mnt/LinuxData/SavedDiscImges/2019-04-08-raspbian-stretch_PiTop"
+ chroot_raspbian # "/mnt/LinuxData/SavedDiscImges/2019-04-08-raspbian-stretch_PiTop"
 # chroot_raspbian #"${HOME}/2018-11-13-raspbian-stretch_T.I.img"
 # clean_up
 
