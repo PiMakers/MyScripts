@@ -187,7 +187,7 @@ chroot_raspbian () {
     cmd='/home/pi/MyScripts/Rpi/temp.sh'
     OLD_USER=${USER}
     OLD_HOME=${HOME}
-    SUDO_USER=pi
+    #SUDO_USER=pi
     USER=pi
     HOME=/home/${USER}
     #err=$(${SUDO} chroot . $cmd) || echo "ERROR:  $err !!!!!!!!!!!"  
@@ -195,8 +195,8 @@ chroot_raspbian () {
     USER=${OLD_USER}
     HOME=/home/${OLD_USER}
     #cd
-    ${SUDO} umount -v ${RPI_ROOT}/{sys,proc,dev/pts,dev,boot}
-    ${SUDO} umount -v ${RPI_ROOT}/mnt/LinuxData  || echo "error LinuxData"
+    ${SUDO} umount -lv ${RPI_ROOT}/{sys,proc,dev/pts,dev,boot}
+    err=$(${SUDO} umount -lv ${RPI_ROOT}/mnt/LinuxData)  || echo "$err"
 
     ${SUDO} rm ${RPI_ROOT}/usr/bin/qemu-arm-static
     ${SUDO} rm ${RPI_ROOT}/etc/resolv.conf 
@@ -206,16 +206,16 @@ chroot_raspbian () {
     ${SUDO} umount -lv ${RPI_BOOT}
     ${SUDO} umount -lv ${RPI_ROOT}
     ${SUDO} losetup -v -d $LOOP_DEVICE
-    err=$(${SUDO} rm -r ${RPI_ROOT}) || echo "$err"
+    err=$(${SUDO} rm -r ${RPI_FS}) || echo "$err"
     
     echo "chroot_raspbian: Bye-bye...."
 
     read -p "Save changes? (y/any)" IMG_NAME
     [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
-    read -p "Type an name (extension) for new img: " IMG_NAME
+    read -p "Type a name (extension) for new img: " IMG_NAME
 #    mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
-    ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "${LATEST_VERSION}${IMG_NAME}.img"
-    echo "Image saved as $(dirname $PWD)/${LATEST_VERSION}${IMG_NAME}.img"
+    ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "/mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
+    echo "Image saved as /mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
     #chown ${USER}:${USER} ${NEW_IMG_NAME}
     #read -p "Write SD card ? (y any)" IMG_NAME
     #[ ${IMG_NAME} == "y"] && sudo dd bs=1M if=$LATEST_VERSION_${IMG_NAME}.img of=/dev/sdx
@@ -235,7 +235,7 @@ check_root
 # install_dependencies
  latest_version
  get_latest_image
- chroot_raspbian #"${HOME}/2018-11-13-raspbian-stretch_T.I.img"
+ chroot_raspbian #"/mnt/LinuxData/SavedDiscImges/2019-04-08-raspbian-stretch_PiTop"
 # chroot_raspbian #"${HOME}/2018-11-13-raspbian-stretch_T.I.img"
 # clean_up
 

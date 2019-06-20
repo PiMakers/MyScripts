@@ -71,7 +71,7 @@ enable_ssh() {
 }
 
 change_login_pwd() {
-        ${SUDOE} bash -c 'echo "pi:${NEW_LOGIN_PASSWD}" | chpasswd'
+    ${SUDOE} bash -c 'echo "pi:${NEW_LOGIN_PASSWD}" | chpasswd'
 }
 
 set_hostname() {
@@ -153,54 +153,45 @@ network={
     key_mgmt=WPA-PSK
 }
 EOF
+}
 
-
-# silent_boot https://scribles.net/silent-boot-on-raspbian-stretch-in-console-mode/
+## silent_boot https://scribles.net/silent-boot-on-raspbian-stretch-in-console-mode/
 silent_boot() {
-    # backup:
-    BACKUP_DIR=/etc/PiMaker/BackUp
-    ${SUDO} mkdir -p ${BACKUP_DIR}/orig_files 2>/dev/null
-    cd ${BACKUP_DIR}/orig_files
+   echo -e "1. Disabling \“Welcome to PIXEL” splash...\"\n"
+      ${SUDO} systemctl mask plymouth-start.service
 
-    if ("$1" == "reset"); then
-        {
-            systemctl unmask plymouth-start.service
-            ${SUDO} cp config.txt /boot/config.txt
-            ${SUDO} cp cmdline.txt /boot/cmdline.txt
-            ${SUDO} cp autologin\@.service /etc/systemd/system/autologin\@.service
-            rm ~/.hushlogin
-        }
-    else {
+   echo -e "2. Removing Rainbow Screen...\n"
 
-    [ ! -f config.txt ] && ${SUDO} cp /boot/config.txt ./
-    [ ! -f cmdline.txt ] && ${SUDO} cp /boot/cmdline.txt ./
-    [ ! -f autologin\@.service ] && ${SUDO} cp /etc/systemd/system/autologin\@.service ./
+      ${SUDO} grep -q '^disable_splash' /boot/config.txt || \
+      ${SUDO} grep -q '# disable_splash' /boot/config.txt && \
+      ${SUDO} sed -i '/^# disable_splash/ s/# //' /boot/config.txt || \
+      ( ${SUDO} bash -c 'echo -e "\n# Disable rainbow image at boot\t\t#PubHub" >> /boot/config.txt' && \
+      ${SUDO} bash -c 'echo -e "disable_splash=1\t\t\t#PubHub" >> /boot/config.txt' )
+   
 
-    echo "1. Disabling \“Welcome to PIXEL” splash...\"\n"
-        systemctl mask plymouth-start.service
+   echo -e "3. Removing Raspberry Pi logo and blinking cursor adding:" \
+           "\n   \"tty=3 logo.nologo vt.global_cursor_default=0\"" \
+           "\n   at the end of the line in \"/boot/cmdline.txt\".\n"
+	   # ${SUDO} grep -q 'logo.nologo' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ logo.nologo/' /boot/cmdline.txt
+	   ${SUDO} sed -i 's/ logo.nologo//g; s/ vt.global_cursor_default=0//g; s/console=tty1/console=tty3/;
+         s/$/ logo.nologo vt.global_cursor_default=0/' /boot/cmdline.txt
+      # ${SUDO} grep -q 'vt.global_cursor_default=0' /boot/cmdline.txt || ${SUDO} sed -i 's/$/ vt.global_cursor_default=0/' /boot/cmdline.txt
+      # ${SUDO} grep -q 'tty=3' /boot/cmdline.txt || ${SUDO} sed -i 's/console=tty1/console=tty3/' /boot/cmdline.txt
 
-    echo "2. Removing Rainbow Screen...\n"
+   echo -e "4. Removing login message\n"
+      touch ~/.hushlogin
 
-    grep '^disable_splash' /boot/config.txt || \
-    grep '# disable_splash' /boot/config.txt && \
-    sed -i '/^# disable_splash/ s/# //' /boot/config.txt || \
-    ( echo -e "\n# Disable rainbow image at boot\t\t#PubHub" >> /boot/config.txt && \
-    echo -e "disable_splash=1\t\t\t#PubHub" >> /boot/config.txt )
+   echo -e "5. Remove autologin message by modify/create /etc/systemd/system/getty@tty1.service.d/autologin.conf"
+      ${SUDO} bash -c 'cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf' << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin pi --noclear --skip-login --noissue --login-options "-f pi" %I \$TERM
+EOF
+#   ${SUDO} sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/autologin\@.service
 
-    echo "3. Removing: Raspberry Pi logo and blinking cursor\n Adding: 'loglevel=3' from/to /boot/cmdline.txt"
-    echo "by adding \"logo.nologo vt.global_cursor_default=0\" at the end of the line in \"/boot/cmdline.txt\".\n"
-        grep 'logo.nologo' /boot/cmdline.txt || sed -i 's/$/ logo.nologo/' /boot/cmdline.txt
-        grep 'vt.global_cursor_default=0' /boot/cmdline.txt || sed -i 's/$/ vt.global_cursor_default=0/' /boot/cmdline.txt
-        IS_RASPBIAN_LITE && echo "Raspbian Lite detected!!\n" && \
-        (grep 'loglevel=3' /boot/cmdline.txt || sed -i 's/$/ loglevel=3/' /boot/cmdline.txt) || echo "Raspbian Lite Not Detected!!\n"
-
-    echo "4. Removing login message\n"
-    touch ~/.hushlogin
-
-    echo "5. Remove autologin message by modify autologin service\n"
-    sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/autologin\@.service
-    }
-fi
+   echo -e "6. Change Boot To Cli\n"
+      [ -f /etc/systemd/system/default.target ] && ${SUDO} rm /etc/systemd/system/default.target 
+      ${SUDO} ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 }
 
 
@@ -304,28 +295,33 @@ echo "Wifi configuration is finished! Please reboot your Raspberry Pi to apply c
 }
 
 NewPi(){
-cmd="ssh -X pi@192.168.0.58"
+    cmd="ssh -X pi@192.168.0.58"
 
-#shoud ssh in
-#change user&pwd
-#update&upgrade
-$cmd ${SUDO} apt -y update && ${SUDO} apt -y upgrade
+    #shoud ssh in
+    #change user&pwd
+    #update&upgrade
+    $cmd ${SUDO} apt -y update && ${SUDO} apt -y upgrade
 
-#install requvired progs: nfs-kernel-server nfs-common hostapd dnsmasq
-$cmd ${SUDO} apt install -y nfs-kernel-server nfs-common hostapd dnsmasq
+    #install requvired progs: nfs-kernel-server nfs-common hostapd dnsmasq
+    $cmd ${SUDO} apt install -y nfs-kernel-server nfs-common hostapd dnsmasq
 
-#setup nfs
+    #setup nfs
 
 }
 
-
+setup() {
 check_root
+relativeSoftLinks &
 update_upgrade
 enable_ssh
 change_login_pwd
 set_hostname
-relativeSoftLinks
 add_wpa_supplicant_conf ## setup wifi inet
+}
+
+# change_login_pwd
+setup
+
 
 # set_defaults
 # remove_unused
