@@ -11,7 +11,7 @@ if [ $name == 'Quit' ]
 then
 break
 fi
-switch $name
+#switch $name
 case in 
 	Kyle)
 		echo "WWWWWWWWWWWW";;

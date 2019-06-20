@@ -4,6 +4,8 @@
 # SETTING UP A RASPBERRY PI AS AN ACCESS POINT IN A STANDALONE NETWORK (NAT)
 # https://www.raspberrypi.org/documentation/configuration/wireless/access-point.md#internet-sharing
 
+# # https://github.com/billz/raspap-webgui/
+
 
 # Running the Raspberry Pi 3 as a Wifi client (station e.g.:STA) and access point (AP) from the single built-in wifi.
 
@@ -49,43 +51,42 @@ check_root() {
     fi
 }
 
-
 select_mode() {
-PS3='Please enter your choice: '
-options=( "Install" "Uninstall" "Quit" )
-# options+=( "More_Choises1" "More_Choises2" ... )
-# unset options[0]
-# options[2]="pocok"
-# arr=( "${arr[@]:0:2}" "new_element" "${arr[@]:2}" )
-select opt in "${options[@]}"
-do
-    case $opt in
-        "Install")
-            echo "Installing $PROGNAME ..."
-            INSTALL=1
-            break 
-            ;;
-        "Uninstall")
-            echo "Uninstalling $PROGNAME ..."
-            INSTALL=0
-            break 
-            ;;
-        "Quit")
-            break
-            ;;
-        *) echo "invalid option $REPLY";;
-    esac
-done
+    PS3='Please enter your choice: '
+    options=( "Install" "Uninstall" "Quit" )
+    # options+=( "More_Choises1" "More_Choises2" ... )
+    # unset options[0]
+    # options[2]="pocok"
+    # arr=( "${arr[@]:0:2}" "new_element" "${arr[@]:2}" )
+    select opt in "${options[@]}"
+    do
+        case $opt in
+            "Install")
+                echo "Installing $PROGNAME ..."
+                INSTALL=1
+                break 
+                ;;
+            "Uninstall")
+                echo "Uninstalling $PROGNAME ..."
+                INSTALL=0
+                break 
+                ;;
+            "Quit")
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
 }
 
 
 ## Install requred packages for DNS, Access Point and Firewall rules.
 install_dependencies() {
-apt-get update
-apt-get install -y hostapd dnsmasq # iptables-persistent
-## Since the configuration files are not ready yet, turn the new software off as follows:
-# systemctl stop dnsmasq
-# systemctl stop hostapd
+    apt-get update
+    apt-get install -y hostapd dnsmasq # iptables-persistent
+    ## Since the configuration files are not ready yet, turn the new software off as follows:
+    # systemctl stop dnsmasq
+    # systemctl stop hostapd
 }
 
 is_interface() {
@@ -106,25 +107,25 @@ get_new_macaddr() {
     local MAC_ADDRESS NEW_MAC_ADDRESS LAST_BYTE i
     MAC_ADDRESS=$(get_macaddr "$1")
     LAST_BYTE=$(printf %d 0x${MAC_ADDRESS##*:})
-#    mutex_lock
+    # mutex_lock
     for i in {1..255}; do
         NEW_MAC_ADDRESS="${MAC_ADDRESS%:*}:$(printf %02x $(( ($LAST_BYTE + $i) % 256 )))"
         (get_all_macaddrs | grep "$NEW_MAC_ADDRESS" > /dev/null 2>&1) || break
     done
-#    mutex_unlock
+   # mutex_unlock
     echo $NEW_MAC_ADDRESS
 }
 
 ## add/remove soft AP device
 create_udev_rule(){
-#TODO change macaddress
-# MAC_ADDRESS=$(get_macaddr $WIFI_INTERFACE)
-# NEW_MAC_ADDRESS=$(get_new_macaddr $WIFI_INTERFACE)
-# bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
-#SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \\
-#  RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \\
-#  RUN+="/bin/ip link set ap0 address ${NEW_MAC_ADDRESS}"
-#EOF
+    #TODO change macaddress
+    # MAC_ADDRESS=$(get_macaddr $WIFI_INTERFACE)
+    # NEW_MAC_ADDRESS=$(get_new_macaddr $WIFI_INTERFACE)
+    # bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
+    #SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \\
+    #  RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \\
+    #  RUN+="/bin/ip link set ap0 address ${NEW_MAC_ADDRESS}"
+    #EOF
 
 local file_name="/etc/udev/rules.d/90-wireless.rules"
 if [ "$1" == 1 ];then
@@ -140,9 +141,9 @@ else [ -f "${file_name}" ]
  echo "${file_name} removed"
 fi
 
-# udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj" || exit 
-# udevadm trigger --attr-match=subsystem=net || exit
-# service dhcpcd restart
+    # udevadm control --reload-rules || echo "clean jjjjjjjjjjjjjjjj" || exit 
+    # udevadm trigger --attr-match=subsystem=net || exit
+    # service dhcpcd restart
 }
 
 
@@ -188,7 +189,7 @@ if [ "$1" == 1 ];then
  if [ -f ${ROOT}/BackUp/wpa_supplicant.conf.orig ]; then
    cp /etc/wpa_supplicant/wpa_supplicant.conf ${ROOT}/BackUp/wpa_supplicant.conf.orig 
  fi
-cat > /etc/wpa_supplicant/wpa_supplicant.conf << EOF
+${SUDOE} bash -c 'cat > /etc/wpa_supplicant/wpa_supplicant.conf' << EOF
 # PubHub
 ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1
@@ -196,7 +197,7 @@ country=HU
   
 network={
     ssid="Ste@diAP"
-    psk="AsdfghjklkjhgfdsAsdfghjkl"
+    psk="Pepe374189"
     key_mgmt=WPA-PSK
 }
 EOF
@@ -216,8 +217,8 @@ if [ "$1" == 1 ];then
 cat > /etc/dnsmasq.conf << EOF
 bogus-priv                                 # PubHub
 domain-needed                              # PubHub
-interface=lo,uap0                          # PubHub
-no-dhcp-interface=lo,wlan0                 # PubHub
+interface=lo,wlan0                         # PubHub
+#no-dhcp-interface=lo,wlan0                # PubHub
 bind-interfaces                            # PubHub
 server=8.8.8.8                             # PubHub
 dhcp-range=10.3.141.50,10.3.141.255,12h    # PubHub
