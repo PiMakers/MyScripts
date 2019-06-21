@@ -14,7 +14,7 @@ set -e
 #TODO
 # Check Rpi or Cross
 
-function cecInstall() {
+cecInstall() {
 sudo apt-get -y update
 sudo apt-get install -y cmake libudev-dev libxrandr-dev python-dev swig
 cd
@@ -33,5 +33,7 @@ make -j4
 sudo make -j4 install
 sudo ldconfig
 }
+
+# sudo apt-get install cec-utils
 
 cecInstall

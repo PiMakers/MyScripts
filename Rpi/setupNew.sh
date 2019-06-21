@@ -194,9 +194,9 @@ EOF
       ${SUDO} ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 }
 
-
 more() {
 # Populate `/etc/udev/rules.d/70-persistent-net.rules`
+
 create_virtual_interface(){
 ${SUDO} bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
 SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \

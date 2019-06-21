@@ -10,6 +10,11 @@ NEW_REPONAME=$(basename $PWD)
 ##Create remote repo with curl
 # curl -u 'USER' https://api.github.com/user/repos -d '{"name":"REPO"}'
 curl -u "${GIT_USER}" https://api.github.com/user/repos -d "{\"name\":\""${NEW_REPONAME}"\"}"
+<<<<<<< HEAD
+=======
+
+cd .. && git clone "https://github.com/${GIT_USER}/${NEW_REPONAME}.git" && cd "${NEW_REPONAME}"
+>>>>>>> f279e160bcd2ed276a6158ba574acee1ad59956b
 
 ##Create a new repository on the command line
 
@@ -22,7 +27,7 @@ git add .
 #git add README.md
 git commit -m "first commit"
 
-
+https://github.com/PiMakers/TeamViewer.git
 
 ##Or Push an existing repository from the command line
 
