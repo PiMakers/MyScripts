@@ -73,7 +73,12 @@ ADD TO userconfig
 
 ## How to run the native Ubuntu desktop on Windows 10
 #https://www.zdnet.com/article/how-to-run-run-the-native-ubuntu-desktop-on-windows-10/
+
+#Ubuntu 16 (Xenial)
 sudo sed -i 's/<listen>.*<\/listen>/<listen>tcp:host=localhost,port=0<\/listen>/' /etc/dbus-1/session.conf
+
+# Ubuntu 18
+sudo sed -i 's/<listen>.*<\/listen>/<listen>tcp:host=localhost,port=0<\/listen>/' /usr/share/dbus-1/session.conf
 
 ##Ubuntu 18.04, DBUS Fix Instructions with Troubleshooting
 https://www.reddit.com/r/bashonubuntuonwindows/comments/9lpc0o/ubuntu_1804_dbus_fix_instructions_with/s
