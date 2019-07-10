@@ -1,19 +1,37 @@
-
+##common
 export LC_ALL=C
+export EXT_DRIVE=/mnt/LinuxData
+export SCRIPT_ROOT=${EXT_DRIVE}/OF/myGitHub/MyScripts
+export USER=pi
+# export IS_CHROOTED=0
+
 
 ## PiTopDev
+export PLATFORM=v6l
+
 # export_rootfs.sh
 export NFS_CIENT=NUC.local
 export NFS_HOST=NUC.local
 
-# setupNew.sh
+## setupNew.sh
 export NEW_LOGIN_PASSWD=raspi
 export NEW_HOSTNAME=PiTopDev
 
-export WIFI_INTERFACE=wlan0
+# Wifi setup
+export WIFI_IFACE=wlan0
 export INET_SSID=Ste@diAP
 export WIFI_PWD=Pepe374189
 
+# AP setup
+export AP_IFACE=uap0
+export AP_IP="10.3.141.1"
+export AP_SSID="PiMakerAP®"
+export AP_PWD="12345678"
+
+myPublicIP() {
+    MY_PUBLIC_IP=$(curl -4 ifconfig.co)
+    export MY_PUBLIC_IP=$MY_PUBLIC_IP}
+}
 check_root() {
     # Must be root to run this script
     echo ":::"
@@ -33,4 +51,30 @@ check_root() {
     fi
 }
 
+is_chrooted() {
+    if [ " $( stat -c %d:%i /)" != "$(${SUDO} stat -c %d:%i /proc/1/root/.)" ]; then
+        IS_CHROOTED=1 ;
+    else 
+        IS_CHROOTED=0;
+    fi
+    export  IS_CHROOTED=${IS_CHROOTED}
+    echo IS_CHROOTED=${IS_CHROOTED}
+    # return ${IS_CHROOTED}
+}
+
+detect_OS() {
+#    OS=$(cat  /etc/os-release | grep '^ID=' | sed s/^'ID='//)
+    OS=$(cat  /etc/os-release | sed '/^ID=/!d; s/^'ID='//')
+    export "OS=$OS"
+    echo "OS=$OS"
+}
+
+SW_DEPENDENCIES=""
+VARS=""
+SETUP_OPT=
+
 check_root
+is_chrooted
+detect_OS
+
+# echo BASHSOURCE=$BASHSOURCE
