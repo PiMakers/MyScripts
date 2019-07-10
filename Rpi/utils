@@ -1,4 +1,4 @@
-##common
+## common
 export LC_ALL=C
 export EXT_DRIVE=/mnt/LinuxData
 export SCRIPT_ROOT=${EXT_DRIVE}/OF/myGitHub/MyScripts

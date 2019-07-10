@@ -167,8 +167,8 @@ clean_up() {
 }
 
 chroot_raspbian () {
-    #trap clean_up SIGINT 2
-    trap my_exit SIGINT 2
+    trap clean_up SIGINT 2
+    # trap my_exit SIGINT 2
     [ -z $1 ] || LATEST_VERSION=$1
     echo "LATEST_VERSION=$LATEST_VERSION.img" && \
     mount_image ${LATEST_VERSION}.img
