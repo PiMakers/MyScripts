@@ -232,6 +232,7 @@ my_exit () {
     ${SUDO} losetup -v -d $LOOP_DEVICE
     err=$(${SUDO} rm -r ${RPI_FS}) || echo "$err"
     
+    echo "chroot_raspbian: Bye-bye...."
     read -p "Save changes? (y/any)" IMG_NAME
     [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
     read -p "Type a name (extension) for new img: " IMG_NAME
