@@ -1,10 +1,11 @@
 OnExportedFS:
-cmdline.txt:
-
+#cmdline.txt:
 dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=192.168.0.14:/rootfs,vers=4.1,proto=tcp,port=2049 rw ip=dhcp elevator=deadline rootwait plymouth.ignore-serial-consoles
 
-fstab:
-
+#fstab:
+proc            /proc           proc    defaults          0       0
+#PARTUUID=cd48578f-01  /boot           vfat    defaults          0       2
+#PARTUUID=cd48578f-02  /               ext4    defaults,noatime  0       1
 192.168.0.14:/tftpboot /boot nfs4 defaults 0 2
 
 Server:
