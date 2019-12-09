@@ -106,7 +106,6 @@ mount_image
 
 configure_nfs
 configure_dnsmasq
-
 ${SUDO} service 'dnsmasq nfs-kernel-server' restart
 
 while ! $(zenity --question --text="Close the bootserver?")
@@ -116,9 +115,9 @@ do
 done
 
 ${SUDO} service 'dnsmasq nfs-kernel-server' stop
-sudo umount ${BOOT_FS}
-sudo umount ${ROOT_FS}
-sudo losetup -d $LOOP_DEVICE
+${SUDO} umount ${BOOT_FS}
+${SUDO} umount ${ROOT_FS}
+${SUDO} losetup -d $LOOP_DEVICE
 
 ${SUDO} sed -i '/PxeServer/d' /etc/exports
 ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
