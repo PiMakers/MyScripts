@@ -118,6 +118,8 @@ ${SUDO} service 'dnsmasq nfs-kernel-server' stop
 ${SUDO} umount ${BOOT_FS}
 ${SUDO} umount ${ROOT_FS}
 ${SUDO} losetup -d $LOOP_DEVICE
+${SUDO} rm -R ${BOOT_FS} ${ROOT_FS}
+
 
 ${SUDO} sed -i '/PxeServer/d' /etc/exports
 ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
