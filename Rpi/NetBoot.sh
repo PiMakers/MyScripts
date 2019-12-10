@@ -80,14 +80,14 @@ ${ROOT_FS} ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,no_auth_nlm,insecure,no_r
 EOF
 }
 
-#/etc/dnsmasq.d/bootserver.conf:
 configure_dnsmasq(){
 [ -f /etc/dnsmasq.conf.orig ] || ${SUDO} cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig || echo "dnsmasq.conf backup failed!!!"
 ${SUDO} bash -c 'cat > /etc/dnsmasq.d/bootserver.conf' << EOF
+#PXE BootServer by PiMaker®
 port=0
 #interface=eth0
 interface=enp0s25
-dhcp-range=192.168.0.0,proxy,255.255.255.0
+dhcp-range=${HOST_IP%.*}.0,proxy,255.255.255.0
 dhcp-script=/bin/echo
 
 #pxe-service=x86PC, "PXE Boot Menu", pxelinux

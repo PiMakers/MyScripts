@@ -208,7 +208,7 @@ EOF
 # Populate `/etc/dnsmasq.conf`
 configure_dnsmasq(){
 [ -f /etc/dnsmasq.conf.orig ] || ${SUDO} cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig || echo "dnsmasq.conf backup failed!!!"
-${SUDO} bash -c 'cat > /etc/dnsmasq.conf' << EOF
+${SUDO} bash -c 'cat > /etc/dnsmasqd/VirtualAp.conf' << EOF
 interface=lo,ap0
 no-dhcp-interface=lo,wlan0
 bind-interfaces
