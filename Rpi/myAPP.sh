@@ -23,7 +23,7 @@
 # side with your wifi particulars, then configure the access point with a password you can give out to your
 # guests.  When the party's over, change the access point password.
 
-set -e
+#set -e
 
 if [ $EUID != 0 ]; then
 	echo "this script must be run as root !!!"
@@ -134,25 +134,6 @@ fi
 }
 
 
-## configure/unconfigure soft AP interface
-configure_interface() {
-local file_name="/etc/network/interfaces.d/PubHubAP"
-if [ "$1" == 1 ];then
-cat > ${file_name} << EOF
-# PubHub
-
-allow-hotplug uap0
-auto uap0
-iface uap0 inet static
-      address 10.3.141.1
-      netmask 255.255.255.0
-EOF
- echo "${file_name} created"
-elif [ -f "${file_name}" ]; then
- rm "${file_name}" || ( echo "ERROR: remove ${file_name}" && exit 11)
- echo "${file_name} removed"
-fi
-}
 
 ## patch dhcpcd-hook to restore STA after hostapd inited.
 patch_10_wpa_supplicant(){
@@ -201,7 +182,7 @@ if [ "$1" == 1 ];then
  if [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
    cp /etc/dnsmasq.conf ${ROOT}/BackUp/dnsmasq.conf.orig
  fi
-cat > /etc/dnsmasq.conf << EOF
+cat > /etc/dnsmasq.d/WiFiAp_Client.conf << EOF
 bogus-priv                                 # PubHub
 domain-needed                              # PubHub
 interface=lo,uap0                          # PubHub
@@ -219,6 +200,7 @@ EOF
 echo "configuring dnsmasq..."
 elif [ -f ${ROOT}/BackUp/dnsmasq.conf.orig ]; then
     cp ${ROOT}/BackUp/dnsmasq.conf.orig /etc/dnsmasq.conf
+    rm etc/dnsmasq.d/WiFiAp_Client.conf
 else 
     echo "Somthing went Wrong configuring dnsmasq"
 fi
@@ -226,6 +208,7 @@ fi
 
 ## /etc/hostapd/hostapd.conf
 configure_hostapd() {
+systemctl unmask hostapd
 if [ "$1" == 1 ];then
  if [ -f ${ROOT}/BackUp/hostapd.conf.orig ]; then
    cp /etc/hostapd/hostapd.conf ${ROOT}/BackUp/hostapd.conf.orig
@@ -294,11 +277,10 @@ Bridge_AP_to_cient() {
 # sed "/$pattern/s/^#*/$exp2/g" $file_name #(pattern="net.ipv4.ip_forward=1"; exp2="" to uncomment, exp2="#" to comment out; file_name="/etc/sysctl.conf")
 local append_or_del="-A"
 [ "$INSTALL" == 1 ] || append_or_del="-D"
-echo ${INSTALL} > /proc/sys/net/ipv4/ip_forward
-iptables -t nat ${append_or_del} POSTROUTING -s 10.3.141.0/24 ! -d 10.3.141.0/24 -j MASQUERADE
-iptables-save > /etc/iptables/rules.v4
+${SUDO} bash -c "echo ${INSTALL} > /proc/sys/net/ipv4/ip_forward"
+${SUDO} iptables -t nat ${append_or_del} POSTROUTING -s 10.3.141.0/24 ! -d 10.3.141.0/24 -j MASQUERADE
+${SUDO} iptables-save > /etc/iptables/rules.v4
 }
-
 
 
 select_mode
@@ -312,7 +294,11 @@ configure_dnsmasq ${INSTALL}
 configure_hostapd ${INSTALL}
 default_hostapd ${INSTALL}
 patch_dhcpcd_conf ${INSTALL}
-# Bridge_AP_to_cient ${INSTALL}
+Bridge_AP_to_cient ${INSTALL}
+
+
+#sudo iw dev uap0 del
+sudo service 'dnsmasq dhcpcd' restart
 # exit 111
 
 
