@@ -80,6 +80,7 @@ keyfile=$ssh_key_path$ssh_keyname
  	ssh-keygen -f "$HOME/.ssh/known_hosts" -R ${target_ip})
 #	ssh -o IdentitiesOnly=yes pi@raspberrypi.local || echo "ERROR"
 	echo "test newly created key for ${login}@${target_ip}..."
+	options=
 	ssh $options $login@${target_ip} echo "success!!!!" || echo "$login@${target_ip} Bassza meg something went wrong!!!"
 }
 
