@@ -1,0 +1,152 @@
+## http://retinal.dehy.de/docs/doku.php?id=technotes:raspberryrootnfs
+#!/bin/bash
+
+## Configuring and creating the initramfs
+#Creating an initramfs is very easy under Raspbian, and this is one of the steps best done on the Pi Zero itself.
+#All the tools you need should already be installed (because they get used whenever you update certain packages on the machine),
+#so you just need to edit the configuration files and then build the initramfs.
+
+#Configuration files
+#These are found under /etc/initramfs-tools and need adjusting or creating as follows:
+
+# Modify /etc/initramfs-tools/initramfs.conf to contain:
+# /usr/share/initramfs-tools/initramfs.conf
+
+configure_initramfs() {
+    sudo bash -c "cat > /etc/initramfs-tools/conf.d/MyNfsBoot" << EOF
+MODULES=netboot
+BOOT=nfs
+DEVICE=eth0
+EOF
+}
+
+#Modify modules and place at the end:
+configure_modules() {
+    sudo bash -c "cat >> /etc/initramfs-tools/modules" << EOF
+brcmfmac
+brcmutil
+cfg80211
+rfkill
+ip_tables
+x_tables
+EOF
+}
+
+
+
+#Create hooks/nfsroot (you can actually name it anything you like, so long as it's a file under hooks) with the content:
+create_nfsroot_hook(){
+    sudo bash -c "cat >> /etc/initramfs-tools/hooks/nfsroot" << EOF
+#!/bin/sh
+PREREQ=""
+
+prereqs()
+{
+  echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+  prereqs
+  exit 0
+  ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+copy_exec /bin/grep /bin
+copy_exec /sbin/lsmod /sbin
+copy_exec /sbin/ifconfig /sbin
+copy_exec /sbin/wpa_supplicant /sbin
+copy_exec /usr/sbin/blkmapd /sbin
+EOF
+}
+
+# tail -n+4 /etc/wpa_supplicant/wpa_supplicant.conf >${DESTDIR}/etc/wpa_supplicant.conf
+#cp /lib/firmware/brcm/brcmfmac43430-sdio.txt ${DESTDIR}/lib/firmware/brcm
+#mkdir -p ${DESTDIR}/var/run/wpa_supplicant
+## This step assumes that you already have a file /etc/wpa_supplicant/wpa_supplicant.conf on your running system, containing something like:
+#wpa_suppliant.conf
+#ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+#update_config=1
+
+#network={
+#  ssid="Notwork"
+#  psk=5ec8def3d30ba1487e2308e55fc81cc8ea82253c0fd850f0d2b3d06f81d03014
+#}
+See my notes on getting started with the Pi Zero W regarding how to create this file, if you need to.
+Create scripts/nfs-top/wifi (again, call it whatever you like, so long as it lives in scripts/nfs-top):
+wifi
+#!/bin/sh
+PREREQ="udev"
+
+prereqs()
+{
+        echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+        prereqs
+        exit 0
+        ;;
+esac
+
+if grep -q splash /proc/cmdline; then
+    /bin/chvt 1
+fi
+sleep 3
+
+if grep -q splash /proc/cmdline; then
+       /sbin/usplash -c &
+       sleep 1
+fi
+
+/sbin/wpa_supplicant -Dwext -iwlan0 -c /etc/wpa_supplicant.conf &
+sleep 5
+ipconfig wlan0 &
+## Build the initramfs
+## Once the above initramfs configuration files are in place, you can build the initramfs itself with the command:
+
+update-initramfs -c -k all
+The output will be something similar to:
+
+update-initramfs: Generating /boot/initrd.img-4.14.62+
+W: Possible missing firmware /lib/firmware/brcm/brcmfmac4373-sdio.bin for module brcmfmac
+W: Possible missing firmware /lib/firmware/brcm/brcmfmac4356-sdio.bin for module brcmfmac
+W: Possible missing firmware /lib/firmware/brcm/brcmfmac43430a0-sdio.bin for module brcmfmac
+W: Possible missing firmware /lib/firmware/brcm/brcmfmac43341-sdio.bin for module brcmfmac
+W: Possible missing firmware /lib/firmware/brcm/brcmfmac4373.bin for module brcmfmac
+The script creates an initramfs file in /boot with a name as shown above (which depends on the current kernel at the time you obtained or last upgraded your copy of Raspbian).
+
+That's all there is to building an initramfs - it's quite a complicated thing, but the update-initramfs script makes it very simple to build.
+
+Note: if you encounter any documentation explaining how to build an initrd, walk slowly away and find something more up-to-date. initrd was an earlier method of achieving the same thing as initramfs, but the tools involved are different, and no current release of Raspbian will use an initrd.
+
+The update-initramfs script leaves the file in the correct place to be used during the boot process, however you should note the exact filename it tells you it's creating, because you'll need it in the next step.
+
+Configure the Pi Zero to load the initramfs during the boot sequence
+Add the following to the end of /boot/config.txt on the SD card you'll be booting the Pi Zero from:
+
+# Load an initrd
+initramfs initrd.img-4.14.62+ followkernel
+## Just make sure the filename corresponds to whatever update-initramfs created for you above.
+
+That's it.
+
+mountkernfs.service
+mountnfs-bootclean.service
+mountnfs.service
+
+remote-fs-pre.target
+nfs-idmapd.service
+
+run-rpc_pipefs.mount
+
+nfs-client.target
+nfs-common.service
+nfs-config.service
+
+nfs-utils.service
+proc-fs-nfsd.mount
+umountnfs.service

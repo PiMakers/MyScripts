@@ -1,0 +1,9 @@
+proc            /proc           proc    defaults          0       0
+PARTUUID=0ce5d41b-01  /boot           vfat    defaults          0       2
+PARTUUID=0ce5d41b-02  /               ext4    defaults,noatime  0       1
+# a swapfile is not a swap partition, no line here
+#   use  dphys-swapfile swap[on|off]  for that
+
+
+# Mount point for images/videos share :
+//192.168.1.1/Cellule_de_communication/Projecteur/Actif     /home/pi/SMBmount    cifs    credentials=/root/.SMBcreds,uid=1000,gid=1000 0 0

@@ -66,18 +66,17 @@ check_root() {
     fi
 }
 
-
 ssh_key_copy() {
 # uncomit if any
-#dryrun="-n"
+# dryrun="-n"
 force="-f"
 options="-o IdentitiesOnly=yes $force $dryrun"
 #
 keyfile=$ssh_key_path$ssh_keyname
-
+	ssh-keygen -f "$HOME/.ssh/known_hosts" -R ${target_ip}
 	[ -f $keyfile ] || ssh-keygen -N $passphrase -C $comment -f $keyfile || echo "ERROR: ssh-keygen -N $passphrase -C $comment -f $keyfile!!!"
-	ssh-copy-id $options -i $ssh_key_path$ssh_keyname $login@$target_ip || ( echo "copyKey error" && \
- 	ssh-keygen -f "$HOME/.ssh/known_hosts" -R ${target_ip})
+	ssh-copy-id $options -i $ssh_key_path$ssh_keyname $login@$target_ip || echo "copyKey error"
+ 	
 #	ssh -o IdentitiesOnly=yes pi@raspberrypi.local || echo "ERROR"
 	echo "test newly created key for ${login}@${target_ip}..."
 	options=
