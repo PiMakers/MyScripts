@@ -11,7 +11,7 @@
 
 #!/bin/bash 
 
-set -e
+#set -e
 
 check_root() {
     # Must be root to install the hotspot
@@ -61,12 +61,13 @@ for  arg in ${ARGS}
         fi
     done
 
+export RASPBIAN_TYPE="full_"    #!!!!!!!!!!!!!!!
 echo "RASPBIAN_TYPE=$RASPBIAN_TYPE"
 
 ROOT=$( cd "$(dirname "$0")" ; pwd -P )
 echo -e " ROOT = $ROOT\n PROGNAME = $PROGNAME\n PROGDIR = $PROGDIR\n ARGS = $ARGS\n"
 
-[ -d ${HOME}/Downloads ] && export DOWNLOAD_DIR=${HOME}/Downloads || mkdir -p ${HOME}/Downloads
+[ -d ${HOME}/Downloads ] || mkdir -p ${HOME}/Downloads && export DOWNLOAD_DIR=${HOME}/Downloads
 export TEMP_DIR=/tmp
 export RPI_FS=${TEMP_DIR}/rpifs
 export RPI_ROOT=${RPI_FS}/rootfs
@@ -84,7 +85,7 @@ latest_version() {
 
 download_latest_raspbian() {
     cd ${DOWNLOAD_DIR}
-    curl -LJ https://downloads.raspberrypi.org/raspbian_${RASPBIAN_TYPE}latest -O || \
+    curl -LJ https://downloads.raspberrypi.org/raspbian_${RASPBIAN_TYPE}latest -o $LATEST_VERSION.zip || \
     ( echo "Error download $LATEST_VERSION..." && return 1)
 }
 
