@@ -6,10 +6,11 @@
 ## https://superuser.com/questions/421663/how-to-force-upperdir-overlayfs-to-reread-reload-lowerdir
 ## https://yagrebu.net/unix/rpi-overlay.md
 
+DIR=/nfs
 cd /tmp
 
 # Create the necessary directories.
-mkdir lower upper overlay
+sudo mkdir -p lower upper $DIR/overlay
 
 # Lets create a fake block device to hold our "lower" filesystem
 dd if=/dev/zero of=lower-fs.img bs=4096 count=102400
@@ -34,11 +35,11 @@ sudo chown $USER:$USER /tmp/upper
 # Create the workdir in the upper filesystem and the 
 # directory in the upper filesystem that will act as the upper
 # directory (they both have to be in the same filesystem)
-mkdir /tmp/upper/upper
-mkdir /tmp/upper/workdir
+mkdir -p /tmp/upper/upper
+mkdir -p /tmp/upper/workdir
 
 # Create our overlayfs mount
-sudo mount -t overlay -o lowerdir=/tmp/lower,upperdir=/tmp/upper/upper,workdir=/tmp/upper/workdir none /tmp/overlay
+sudo mount -t overlay -o lowerdir=/tmp/lower,upperdir=/tmp/upper/upper,workdir=/tmp/upper/workdir none /$DIR/overlay
 
 
 #

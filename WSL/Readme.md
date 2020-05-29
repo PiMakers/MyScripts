@@ -5,6 +5,12 @@
 # Open a PowerShell prompt as administrator and run:
 
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
+# or
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+
+# WSL2:
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
 
 ## Install Bash on Ubuntu on Windows
 # Open a command prompt as your normal user

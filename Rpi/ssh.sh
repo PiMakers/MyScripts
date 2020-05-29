@@ -37,7 +37,7 @@ ssh_defaults () {
 	target_host=${TARGET_HOST} && echo "target_host = $target_host"
 	# target_ip="192.168.0.102" && echo "target ip = $target_ip"
 	target_ip="$target_host" && echo "target ip = $target_ip"
-	login="pi" && echo "login name = $login"
+	login="pimaker" && echo "login name = $login"
 	passwd="raspi" && echo "password = $passwd"
 	# ssh-keygen -c [-P passphrase] [-C comment] [-f keyfile]
 	ssh_keyname="$USER@$target_host" && echo "default ssh_keyname = $ssh_keyname"
