@@ -1,6 +1,7 @@
 ## Pi 4 netboot : https://hackaday.com/2019/11/11/network-booting-the-pi-4/
 ## https://github.com/raspberrypi/rpi-eeprom/blob/master/firmware/raspberry_pi4_network_boot_beta.md
 ## http://retinal.dehy.de/docs/doku.php?id=technotes:raspberryrootnfs
+## https://xinau.ch/notes/ubuntu-network-installation-with-pxe/
 
 
 ## PAM: https://bbs.archlinux.org/viewtopic.php?id=224912 
@@ -8,6 +9,9 @@
 
 ## setenforce 0/1 disable SElinux
 ## restorecon -Rv restore security
+
+    #ssh-keygen -f "/home/pimaker/.ssh/known_hosts" -R "192.168.1.3"
+    #ssh_cmd='ssh -X pi@192.168.1.3 $1'
 
 #trap "echo SIGINT && exit" SIGINT
 
@@ -18,7 +22,9 @@ exit() {
     trap "echo FuckYou!!!" EXIT
     trap "echo FuckYouToo" RETURN
     [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
-    cleanUp
+    if [ -z ${iSCSi} ]; then
+        cleanUp
+    fi
     kill -2 $$
 }
 
@@ -61,7 +67,6 @@ check_dependency() {
     fi
 }
 
-OVERLAY=1
 NFS_VERS=4
 IMG_FOLDER=/mnt/LinuxData/OF/img
 
@@ -101,7 +106,8 @@ get_img(){
             if [ ! -f ${IMG%.*}.img ];then
                 unzip $IMG -d ${IMG_FOLDER}/
             fi
-            IMG=${IMG%.*}.img
+            IMG=$(basename ${IMG%.*}.img)
+            IMG=${IMG_FOLDER}/$IMG
             echo $IMG
         fi
     fi
@@ -384,6 +390,10 @@ cleanUp() {
     ## vnc-server:
     #sudo ln -s /usr/lib/systemd/system/vncserver-x11-serviced.service /etc/systemd/system/multi-user.target.wants/vncserver-x11-serviced.service
     #sudo ln -s /lib/systemd/system/triggerhappy.service /etc/systemd/system/multi-user.target.wants/triggerhappy.service
+    if [ -f ${ROOT_FS}/etc/fstab.orig ];then
+        ${SUDO} cp ${ROOT_FS}/etc/fstab.orig ${ROOT_FS}/etc/fstab
+    fi
+
 
     sync
     ${SUDO} umount -lv ${BOOT_FS}
@@ -414,6 +424,7 @@ cleanUp() {
     ${SUDO} service 'nfs-kernel-server' restart
 }
 
+if [ -z ${iSCSi} ]; then
 check_root
 check_dependency
 get_img
@@ -425,7 +436,7 @@ remove_dphys-swapfile
 # setup options
 enable_ssh
 create_ssh_keypair
-prepare_dhcpcd
+#prepare_dhcpcd
 
 ${SUDO} rm -f ${ROOT_FS}/etc/rc3.d/S01resize2fs_once
 # ${SUDO} rm -f ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/triggerhappy.service
@@ -443,6 +454,7 @@ do
     echo "sleeping..."
     sleep 10
 done
+fi
 
 exit
 export DISPLAY=192.168.1.10:0

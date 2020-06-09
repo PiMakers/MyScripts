@@ -1,20 +1,91 @@
-## ubuntu 18.04 minimal
-sudo apt-get install git python-pip arp-scan
-sudo snap install code scrcpy
 
-pip install PyChromecast
+readme() {
+    ## ubuntu 18.04 minimal
+    sudo apt-get install git python-pip arp-scan
+    sudo snap install code scrcpy
+
+    pip install PyChromecast
+
+    ## LTS Enablement Stacks
+    # The Ubuntu LTS enablement (also called HWE or Hardware Enablement) stacks provide newer kernel and X support for existing Ubuntu LTS releases.
+    sudo apt-get install --install-recommends linux-generic-hwe-18.04 xserver-xorg-hwe-18.04
+}
+## https://www.wikihow.com/Boot-an-Ubuntu-ISO-from-Your-Hard-Drive
+#1 Download the bootable disc image from here: http://releases.ubuntu.com/20.04/ubuntu-20.04-desktop-amd64.iso
+# Boot toISO
+# IMG=/mnt/LinuxData/tmpimgs/2020-02-12-rpd-x86-buster.iso
+# /ISO/2020-02-12-rpd-x86-buster.iso
+# 2 Install GRUB2 if it is not already installed. Type the following command into the terminal: 
+# sudo grub-install --root-directory=/media/grub2 /dev/sda
+#3 Add a menu entry for your Ubuntu ISO.
+
+# if sourced, exit with "return"
+exit() {
+    trap "echo FuckYou!!!" EXIT
+    trap "echo FuckYouToo" RETURN
+    [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
+    cleanUp
+    kill -2 $$
+}
+
+check_root() {
+    # Must be root to install the hotspot
+    echo ":::"
+    if [[ $EUID -eq 0 ]];then
+        echo "::: You are root - OK"
+    else
+        echo "::: sudo will be used for the install."
+        # Check if it is actually installed
+        # If it isn't, exit because the install cannot complete
+        if [[ $(dpkg-query -s sudo) ]];then
+            export SUDO="sudo"
+            export SUDOE="sudo -E"
+        else
+            echo "::: Please install sudo or run this as root."
+            exit
+        fi
+    fi
+}
+
+   IMG_FOLDER=/ISO
+   IMG_NAME=2020-02-12-rpd-x86-buster.iso
+   BOOT_ENTRY=TestOs
+
+get_img(){
+
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.iso" --filename=${IMG_FOLDER}/2019-09-26-raspbian-buster-full-netboot.img 2>/dev/null); then
+        echo "No img selected. Exit"; exit 1
+    else 
+        if [ -f $IMG ]; then
+            IMG_FOLDER=$(dirname ${IMG})
+            IMG_NAME=$(basename ${IMG})
+        else
+            echo "something went wrong! Exit"; exit 1
+        fi
+    fi
+
+    BOOT_ENTRY=${BOOT_ENTRY:-$(zenity --entry)}
+}
 
 
+AddMenuEntry() {
+    cat << EOF | sudo tee -a /etc/grub.d/40_custom
+menuentry "${BOOT_ENTRY}" {
+loopback loop ${IMG}
+linux (loop)/casper/vmlinuz boot=casper iso-scan/filename=${IMG} noeject noprompt splash --
+initrd (loop)/casper/initrd.lz
+}
+menuentry "Linux Mint 10 Gnome ISO" {
+loopback loop /FILEPATH/linuxmint10.iso
+linux (loop)/casper/vmlinuz
+file=/cdrom/preseed/mint.seed boot=casper initrd=/casper/initrd.lz iso-scan/filename=/FILEPATH/linuxmint10.iso noeject noprompt splash --
+initrd (loop)/casper/initrd.lz
+}
+EOF
+#4 Make make the custom menu entries active, run:
+sudo update-grub
+}
 
-
-
-
-
-
-
-
-
-
-## LTS Enablement Stacks
-# The Ubuntu LTS enablement (also called HWE or Hardware Enablement) stacks provide newer kernel and X support for existing Ubuntu LTS releases.
-sudo apt-get install --install-recommends linux-generic-hwe-18.04 xserver-xorg-hwe-18.04
+check_root
+get_img
+AddMenuEntry

@@ -72,23 +72,24 @@ export TEMP_DIR=/tmp
 export RPI_FS=${TEMP_DIR}/rpifs
 export RPI_ROOT=${RPI_FS}/rootfs
 export RPI_BOOT=${RPI_FS}/boot
+export OS_NAME=${OS_NAME:-raspbian} # raspios|raspbian
 
 #cd $ROOT
 
 # check if we have the latest img
 latest_version() {
     type curl || ( echo "curl not installed"; exit 1 )
-    LATEST_VERSION=$(curl https://downloads.raspberrypi.org/raspbian_${RASPBIAN_TYPE}latest 2>/dev/null | sed '/href/!d; s/.zip.*//; s/.*\///')
+    LATEST_VERSION=$(curl https://downloads.raspberrypi.org/${OS_NAME}_${RASPBIAN_TYPE}latest 2>/dev/null | sed '/href/!d; s/.zip.*//; s/.*\///')
     [ ! -z $LATEST_VERSION ] || (echo "Unable to determine latast version!!!"; return 1)
     export LATEST_VERSION=$LATEST_VERSION
 }
 
 download_latest_raspbian() {
     cd ${DOWNLOAD_DIR}
-    curl -LJ https://downloads.raspberrypi.org/raspbian_${RASPBIAN_TYPE}latest -o $LATEST_VERSION.zip || \
+    curl -LJ https://downloads.raspberrypi.org/${OS_NAME}_${RASPBIAN_TYPE}latest -o $LATEST_VERSION.zip || \
     ( echo "Error download $LATEST_VERSION..." && return 1)
 }
-
+export LATEST_VERSION=${LATEST_VERSION:-}
 get_latest_image() {
     cd ${DOWNLOAD_DIR}
     if [ ! -f $LATEST_VERSION.img ]; then
@@ -207,7 +208,7 @@ chroot_raspbian () {
     read -p "Save changes? (y/any)" IMG_NAME
     [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
     read -p "Type a name (extension) for new img: " IMG_NAME
-#    mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
+    # mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
     ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "/mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
     echo "Image saved as /mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
     #chown ${USER}:${USER} ${NEW_IMG_NAME}
@@ -237,7 +238,7 @@ my_exit () {
     read -p "Save changes? (y/any)" IMG_NAME
     [[ ${IMG_NAME} != "y" ]] && ${SUDO} rm ${TEMP_DIR}/${LATEST_VERSION}.img && exit 101
     read -p "Type a name (extension) for new img: " IMG_NAME
-#    mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
+    #mv  ${HOME}/Downloads/${LATEST_VERSION}.img "${LATEST_VERSION}_${IMG_NAME}.img"
     ${SUDO} mv  ${TEMP_DIR}/${LATEST_VERSION}.img "/mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
     echo "Image saved as /mnt/LinuxData/SavedDiscImges/${LATEST_VERSION}${IMG_NAME}.img"
     #chown ${USER}:${USER} ${NEW_IMG_NAME}
@@ -250,7 +251,7 @@ my_exit () {
     ${SUDO} umount -lv ${RPI_ROOT} || echo "could not umount $RPI_ROOT"
     ${SUDO} losetup -d $LOOP_DEVICE || echo "could not umount losetup -d $LOOP_DEVICE"
     echo "MyExit happend!!!!"
-#  exit 101
+    #exit 101
 }
 
 check_root

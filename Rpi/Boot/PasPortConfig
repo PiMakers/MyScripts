@@ -1,0 +1,51 @@
+PASSPORT_DIR=/mnt/c/'Program Files (x86)'/PJS/PassPort/
+CONF_FILE=PassPortConfig.xml
+WSL_IP=$(hostname -I)
+WIN_IP=192.168.1.10
+SRC_ADDR=${WIN_IP}
+SRC_PORT=67
+DST_ADDR=${WSL_IP}
+DST_PORT=67
+PROTO=udp            #tcp/udp
+
+
+skeleton() {
+cat > "${PASSPORT_DIR}/${CONF_FILE}" << EOF 
+<?xml version="1.0" encoding="utf-8"?><PassPort>
+<Forward>
+<Source address="${SRC_ADDR}" port="$((${SRC_PORT}+1))" />
+<Target address="${DST_ADDR}" port="$((${DST_PORT}+1))" />
+<Protocol type="${PROTO}" />
+</Forward>
+<Forward>
+<Source address="${DST_ADDR}" port="$((${SRC_PORT}+1))" />
+<Target address="${SRC_ADDR}" port="$((${DST_PORT}+1))" />
+<Protocol type="${PROTO}" />
+</Forward>
+<Forward>
+<Source address="${DST_ADDR}" port="${SRC_PORT}" />
+<Target address="${SRC_ADDR}" port="${DST_PORT}" />
+<Protocol type="${PROTO}" />
+</Forward>
+<Forward>
+<Source address="${SRC_ADDR}" port="${SRC_PORT}" />
+<Target address="${DST_ADDR}" port="${DST_PORT}" />
+<Protocol type="${PROTO}" />
+</Forward>
+</PassPort>
+EOF
+## https://stackoverflow.com/questions/1251999/how-can-i-replace-a-newline-n-using-sed
+#sed ':a;N;$!ba;s/\n/ /g;s/> </></g' "${PASSPORT_DIR}/${CONF_FILE}"
+cat "${PASSPORT_DIR}/${CONF_FILE}"
+}
+
+## https://askubuntu.com/questions/668986/how-to-append-string-before-and-after-a-line-using-sed
+## sed -n '/\[Z\]$/ { s/^/<font>/; s/$/<\/font>/p }' file.txt
+
+#sed s/<PassPort />/<Forward>/; s/$/<\/Forward>/ } "${PASSPORT_DIR}/${CONF_FILE}"
+
+run_exe(){
+    sudo "${PASSPORT_DIR}"/PassPort.exe  -Control &
+}
+
+skeleton

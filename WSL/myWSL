@@ -1,0 +1,25 @@
+#!/bin/bash
+
+echo export DISPLAY=$(ipconfig.exe | grep IPv4 | cut -d: -f2 | sed -n -e '/^ 172/d' -e 's/ \([0-9\.]*\).*/\1:0.0/p') >> ~/.profile
+echo export LIBGL_ALWAYS_INDIRECT=1 >> ~/.profile
+sudo mkdir -p /run/user/1000
+echo export XDG_RUNTIME_DIR=/run/user/1000 >> ~/.profile
+echo export RUNLEVEL=3 >> ~/.profile
+. ~/.profile
+
+sudo apt update && sudo apt -y upgrade
+sudo apt install -y nfs-common zenity
+export DIR_TO_MOUNT=/mnt/LinuxData/OF
+
+sudo mkdir -p ${DIR_TO_MOUNT}
+sudo sed -i 's/^NUC.*//' /etc/fstab
+sudo sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/fstab
+echo "NUC:${DIR_TO_MOUNT} ${DIR_TO_MOUNT} nfs4 defaults 0 0" | sudo tee -a /etc/fstab
+
+sudo mkdir -p /run/sendsigs.omit.d/rpcbind
+sudo service rpcbind start
+sudo mount -a
+mountpoint /mnt/LinuxData/OF && echo HURRAH! || echo "BASSZAMEG!"
+
+sudo sed -i 's/^#Port 22/Port 2222/;s/#PubkeyAuthentication yes/PubkeyAuthentication yes/' \
+/etc/ssh/sshd_config

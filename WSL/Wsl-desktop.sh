@@ -42,4 +42,45 @@ sudo apt-get install ubuntu-desktop # sudo apt install lxde && startlxde
 sudo service dbus start
 sudo service x11-common start
 gnome-shell --x11 -r
-export DISPLAY=$(ipconfig.exe | grep IPv4 | cut -d: -f2 | sed -n -e '/^ 172/d' -e 's/ \([0-9\.]*\).*/\1:0.0/p') #export DISPLAY=192.168.1.10:0
+
+## Expanding the size of your WSL 2 Virtual Hardware Disk
+## https://docs.microsoft.com/en-us/windows/wsl/compare-versions#wsl-2-architecture
+wsl --shutdown
+Terminate all WSL instances using the command: wsl --shutdown
+
+Find your distribution installation package name ('PackageFamilyName')
+
+Using PowerShell (where 'distro' is your distribution name) enter the command:
+Get-AppxPackage -Name "*<distro>*" | Select PackageFamilyName
+Locate the VHD file fullpath used by your WSL 2 installation, this will be your pathToVHD:
+
+%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState\<disk>.vhdx
+Resize your WSL 2 VHD by completing the following commands:
+
+Open Windows Command Prompt with admin privileges and enter:
+diskpart
+Select vdisk file="<pathToVHD>"
+expand vdisk maximum="<sizeInMegaBytes>"
+Launch your WSL distribution (Ubuntu, for example).
+
+## 6. Make WSL aware that it can expand its file system's size by running these commands from your Linux distribution command line:
+
+sudo mount -t devtmpfs none /dev
+mount | grep ext4
+Copy the name of this entry, which will look like: /dev/sdXX (with the X representing any other character)
+sudo resize2fs /dev/sdXX
+Use the value you copied earlier. You may also need to install resize2fs: apt install resize2fs
+
+## WSL2 script
+echo export DISPLAY=$(ipconfig.exe | grep IPv4 | cut -d: -f2 | sed -n -e '/^ 172/d' -e 's/ \([0-9\.]*\).*/\1:0.0/p') >> ~/.profile
+sudo mkdir -p /run/user/1000
+echo export XDG_RUNTIME_DIR=/run/user/1000 >> ~/.profile
+echo export RUNLEVEL=3 >> ~/.profile
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## https://medium.com/@gulfsteve/hacking-with-wsl2-ede3e649e08d
+# NAT WSL 
+sed '/nameserver/!d;s/[^ ]* //'  /etc/resolv.conf
+# wsl ip
+ip addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}'
+hostname -I
