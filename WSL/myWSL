@@ -5,8 +5,9 @@
 # remove "UNC paths are not supported" message: 2>nul or
 # HKEY_CURRENT_USER\Software\Microsoft\Command Processor  add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).
 
+
 # exports:
-sed -i '/^export /d;/cmd.exe/d' ~/.bashrc >/dev/null
+sed -i '/^export /d;/cmd.exe/d' ~/.bashrc > /dev/null
 echo >> ~/.bashrc
 ipconfig.exe | sed '/IPv4/!d;s/.* \: /export DISPLAY=/;s/.$/:0/' | sed -n '1p' >> ~/.bashrc
 echo export LIBGL_ALWAYS_INDIRECT=1 >> ~/.bashrc
@@ -14,11 +15,12 @@ echo export LIBGL_ALWAYS_INDIRECT=1 >> ~/.bashrc
 #echo export XDG_RUNTIME_DIR=/run/user/1000 >> ~/.bashrc
 #echo export RUNLEVEL=3 >> ~/.bashrc
 # echo 'cmd.exe /c /V:ON "( set PATH=%PATH%;%ProgramFiles%\VcXsrv && cmd.exe /c /V:ON start vcxsrv.exe -wgl -dpi auto -ac -multiwindow -silent-dup-error )"' >> ~/.bashrc
-cmd.exe /c start vcxsrv.exe -wgl -dpi auto -ac -multiwindow -silent-dup-error 2>nul
+cmd.exe /c start /B vcxsrv.exe -wgl -dpi auto -ac -multiwindow -silent-dup-error
 . ~/.bashrc #2>/dev/null
 
 #echo $USER ALL=\(ALL\) NOPASSWD: ALL | sudo tee /etc/sudoers.d/$USER
 sudo apt update #&& sudo apt -y upgrade
+
 sudo mkdir -p /run/sendsigs.omit.d/rpcbind
 sudo apt install -y nfs-common zenity
 sudo service rpcbind start
@@ -32,3 +34,26 @@ mountpoint /mnt/LinuxData/OF && echo HURRAH! || echo "BASSZAMEG!"
 
 # sudo sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
 # ;s/#PubkeyAuthentication yes/PubkeyAuthentication yes/
+
+# Enable WSL - audio
+enableAudio() {
+    # https://x410.dev/cookbook/wsl/enabling-sound-in-wsl-ubuntu-let-it-sing/
+    # https://research.wmz.ninja/articles/2017/11/setting-up-wsl-with-graphics-and-audio.html
+    pulseAudioArchName=pulseaudio-1.1.zip
+    WinWslDir=/mnt/i/wsl
+    if [ ! -f /tmp/${pulseAudioArchName} ]; then
+        curl http://bosmans.ch/pulseaudio/${pulseAudioArchName} -o /tmp/${pulseAudioArchName}
+    fi
+    unzip /tmp/${pulseAudioArchName} -d ${WinWslDir}/pulseAudio
+    sed -i 's/^#load-module module-native-protocol-tcp/load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1 auth-anonymous\=1/' ${WinWslDir}/pulseAudio/etc/pulse/default.pa
+    sed -i 's/^load-module module-waveout sink_name=output source_name=input/load-module module-waveout sink_name=output source_name=input record=0/' ${WinWslDir}/pulseAudio/etc/pulse/default.pa
+    sed -i 's/^; exit-idle-time = 20/exit-idle-time = -1/' ${WinWslDir}/pulseAudio/etc/pulse/daemon.conf
+    sed -i '/PULSE_SERVER =/d;/cmd.exe/d' ~/.bashrc > /dev/null
+    echo export PULSE_SERVER=tcp:192.168.1.10 >> ~/.bashrc
+    # sudo apt install pulseaudio
+    #what about alsa?? sudo apt install alsa
+    
+    binPathWin=$(wslpath -w ${WinWslDir}/pulseAudio/bin/pulseaudio.exe)
+    #cmd.exe /c dir $binPathWin
+    cmd.exe /c start "" /B $binPathWin
+}
