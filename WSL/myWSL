@@ -1,25 +1,62 @@
 #!/bin/bash
 
-echo export DISPLAY=$(ipconfig.exe | grep IPv4 | cut -d: -f2 | sed -n -e '/^ 172/d' -e 's/ \([0-9\.]*\).*/\1:0.0/p') >> ~/.profile
-echo export LIBGL_ALWAYS_INDIRECT=1 >> ~/.profile
-sudo mkdir -p /run/user/1000
-echo export XDG_RUNTIME_DIR=/run/user/1000 >> ~/.profile
-echo export RUNLEVEL=3 >> ~/.profile
-. ~/.profile
+# https://forum.snapcraft.io/t/running-snaps-on-wsl2-insiders-only-for-now/13033
+# https://gist.github.com/stowler/9921780 # VcXserver cmd-s
+# remove "UNC paths are not supported" message: 2>nul or
+# HKEY_CURRENT_USER\Software\Microsoft\Command Processor  add the value DisableUNCCheck REG_DWORD and set the value to 0 x 1 (Hex).
 
-sudo apt update && sudo apt -y upgrade
-sudo apt install -y nfs-common zenity
-export DIR_TO_MOUNT=/mnt/LinuxData/OF
+# DISTRO=Ubuntu-20.04
+# wsl.exe --set-default ${DISTRO}
 
-sudo mkdir -p ${DIR_TO_MOUNT}
-sudo sed -i 's/^NUC.*//' /etc/fstab
-sudo sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/fstab
-echo "NUC:${DIR_TO_MOUNT} ${DIR_TO_MOUNT} nfs4 defaults 0 0" | sudo tee -a /etc/fstab
+# wsl.exe --unregister  ${DISTRO}
+# wsl --shutdown
+# wsl.exe --export ${DISTRO} I:\wsl\export
+set +e
+export_settings() {
+    sed '/^export /d;/cmd.exe/d' ~/.bashrc >/dev/null
+    ipconfig.exe | sed '/IPv4/!d;s/.* \: /export DISPLAY=/;s/.$/:0/' | sed -n '1p' >> ~/.bashrc
+    echo export LIBGL_ALWAYS_INDIRECT=1 >> ~/.bashrc
+    sudo mkdir -p /run/user/1000
+    echo export XDG_RUNTIME_DIR=/run/user/1000 >> ~/.bashrc
+    echo export RUNLEVEL=3 >> ~/.bashrc
+    #echo 'cmd.exe /c /V:ON "( set PATH=%PATH%;%ProgramFiles%\VcXsrv && cmd.exe /c /V:ON start vcxsrv.exe -wgl -dpi auto -ac -multiwindow -silent-dup-error )"' >> ~/.bashrc
+    cmd.exe /c start vcxsrv.exe -wgl -dpi auto -ac -multiwindow -silent-dup-error 2>/dev/null
+    . ~/.bashrc #2>/dev/null
+}
+enable_pwdles() {
+    echo $USER ALL=\(ALL\) NOPASSWD: ALL | sudo tee /etc/sudoers.d/$USER
+}
 
-sudo mkdir -p /run/sendsigs.omit.d/rpcbind
-sudo service rpcbind start
-sudo mount -a
-mountpoint /mnt/LinuxData/OF && echo HURRAH! || echo "BASSZAMEG!"
+update_upgrade() {
+    sudo apt update && sudo apt -y upgrade
+}
 
-sudo sed -i 's/^#Port 22/Port 2222/;s/#PubkeyAuthentication yes/PubkeyAuthentication yes/' \
-/etc/ssh/sshd_config
+mount_ext_drv() {
+    sudo mkdir -p /run/sendsigs.omit.d/rpcbind
+    sudo apt install -y nfs-common zenity
+    #sudo service rpcbind disable
+    DIR_TO_MOUNT='/mnt/LinuxData/OF'
+    sudo mkdir -pv ${DIR_TO_MOUNT}
+    # LABEL=cloudimg-rootfs   /                       ext4    defaults        0 0
+    FSTAB_ENTRY="NUC:${DIR_TO_MOUNT} ${DIR_TO_MOUNT} nfs4 nolock,defaults 0 0"
+    sudo sed -i "/^NUC:/d;s/$/\n${FSTAB_ENTRY//\//\\/}/" /etc/fstab
+    sudo mount -a
+    mountpoint /mnt/LinuxData/OF
+    cat << EOF | sed 's/^.\{8\}//' | sudo tee /etc/wsl.conf
+        [automount]
+        mountFsTab = false
+EOF
+    mountpoint /mnt/LinuxData/OF
+}
+
+# sudo sed -i 's/^#Port 22/Port 2222/' /etc/ssh/sshd_config
+# ;s/#PubkeyAuthentication yes/PubkeyAuthentication yes/
+
+run() {
+    export_settings
+    enable_pwdles
+    update_upgrade
+    mount_ext_drv
+}
+
+run
