@@ -77,13 +77,15 @@ dl_raspbian() {
     OS_PARAMS=$(zenity --forms zenity --timeout=5 --separator="," --add-combo=OS --combo-values="raspbian|raspios_armhf|raspios_arm64" \
          --add-combo=type --combo-values="default|lite|full" \
          --add-combo="release date" --combo-values="by date|latest")
-    #x="$?"
     if [ $? = 5  ];then 
         SET_DEFAULTS=1
+        res=$(zenity --warning --extra-button="Retry" --timeout=3 --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}" )
+        if [ ${res} == "Retry" ]; then
+            SET_DEFAULTS=0
+        fi
+        
     fi
-    if [ "${SET_DEFAULTS}" == 1 ]; then
-        zenity --warning --timeout=3 --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}"                                    # lite | full | """
-    else
+    if [ "${SET_DEFAULTS}" == 0 ]; then
         if [ -z "${OS_PARAMS}" ]; then
             zenity --warning --timeout=3 --text="Aborted !!!"
             exit
@@ -104,7 +106,12 @@ dl_raspbian() {
                     1)
                         while [ "$m" == " " ]
                             do
-                                m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite|full")
+                                # Remove lines after lite, full options implemented by raspberrypi.org
+                                if [ "${LIST[0]}" == "raspios_arm64" ];then     # line to remove !!!!!!!!!!!!!!!
+                                    m="default"                                 # line to remove !!!!!!!!!!!!!!!
+                                else                                            # line to remove !!!!!!!!!!!!!!!
+                                    m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite|full")
+                                fi                                              # line to remove !!!!!!!!!!!!!!!
                             done
                         ;;
                     2)
@@ -114,7 +121,7 @@ dl_raspbian() {
                             done
                         ;;                        
                     *)
-                        echo "?????????"${#LIST[@]}
+                        echo "It could never happens!!!!" ${#LIST[@]}
                         ;;
                 esac
 
@@ -148,7 +155,7 @@ dl_raspbian() {
         IMG_NAME=$(curl ${DL_URL} | sed '/href/!d; s/.zip.*/.zip/; s/.*\///')
     else
         DL_URL=${BASE_URL}/${OS_NAME}/images
-        OS_VERS=$(zenity --list  --radiolist --column="s" --column="select OS to download" " " $(curl -LJs ${DL_URL} | sed '/alt="\[DIR\]"/!d;s/^.*href="//g;s|/.*| |'))
+        OS_VERS=$(zenity --list  --radiolist --column="" --column="select OS to download" " " $(curl -LJs ${DL_URL} | sed '/alt="\[DIR\]"/!d;s/^.*href="//g;s|/.*| |'))
         DL_URL=${DL_URL}/${OS_VERS}
         IMG_NAME=$(curl -LJs ${DL_URL} | sed '/torrent/!d;s/^.*href="//g;s|/.*||;s/.torrent.*//')
         DL_URL=${DL_URL}/${IMG_NAME}

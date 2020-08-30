@@ -4,7 +4,7 @@
 ## https://gist.github.com/luk6xff/9f8d2520530a823944355e59343eadc1
 
 set +e
-trap 'KILL -HUP ($jobs -p)' HUP
+#trap 'KILL -HUP ($jobs -p)' HUP
 
 # if sourced, exit with "return"
 exit() {
@@ -16,9 +16,11 @@ exit() {
 }
 
 detect_system () {
-    . /usr/lib/os-release
     if [ -z $WSL_DISTRO_NAME ]; then
         echo "WSL!"
+        break;
+    else
+        . /usr/lib/os-release
     fi
 }
 
@@ -34,46 +36,47 @@ install_dependencies() {
 }
 
 SUDO=sudo
-iSCSI_ROOT=/iscsi
+OVERLAY=0
+iSCSI_ROOT=/mnt/LinuxData/iscsi
 RPI_IMG_DIR=$iSCSI_ROOT
-RPI_ROOT_FS=/tmp/rpi/root
-RPI_BOOT_FS=${RPI_ROOT_FS}/boot
 
-IMG_FOLDER=/mnt/LinuxData/OF/img
+TEMP=/mnt/LinuxData/tmp
+RPI_ROOT_FS=${TEMP}/root
 
-sudo mkdir -p ${iSCSI_ROOT}/blocks
-. ~/.profile
+IMG_FOLDER=/mnt/LinuxData/Install/img
+
+#. ~/.profile
 
 #IMAGE section
 
 download_latest_raspbian() {
-IMG_OS_NAME=raspios
-IMG_OS_ARCH=arm64       # arm64 | armhf
-IMG_OS_VERSION=latest
-IMG_OS_TYPE=            # full | lite
-IMG_NAME=${IMG_OS_NAME}
-for m in "${IMG_OS_TYPE}" "${IMG_OS_ARCH}" "${IMG_OS_VERSION}" ; do
-    [ -z $m ] || IMG_NAME+="_${m}"
-done
-#echo IMG_NAME=${IMG_NAME}
-DL_LINK=$(curl -Is https://downloads.raspberrypi.org/${IMG_NAME} | sed '/location: /!d;s/.*: //')
-DL_LINK=${DL_LINK/p:/ps:}
-IMG_NAME=$(basename ${DL_LINK})    
+    IMG_OS_NAME=raspios
+    IMG_OS_ARCH=arm64       # arm64 | armhf
+    IMG_OS_VERSION=latest
+    IMG_OS_TYPE=            # full | lite
+    IMG_NAME=${IMG_OS_NAME}
+    for m in "${IMG_OS_TYPE}" "${IMG_OS_ARCH}" "${IMG_OS_VERSION}" ; do
+        [ -z $m ] || IMG_NAME+="_${m}"
+    done
+    #echo IMG_NAME=${IMG_NAME}
+    DL_LINK=$(curl -Is https://downloads.raspberrypi.org/${IMG_NAME} | sed '/location: /!d;s/.*: //')
+    DL_LINK=${DL_LINK/p:/ps:}
+    IMG_NAME=$(basename ${DL_LINK})    
     curl -L ${DL_LINK/p:/ps:} -o "${IMG_FOLDER}/${IMG_NAME}" || \
-    ( echo "Error download $LATEST_VERSION..." && return 1)
+        ( echo "Error download $LATEST_VERSION..." && return 1)
 }
 
 get_img(){
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename=${RPI_IMG_DIR}/any.img 2>/dev/null); then
         # TODO download script
-        if [ $(zenity --question --text="Download latest image?") ];then
+        if ! $(zenity --question --text="Download image?");then
             echo "Downloding latest image... (not implemented yet)"
             #RASPBIAN_TYPE=lite
         else
-        echo "No img selected. Exit"; exit 1
+            echo "No img selected. Exit"; exit 1
         fi
     else
-        sudo mkdir -pv ${iSCSI_ROOT}/blocks    
+        sudo mkdir -pv ${iSCSI_ROOT}/blocks
         if [ ${IMG##*.}=="zip" ];then
             if [ ! -f ${IMG%.*}.img ];then
                 sudo unzip -o $IMG -d ${iSCSI_ROOT}/blocks
@@ -82,7 +85,6 @@ get_img(){
             fi
             IMG=${IMG%.*}.img
         else
-            sudo mkdir -pv ${iSCSI_ROOT}/blocks
             if ( $IMG == ${iSCSI_ROOT}/blocks/${IMG##*/} ); then
                 echo "Already set!!!"
             else
@@ -94,10 +96,27 @@ get_img(){
 }
 
 mount_img() {
-    sudo mkdir -pv ${RPI_BOOT_FS}
+    if [ $OVERLAY == 1 ]; then
+        UPPER_DIR=${TEMP}/upper
+        ${SUDO} mkdir -pv -m 755 ${UPPER_DIR}/data
+        ${SUDO} mkdir -pv -m 777 ${UPPER_DIR}/work
+        #${SUDO} chown $USER:$USER ${UPPER_DIR}/data
+        ${SUDO} chown root:root ${UPPER_DIR}/data
+    fi
+    
     export LOOP_DEVICE=$(sudo losetup --show -f -P ${iSCSI_ROOT}/blocks/${IMG##*/})
+    sudo mkdir -pv ${RPI_ROOT_FS}
     sudo mount -v ${LOOP_DEVICE}p2 ${RPI_ROOT_FS}
-    sudo mount -v ${LOOP_DEVICE}p1 ${RPI_BOOT_FS}
+
+    if [ $OVERLAY == 1 ]; then
+        OVERLAY_FS_ROOT=${iSCSI_ROOT}/overlay
+        ${SUDO} mkdir -p -m 777 ${OVERLAY_FS_ROOT}
+        LOWER_DIRS=${RPI_ROOT_FS}
+        ${SUDO} mount -v -t overlay -o lowerdir=${LOWER_DIRS},upperdir=${UPPER_DIR}/data,workdir=${UPPER_DIR}/work  none ${OVERLAY_FS_ROOT}
+        RPI_ROOT_FS=${OVERLAY_FS_ROOT}
+    fi
+    RPI_BOOT_FS=${RPI_ROOT_FS}/boot
+    ${SUDO} mount -v ${LOOP_DEVICE}p1 ${RPI_ROOT_FS}/boot || echo "error mounting ${RPI_BOOT_FS}"
 }
 
 #echo ${IMG##*/}
@@ -132,21 +151,23 @@ chrootScript() {
     cat << EOF | ${SUDO} tee ${RPI_ROOT_FS}${CMD}
     #!/bin/bash
     export LC_ALL=C
-    export DISPLAY=192.168.1.10:0
+    #export DISPLAY=$(hostname):0
     apt update
-    #apt upgrade -y
-    #apt autoremove -y
-    #apt autoclean
-    #apt clean
+    apt upgrade -y
+    apt autoremove -y
+    apt autoclean
+    apt clean
     apt install -y open-iscsi
     PI_KERNEL_VERSION=\$(echo "\$(ls /lib/modules)" | sed "/${IMG_ARCH}.*/!d")
     echo PI_KERNEL_VERSION=\${PI_KERNEL_VERSION}
-    update-initramfs -v -k \${PI_KERNEL_VERSION} -c >/dev/null
+    update-initramfs -v -k \${PI_KERNEL_VERSION} -c 1>/dev/null
     touch /boot/iscsi_cmdline.txt
     sed "s/quiet .*//;s/$/ip=::::raspi:eth0:dhcp ISCSI_INITIATOR=${INITIATOR_IQN} ISCSI_TARGET_NAME=$TARGET_IQN ISCSI_TARGET_IP=$ISCSI_TARGET_IP ISCSI_TARGET_PORT=${ISCSI_TARGET_PORT} rw/" \
     /boot/cmdline.txt | tee /boot/iscsi_cmdline.txt
     
-    sed -i '/cmdline/d;/initramfs/d' /boot/iscsi_config.txt
+    if [ -f /boot/iscsi_config.txt ];then
+        sed -i '/cmdline/d;/initramfs/d' /boot/iscsi_config.txt
+    fi
     echo "initramfs initrd.img-\${PI_KERNEL_VERSION} followkernel" >> /boot/iscsi_config.txt
           
     echo "cmdline=iscsi_cmdline.txt" >> /boot/iscsi_config.txt
@@ -167,41 +188,53 @@ EOF
 prepare_img() {
     ARCH=$(dpkg --print-architecture)
 
+    #    ${SUDO} cp /usr/bin/qemu-arm-static ${RPI_ROOT}/usr/bin/qemu-arm-static
+    ${SUDO} cp /etc/resolv.conf ${RPI_ROOT_FS}/etc/resolv.conf
     if [ ! -n "$XAUTHORITY" ]; then
         sudo cp "$XAUTHORITY" ${RPI_ROOT_FS}/root/Xauthority
         export XAUTHORITY=/root/Xauthority
     fi
-
-    if [ "$ARCH" != "armhf" ]; then
-        
-        sudo which qemu-arm-static > /dev/null || { echo "qemu-arm-static command not found. Try: sudo apt-get install binfmt-support qemu-user-static"; exit 1; }                                                                                                                                                    
-        sudo install -m 0755 /usr/bin/qemu-arm-static ${RPI_ROOT_FS}/usr/bin/qemu-arm-static || echo "HHHHHHHHHHHHHHHHHHHHHHH"
-    fi
-
+    
+    # ld.so.preload fix
     if [ -f ${RPI_ROOT_FS}/etc/ld.so.preload ]; then
-        sudo mv ${RPI_ROOT_FS}/etc/ld.so.preload ${RPI_ROOT_FS}/etc/ld.so.preload.disabled
+        ${SUDO} sed -i 's/^/#/g' ${RPI_ROOT_FS}/etc/ld.so.preload
     fi
-    sudo mount --bind /dev ${RPI_ROOT_FS}/dev
-    sudo mount --bind /dev/pts ${RPI_ROOT_FS}/dev/pts
-    sudo mount --bind /proc ${RPI_ROOT_FS}/proc
-    sudo mount --bind /sys ${RPI_ROOT_FS}/sys
-    #sudo mount ${RPI_ROOT_FS} ${RPI_BOOT_FS}   
-    sudo chroot ${RPI_ROOT_FS} $CMD
+    ${SUDO} mount -v --bind /dev ${RPI_ROOT_FS}/dev
+    ${SUDO} mount -v --bind /dev/pts ${RPI_ROOT_FS}/dev/pts
+    ${SUDO} mount -v --bind /proc ${RPI_ROOT_FS}/proc
+    ${SUDO} mount -v --bind /sys ${RPI_ROOT_FS}/sys
+
+    ${SUDO}  chroot ${RPI_ROOT_FS} $CMD
     
-    sudo umount ${RPI_ROOT_FS}/dev/pts
-    sudo umount ${RPI_ROOT_FS}/dev
-    sudo umount ${RPI_ROOT_FS}/proc
-    sudo umount ${RPI_ROOT_FS}/sys
+    # unmount everything
+    ${SUDO} umount -lv ${RPI_ROOT_FS}/{dev/pts,dev,sys,proc}
     
-    if [ -f ${RPI_ROOT_FS}/etc/ld.so.preload.disabled ]; then
-        sudo mv ${RPI_ROOT_FS}/etc/ld.so.preload.disabled ${RPI_ROOT_FS}/etc/ld.so.preload
+    # revert ld.so.preload fix
+    if [ -f ${RPI_ROOT_FS}/etc/ld.so.preload ]; then
+        ${SUDO} sed -i 's/^#//g' ${RPI_ROOT_FS}/etc/ld.so.preload
     fi
 
-    sudo rm ${RPI_ROOT_FS}/usr/bin/qemu-arm-static
-    
     if [ -n "$XAUTHORITY" ]; then
-        sudo rm -f "${RPI_ROOT_FS}/root/Xauthority"
+        ${SUDO} rm -f "${RPI_ROOT_FS}/root/Xauthority"
     fi
+}
+
+cleanUp() {
+    sync
+    ${SUDO} service dnsmasq stop
+    ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
+    ${SUDO} service tgt stop
+    echo "CleaningUp..."    
+    if [ $OVERLAY == 1 ]; then
+        sudo umount -l ${OVERLAY_FS_ROOT}
+        read -p "removing upper dir"
+        ${SUDO} rm -r ${UPPER_DIR}
+        RPI_ROOT_FS=${TEMP}/root
+    fi
+    ${SUDO} umount -l ${RPI_BOOT_FS}
+    ${SUDO} umount -l ${RPI_ROOT_FS}
+    ${SUDO} losetup -d ${LOOP_DEVICE}
+    ${SUDO} rm -r ${RPI_ROOT_FS}
 }
 
 ## https://www.geek-share.com/detail/2555438287.html
@@ -225,7 +258,6 @@ create_iscsi_conf() {
     # controller_tid <val>
  </target>
 EOF
-    #sudo systemctl restart tgt
     sudo service tgt restart
     sudo tgtadm --lld iscsi --mode target --op show
 }
@@ -249,6 +281,7 @@ PXEDHCPproxyAndTFTPserver() {
     dhcp-range=${NETWORK_SUBNET},proxy
     log-dhcp
     log-queries
+
     enable-tftp
     tftp-root=${TFTP_ROOT}
     tftp-unique-root=mac
@@ -261,9 +294,9 @@ EOF
   #sudo service dnsmasq enable
   sudo service dnsmasq start
   
-  if [ $(zenity --question --text="Close iSCSI server?" --display=$DISPLAY) ];then
+  if $(zenity --question --text="Close iSCSI server?" --display=$DISPLAY) ;then
     sudo service dnsmasq stop
-    sudo rm /etc/dnsmasq.d/proxydhcp.conf
+    sudo rm /etc/dnsmasq.d/bootserver.conf
     sudo service tgt stop
     exit
   fi
@@ -279,14 +312,6 @@ hacking_img() {
     ${SUDO} sed -i 's/^ib_iser/#ib_iser/' ${RPI_ROOT_FS}/lib/modules-load.d/open-iscsi.conf
 }
 
-cleanUp() {
-    sync
-    sudo umount -l ${RPI_BOOT_FS}
-    sudo umount -l ${RPI_ROOT_FS}
-    sudo losetup -d ${LOOP_DEVICE}
-}
-
-
 run() {
     install_dependencies
     get_img
@@ -297,6 +322,9 @@ run() {
     PXEDHCPproxyAndTFTPserver
 }
 
+run
+
+exit
 #iqn.2020-06.com.Win10x64-Edit.initiator:rpi-blog
 
 Install_and_Configure_iSCSI_Initiator() {
@@ -355,3 +383,8 @@ iscsi_start() {
 }
 
 run
+
+uninstallUnused() {
+    # 2020-05-27-raspios-buster-full-armhf.img
+    list+=("wolfram* libreoffice *minecraft*" )
+}
