@@ -2,6 +2,17 @@
 
 #!/bin/bash
 
+DOWNLOAD_DIR='/mnt/LinuxData/Install/img'
+IMG_FOLDER="/mnt/LinuxData/img"
+LATEST_VERSION=
+
+readonly BASE_URL="https://downloads.raspberrypi.org"
+SET_DEFAULTS=0
+OS_NAME="raspios_armhf"                        # raspbian | raspios
+#IMG_ARCH="arm64"                               # armhf | arm64
+OS_TYPE=""                                     # lite | full | ""
+OS_VERS="latest"                               # by_date | latest 
+
 check_root() {
     # Must be root to install the hotspot
     echo ":::"
@@ -21,20 +32,10 @@ check_root() {
     fi
 }
 
-DOWNLOAD_DIR='/mnt/LinuxData/Install/img'
-LATEST_VERSION=
-
-readonly BASE_URL="https://downloads.raspberrypi.org"
-SET_DEFAULTS=0
-OS_NAME="raspios_armhf"                        # raspbian | raspios
-#IMG_ARCH="arm64"                               # armhf | arm64
-OS_TYPE=""                                     # lite | full | ""
-OS_VERS="latest"                               # by_date | latest 
-
 cleanUp() {
     echo "Cleaning ..."
-    #mountpoint /mnt/dev/pts /mnt/dev
-    ${SUDO} umount -lv /mnt/{dev/pts,dev,sys,proc,boot,}
+    # mountpoint /mnt/dev/pts /mnt/dev
+    # ${SUDO} umount -lv /mnt/{dev/pts,dev,sys,proc,boot,}
     if [ ! -z ${LOOP_DEVICE} ]; then
         ${SUDO} losetup -d ${LOOP_DEVICE}
     fi
@@ -45,7 +46,7 @@ exit() {
     trap 'echo "FuckYou!!! (exit)"' EXIT
     trap 'echo "FuckYouToo !!! (return)"' RETURN
     #[ "${BASH_SOURCE}" == "${0}" ] || ( EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" )
-    cleanUp
+    # cleanUp
     kill -2 $$
 }
 
@@ -59,18 +60,7 @@ latest_version() {
     DL_URL=${BASE_URL}/${IMG_NAME}
     LATEST_VERSION=$(curl ${DL_URL} 2>/dev/null | sed '/href/!d; s/.zip.*//; s/.*\///')
     [ -z $LATEST_VERSION ] && echo "Unable to determine latest version!!!" && exit
-    echo ${LATEST_VERSION}
-}
-
-download_latest() {
-    latest_version
-    cd ${DOWNLOAD_DIR}
-    if [ -f $LATEST_VERSION.zip ]; then
-        echo "$LATEST_VERSION.zip already downloded."
-    else
-        curl -LJ ${DL_URL} -o $LATEST_VERSION.zip || \
-        ( echo "Error download $LATEST_VERSION..." && return 1)
-    fi
+    echo "latest version: ${LATEST_VERSION}"
 }
 
 dl_raspbian() {
@@ -167,14 +157,75 @@ dl_raspbian() {
     else
         curl -L ${DL_URL} -o ${DOWNLOAD_DIR}/${IMG_NAME}
     fi
+
+    echo "Download of ${DOWNLOAD_DIR}/${IMG_NAME} done!"
 }
+
+## usage: extractImg filename (must be in zipped format!!!) 
+extractImg() {
+    [ -z $1 ] || ( IMG_NAME=${1##*/} && DOWNLOAD_DIR=${1%/*} )
+    IMG=${DOWNLOAD_DIR}/${IMG_NAME}
+
+    echo $IMG
+    if [ ${IMG##*.}=="zip" ];then
+        #if [ ! -f ${IMG_FOLDER}/${IMG%.*}.img ];then
+                unzip $IMG -d ${IMG_FOLDER}/
+        #fi
+            IMG=$(basename ${IMG%.*}.img)
+            IMG=${IMG_FOLDER}/$IMG
+            echo "raspbian image extracted: $IMG"
+    fi
+}
+
+## chrootRaspbian path_to_rootfolder path_to_script
+chrootRaspbian() {
+    [ -z $1] || RPI_ROOT_FS=$1
+    ARCH=$(dpkg --print-architecture)
+
+    #    ${SUDO} cp /usr/bin/qemu-arm-static ${RPI_ROOT}/usr/bin/qemu-arm-static
+    ${SUDO} cp /etc/resolv.conf ${RPI_ROOT_FS}/etc/resolv.conf
+    if [ ! -n "$XAUTHORITY" ]; then
+        sudo cp "$XAUTHORITY" ${RPI_ROOT_FS}/root/Xauthority
+        export XAUTHORITY=/root/Xauthority
+    fi
+    
+    ${SUDO} cp /etc/resolv.conf ${RPI_ROOT_FS}/etc/resolv.conf
+
+    # ld.so.preload fix
+    if [ -f ${RPI_ROOT_FS}/etc/ld.so.preload ]; then
+        sudo mv  ${RPI_ROOT_FS}/etc/ld.so.preload ${RPI_ROOT_FS}/etc/ld.so.preload.bak
+    fi
+    ${SUDO} mount -v --bind /dev ${RPI_ROOT_FS}/dev
+    ${SUDO} mount -v --bind /dev/pts ${RPI_ROOT_FS}/dev/pts
+    ${SUDO} mount -v --bind /proc ${RPI_ROOT_FS}/proc
+    ${SUDO} mount -v --bind /sys ${RPI_ROOT_FS}/sys
+
+    ${SUDO}  chroot ${RPI_ROOT_FS} /boot/$CMD
+    
+    # unmount everything
+    sync
+    ${SUDO} umount -lv ${RPI_ROOT_FS}/{dev/pts,dev,sys,proc}
+    
+    # revert ld.so.preload fix
+    if [ -f ${RPI_ROOT_FS}/etc/ld.so.preload.bak ]; then
+        sudo mv  ${RPI_ROOT_FS}/etc/ld.so.preload.bak ${RPI_ROOT_FS}/etc/ld.so.preload
+    fi
+
+    if [ -n "$XAUTHORITY" ]; then
+        ${SUDO} rm -f "${RPI_ROOT_FS}/root/Xauthority"
+    fi
+}
+
 
 # Program start here
 
+run() {
 check_root
-${SUDO} service dnsmasq stop
 dl_raspbian
+extractImg
+}
 
+[ "${BASH_SOURCE}" == "${0}" ] && run
 exit
 # install dependecies
 ${SUDO} apt-get install -y qemu qemu-user-static binfmt-support
