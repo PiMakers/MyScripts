@@ -2,8 +2,8 @@
 
 #!/bin/bash
 
-DOWNLOAD_DIR='/mnt/LinuxData/Install/img'
-IMG_FOLDER="/mnt/LinuxData/img"
+DOWNLOAD_DIR='/mnt/LinuxData/Install/zip'
+IMG_FOLDER='/mnt/LinuxData/Install/img'
 LATEST_VERSION=
 
 readonly BASE_URL="https://downloads.raspberrypi.org"
@@ -66,7 +66,7 @@ latest_version() {
 dl_raspbian() {
     OS_PARAMS=$(zenity --forms zenity --timeout=5 --separator="," --add-combo=OS --combo-values="raspbian|raspios_armhf|raspios_arm64" \
          --add-combo=type --combo-values="default|lite|full" \
-         --add-combo="release date" --combo-values="by date|latest")
+         --add-combo="release date" --combo-values="latest|by date")
     if [ $? = 5  ];then 
         SET_DEFAULTS=1
         res=$(zenity --warning --extra-button="Retry" --timeout=3 --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}" )
@@ -96,9 +96,9 @@ dl_raspbian() {
                     1)
                         while [ "$m" == " " ]
                             do
-                                # Remove lines after lite, full options implemented by raspberrypi.org
+                                # Remove lines after full options implemented by raspberrypi.org
                                 if [ "${LIST[0]}" == "raspios_arm64" ];then     # line to remove !!!!!!!!!!!!!!!
-                                    m="default"                                 # line to remove !!!!!!!!!!!!!!!
+                                    m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite")                                 # line to remove !!!!!!!!!!!!!!!
                                 else                                            # line to remove !!!!!!!!!!!!!!!
                                     m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite|full")
                                 fi                                              # line to remove !!!!!!!!!!!!!!!
@@ -107,7 +107,7 @@ dl_raspbian() {
                     2)
                         while [ "$m" == " " ]
                             do
-                                m=$(zenity --forms --separator="," --add-combo="release date" --combo-values="by date|latest")
+                                m=$(zenity --forms --separator="," --add-combo="release date" --combo-values="latest|by date")
                             done
                         ;;                        
                     *)
@@ -131,8 +131,8 @@ dl_raspbian() {
     else
         IMG_ARCH=arm64
         # This must be deleted when lite, full options implemented by raspberrypi.org
-        OS_TYPE=
-        zenity --warning --timeout=3 --text="lite &amp; full options are not implemented yet by raspberrypi.org! Rest to default"
+        # OS_TYPE=
+        zenity --warning --timeout=3 --text="full options are not implemented yet by raspberrypi.org! Rest to default"
     fi
     # echo "OS_NAME = ${OS_NAME/_${IMG_ARCH}} OS_TYPE=${OS_TYPE} OS_VERS=${OS_VERS} IMG_ARCH = ${IMG_ARCH}"
     if [ "${OS_VERS}" == "latest" ]; then
@@ -145,7 +145,7 @@ dl_raspbian() {
         IMG_NAME=$(curl ${DL_URL} | sed '/href/!d; s/.zip.*/.zip/; s/.*\///')
     else
         DL_URL=${BASE_URL}/${OS_NAME}/images
-        OS_VERS=$(zenity --list  --radiolist --column="" --column="select OS to download" " " $(curl -LJs ${DL_URL} | sed '/alt="\[DIR\]"/!d;s/^.*href="//g;s|/.*| |'))
+        OS_VERS=$(zenity --list  --radiolist --column=" " --column="select OS to download" " " $(curl -LJs ${DL_URL} | sed '/alt="\[DIR\]"/!d;s/^.*href="//g;s|/.*| |'))
         DL_URL=${DL_URL}/${OS_VERS}
         IMG_NAME=$(curl -LJs ${DL_URL} | sed '/torrent/!d;s/^.*href="//g;s|/.*||;s/.torrent.*//')
         DL_URL=${DL_URL}/${IMG_NAME}
@@ -155,6 +155,7 @@ dl_raspbian() {
     if [ -f ${DOWNLOAD_DIR}/${IMG_NAME} ];then
         echo "${DOWNLOAD_DIR}/${IMG_NAME} already downloaded!!"
     else
+        mkdir -pv ${DOWNLOAD_DIR}
         curl -L ${DL_URL} -o ${DOWNLOAD_DIR}/${IMG_NAME}
     fi
 
@@ -169,7 +170,10 @@ extractImg() {
     echo $IMG
     if [ ${IMG##*.}=="zip" ];then
         #if [ ! -f ${IMG_FOLDER}/${IMG%.*}.img ];then
-                unzip $IMG -d ${IMG_FOLDER}/
+                mkdir -pv ${IMG_FOLDER}
+                unzip $IMG -d ${IMG_FOLDER}/ || ( rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
+                dl_raspbian && exit )
+
         #fi
             IMG=$(basename ${IMG%.*}.img)
             IMG=${IMG_FOLDER}/$IMG
