@@ -2,14 +2,18 @@
 
 #!/bin/bash
 
+set -e
+
 DOWNLOAD_DIR='/mnt/LinuxData/Install/img'
 IMG_FOLDER="/mnt/LinuxData/img"
+TIMEOUT=5
+WARNING_TIMEOUT=3
 LATEST_VERSION=
 
 readonly BASE_URL="https://downloads.raspberrypi.org"
 SET_DEFAULTS=0
 OS_NAME="raspios_armhf"                        # raspbian | raspios
-#IMG_ARCH="arm64"                               # armhf | arm64
+#IMG_ARCH="arm64"                              # armhf | arm64
 OS_TYPE=""                                     # lite | full | ""
 OS_VERS="latest"                               # by_date | latest 
 
@@ -64,12 +68,12 @@ latest_version() {
 }
 
 dl_raspbian() {
-    OS_PARAMS=$(zenity --forms zenity --timeout=5 --separator="," --add-combo=OS --combo-values="raspbian|raspios_armhf|raspios_arm64" \
+    OS_PARAMS=$(zenity --forms zenity --timeout=${TIMEOUT} --separator="," --add-combo=OS --combo-values="raspbian|raspios_armhf|raspios_arm64" \
          --add-combo=type --combo-values="default|lite|full" \
-         --add-combo="release date" --combo-values="by date|latest")
+         --add-combo="release date" --combo-values="latest|by date")
     if [ $? = 5  ];then 
         SET_DEFAULTS=1
-        res=$(zenity --warning --extra-button="Retry" --timeout=3 --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}" )
+        res=$(zenity --warning --extra-button="Retry" --timeout=${WARNING_TIMEOUT} --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}" )
         if [ ${res} == "Retry" ]; then
             SET_DEFAULTS=0
         fi
@@ -96,9 +100,9 @@ dl_raspbian() {
                     1)
                         while [ "$m" == " " ]
                             do
-                                # Remove lines after lite, full options implemented by raspberrypi.org
+                                # Remove lines after full options implemented by raspberrypi.org
                                 if [ "${LIST[0]}" == "raspios_arm64" ];then     # line to remove !!!!!!!!!!!!!!!
-                                    m="default"                                 # line to remove !!!!!!!!!!!!!!!
+                                    m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite") # line to remove !!!!!!!!!!!!!!!
                                 else                                            # line to remove !!!!!!!!!!!!!!!
                                     m=$(zenity --forms --separator="," --add-combo=type --combo-values="default|lite|full")
                                 fi                                              # line to remove !!!!!!!!!!!!!!!
@@ -131,8 +135,10 @@ dl_raspbian() {
     else
         IMG_ARCH=arm64
         # This must be deleted when lite, full options implemented by raspberrypi.org
-        OS_TYPE=
-        zenity --warning --timeout=3 --text="lite &amp; full options are not implemented yet by raspberrypi.org! Rest to default"
+        if [ ${OS_TYPE} == full ]; then
+            zenity --warning --timeout=${WARNING_TIMEOUT} --text="full versions are not implemented yet! Reset to default"
+            OS_TYPE=
+        fi
     fi
     # echo "OS_NAME = ${OS_NAME/_${IMG_ARCH}} OS_TYPE=${OS_TYPE} OS_VERS=${OS_VERS} IMG_ARCH = ${IMG_ARCH}"
     if [ "${OS_VERS}" == "latest" ]; then
@@ -145,7 +151,8 @@ dl_raspbian() {
         IMG_NAME=$(curl ${DL_URL} | sed '/href/!d; s/.zip.*/.zip/; s/.*\///')
     else
         DL_URL=${BASE_URL}/${OS_NAME}/images
-        OS_VERS=$(zenity --list  --radiolist --column="" --column="select OS to download" " " $(curl -LJs ${DL_URL} | sed '/alt="\[DIR\]"/!d;s/^.*href="//g;s|/.*| |'))
+        OS_LIST=$(curl -LJs ${DL_URL} | sed '/folder/!d;s/^.*href="/ o /g;s|/.*||')
+        OS_VERS=$(zenity --list  --radiolist --column="" --column="select OS to download" ${OS_LIST})
         DL_URL=${DL_URL}/${OS_VERS}
         IMG_NAME=$(curl -LJs ${DL_URL} | sed '/torrent/!d;s/^.*href="//g;s|/.*||;s/.torrent.*//')
         DL_URL=${DL_URL}/${IMG_NAME}
@@ -155,7 +162,7 @@ dl_raspbian() {
     if [ -f ${DOWNLOAD_DIR}/${IMG_NAME} ];then
         echo "${DOWNLOAD_DIR}/${IMG_NAME} already downloaded!!"
     else
-        curl -L ${DL_URL} -o ${DOWNLOAD_DIR}/${IMG_NAME}
+        curl -L ${DL_URL} -o ${DOWNLOAD_DIR}/${IMG_NAME} || echo "ERROR download from: ${DL_URL}"
     fi
 
     echo "Download of ${DOWNLOAD_DIR}/${IMG_NAME} done!"
