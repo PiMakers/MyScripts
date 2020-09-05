@@ -4,8 +4,8 @@
 
 set -e
 
-DOWNLOAD_DIR='/mnt/LinuxData/Install/img'
-IMG_FOLDER="/mnt/LinuxData/img"
+DOWNLOAD_DIR='/mnt/LinuxData/Install/zip'
+IMG_FOLDER='/mnt/LinuxData/Install/img'
 TIMEOUT=5
 WARNING_TIMEOUT=3
 LATEST_VERSION=
@@ -111,7 +111,7 @@ dl_raspbian() {
                     2)
                         while [ "$m" == " " ]
                             do
-                                m=$(zenity --forms --separator="," --add-combo="release date" --combo-values="by date|latest")
+                                m=$(zenity --forms --separator="," --add-combo="release date" --combo-values="latest|by date")
                             done
                         ;;                        
                     *)
@@ -176,7 +176,10 @@ extractImg() {
     echo $IMG
     if [ ${IMG##*.}=="zip" ];then
         #if [ ! -f ${IMG_FOLDER}/${IMG%.*}.img ];then
-                unzip $IMG -d ${IMG_FOLDER}/
+                mkdir -pv ${IMG_FOLDER}
+                unzip $IMG -d ${IMG_FOLDER}/ || ( rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
+                dl_raspbian && exit )
+
         #fi
             IMG=$(basename ${IMG%.*}.img)
             IMG=${IMG_FOLDER}/$IMG
