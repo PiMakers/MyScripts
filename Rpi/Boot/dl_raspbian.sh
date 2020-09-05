@@ -68,7 +68,7 @@ dl_raspbian() {
         
     fi
     if [ "${SET_DEFAULTS}" == 0 ]; then
-        if [ -z "${OS_PARAMS}" ]; thenn
+        if [ -z "${OS_PARAMS}" ]; then
             zenity --warning --timeout=${WARNING_TIMEOUT} --text="Aborted by user!!!"
             exit
         fi
