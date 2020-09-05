@@ -2,7 +2,7 @@
 
 #!/bin/bash
 
-set -e
+#set -e
 
 DOWNLOAD_DIR='/mnt/LinuxData/Install/zip'
 IMG_FOLDER='/mnt/LinuxData/Install/img'
@@ -12,8 +12,9 @@ LATEST_VERSION=
 
 readonly BASE_URL="https://downloads.raspberrypi.org"
 SET_DEFAULTS=0
+# default :
 OS_NAME="raspios_armhf"                        # raspbian | raspios
-#IMG_ARCH="arm64"                              # armhf | arm64
+IMG_ARCH="armhf"                               # armhf | arm64
 OS_TYPE=""                                     # lite | full | ""
 OS_VERS="latest"                               # by_date | latest 
 
@@ -54,19 +55,6 @@ exit() {
     kill -2 $$
 }
 
-latest_version() {
-    type curl > /dev/null || ( echo "curl not installed" && exit 1 )
-    IMG_NAME=${OS_NAME}
-    for m in ${OS_TYPE} ${IMG_ARCH} "latest"
-        do
-            IMG_NAME="${IMG_NAME}_$m"
-        done
-    DL_URL=${BASE_URL}/${IMG_NAME}
-    LATEST_VERSION=$(curl ${DL_URL} 2>/dev/null | sed '/href/!d; s/.zip.*//; s/.*\///')
-    [ -z $LATEST_VERSION ] && echo "Unable to determine latest version!!!" && exit
-    echo "latest version: ${LATEST_VERSION}"
-}
-
 dl_raspbian() {
     OS_PARAMS=$(zenity --forms zenity --timeout=${TIMEOUT} --separator="," --add-combo=OS --combo-values="raspbian|raspios_armhf|raspios_arm64" \
          --add-combo=type --combo-values="default|lite|full" \
@@ -80,8 +68,8 @@ dl_raspbian() {
         
     fi
     if [ "${SET_DEFAULTS}" == 0 ]; then
-        if [ -z "${OS_PARAMS}" ]; then
-            zenity --warning --timeout=3 --text="Aborted !!!"
+        if [ -z "${OS_PARAMS}" ]; thenn
+            zenity --warning --timeout=${WARNING_TIMEOUT} --text="Aborted by user!!!"
             exit
         fi
         LIST=()
@@ -158,13 +146,13 @@ dl_raspbian() {
         DL_URL=${DL_URL}/${IMG_NAME}
     fi
     
-    echo "DL_URL=${DL_URL} PWD=$PWD IMG_NAME=${IMG_NAME}"
+    echo -e "DL_URL=${DL_URL}\nPWD=$PWD\nIMG_NAME=${IMG_NAME}"
+    mkdir -pv ${DOWNLOAD_DIR}
     if [ -f ${DOWNLOAD_DIR}/${IMG_NAME} ];then
         echo "${DOWNLOAD_DIR}/${IMG_NAME} already downloaded!!"
     else
         curl -L ${DL_URL} -o ${DOWNLOAD_DIR}/${IMG_NAME} || echo "ERROR download from: ${DL_URL}"
     fi
-
     echo "Download of ${DOWNLOAD_DIR}/${IMG_NAME} done!"
 }
 
