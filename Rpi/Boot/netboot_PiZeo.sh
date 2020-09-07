@@ -18,6 +18,9 @@ WORK_FOLDER=/tmp
 cd ${WORK_FOLDER}
 
 USBBoot_utility() {
+    DEV_DIR=/mnt/LinuxData/OF/
+    mkdir -pv ${DEV_DIR}/GitHub
+    cd ${DEV_DIR}/GitHub
     git clone --depth=1 https://github.com/raspberrypi/usbboot
     cd usbboot
     ${SUDO} apt-get install libusb-1.0-0-dev

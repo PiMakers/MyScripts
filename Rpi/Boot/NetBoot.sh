@@ -208,7 +208,7 @@ mountImage() {
         fi
         ###############################
             OVERLAY_FS_ROOT=${ROOT_FS}
-        ${SUDO} mkdir -p -m 777 ${OVERLAY_FS_ROOT}
+        ${SUDO} mkdir -pv -m 777 ${OVERLAY_FS_ROOT}
         LOWER_DIRS=${RPI_ROOT_FS}
         ${SUDO} mount -v -t overlay -o lowerdir=${LOWER_DIRS},upperdir=${UPPER_DIR}/data,workdir=${UPPER_DIR}/work,index=on,nfs_export=on,redirect_dir=on none ${OVERLAY_FS_ROOT}
         # ${SUDO} mount -v -t overlay -o lowerdir=${RPI_ROOT_FS}/etc:${RPI_ROOT_FS}/opt:${RPI_ROOT_FS}/bin,upperdir=${UPPER_DIR}/data,workdir=${UPPER_DIR}/work,index=on,nfs_export=on,redirect_dir=on   none ${OVERLAY_FS_ROOT}
@@ -449,14 +449,17 @@ enable_ssh() {
 create_ssh_keypair() {
     # SUDO=sudo
     # ROOT_FS=/nfs/root
+    HOSTNAME=$(hostname -s)
+    
     if [ ${OVERLAY} == 1 ]; then
         #local ROOT_FS=${UPPER_DIR}/data
         echo "KapdBe!"
     fi
-        ${SUDO} mkdir -p -m 700 ${ROOT_FS}/home/pi/.ssh
+        ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/pi/.ssh
         ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/pi
-        ${SUDO} cat ~/.ssh/PiMaker@NUC.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys
-        #${SUDO} cat ~/.ssh/id_rsa.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys
+        [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
+        #${SUDO} cat ~/.ssh/PiMaker@NUC.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
+        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
         ${SUDO} chmod 600 ${ROOT_FS}/home/pi/.ssh/authorized_keys
         ${SUDO} chown 1000:1000 ${ROOT_FS}/home/pi/.ssh/authorized_keys
 
@@ -470,6 +473,10 @@ create_ssh_keypair() {
     #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
         ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
     fi
+<<<<<<< HEAD
+=======
+
+>>>>>>> 76c81cfc5e3f481c8399bc07fcd32323973db19c
 }
 
 enable_inet_for_usbboot() {
@@ -535,7 +542,6 @@ cleanUp() {
         ${SUDO} mv ${BOOT_FS}/cmdline.txt.orig ${BOOT_FS}/cmdline.txt
     fi
 
-
     sync
     ${SUDO} umount -lv ${BOOT_FS}
 
@@ -563,11 +569,37 @@ cleanUp() {
     ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
 
     ${SUDO} service 'nfs-kernel-server' restart
+    #else
+        # CleanUp variabels
+        # NFS_VERS=4
+        #IMG_FOLDER=/mnt/LinuxData/Install/img
+        # OVERLAY=0
+        # HOST_IP=$(echo $(hostname -I) | sed 's/ .*//')
+        # NFS_ROOT=/nfs
+        # TEMP=/tmp
+
+        # [ $OVERLAY == 1 ] && OVERLAY_FS_ROOT=${NFS_ROOT}/root && NFS_ROOT=/tmp
+
+
+        # ROOT_FS=${NFS_ROOT}/root
+        # BOOT_FS=${NFS_ROOT}/boot
+
+        # RPI_ROOT_FS=${ROOT_FS}
+
+        # BOOT_FS=${ROOT_FS}/boot
+        if [ $OVERLAY == 1 ]; then
+            RPI_ROOT_FS=${TEMP}/root
+            UPPER_DIR=${TEMP}/upper
+        fi
+
+        # serials="b0c7e328 dc:a6:32:66:0a:2c"
+        echo "Sourced CleanUp happend!!!"
+# fi
 }
 
+#     if [ -z ${iSCSi} ]; then
 run() {
-    if [ -z ${iSCSi} ]; then
-    check_root
+    # check_root //movedToRoot!
     check_dependency
     get_img
     #resize_image
@@ -605,9 +637,9 @@ run() {
         echo "sleeping..."
         sleep 10
     done
-fi
 }
-
+#fi
+check_root
 [ "${BASH_SOURCE}" == "${0}" ] && run
 exit
 export DISPLAY=192.168.1.10:0
