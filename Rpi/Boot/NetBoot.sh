@@ -473,10 +473,6 @@ create_ssh_keypair() {
     #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
         ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
     fi
-<<<<<<< HEAD
-=======
-
->>>>>>> 76c81cfc5e3f481c8399bc07fcd32323973db19c
 }
 
 enable_inet_for_usbboot() {
@@ -597,7 +593,29 @@ cleanUp() {
 # fi
 }
 
-#     if [ -z ${iSCSi} ]; then
+## /etc/X11/default-display-manager
+## https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
+## /usr/share/raspi-ui-overrides/applications/mimeinfo.cache
+#sudo nano /etc/lightdm/lightdm.conf
+#Anywhere below the [SeatDefaults] header, add:
+#xserver-command=X -s 0 -dpms
+#This will set your blanking timeout to 0 and turn off your display power management signaling.
+prevent_from_sleeping() {
+    # desktop
+    if [ -f ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
+    ${SUDO} sed -r -i '/(noblank|off|-dpms)/d' ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart
+    ${SUDO} bash -c "cat >> ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart" << EOF
+@xset s noblank
+@xset s off
+@xset -dpms
+EOF
+    fi
+if [ -d /opt/vc/src/hello_pi ]; then
+    ${SUDO} service lightdm restart
+fi
+# cmdline
+}
+
 run() {
     # check_root //movedToRoot!
     check_dependency
@@ -713,30 +731,6 @@ pepe() {
     # delete all trailing blank lines at end of file
     ${SUDO} sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' ${BOOT_FS}/config.txt
     echo "cmdline=netboot.txt   # PxeServer" | ${SUDO} tee -a ${BOOT_FS}/config.txt
-}
-
-
-## /etc/X11/default-display-manager
-## https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
-## /usr/share/raspi-ui-overrides/applications/mimeinfo.cache
-#sudo nano /etc/lightdm/lightdm.conf
-#Anywhere below the [SeatDefaults] header, add:
-#xserver-command=X -s 0 -dpms
-#This will set your blanking timeout to 0 and turn off your display power management signaling.
-prevent_from_sleeping() {
-# desktop
-    if [ -f ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
-    ${SUDO} sed -r -i '/(noblank|off|-dpms)/d' ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart
-    ${SUDO} bash -c "cat >> ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart" << EOF
-@xset s noblank
-@xset s off
-@xset -dpms
-EOF
-    fi
-if [ -d /opt/vc/src/hello_pi ]; then
-    ${SUDO} service lightdm restart
-fi
-# cmdline
 }
 
 remove_unused() {
