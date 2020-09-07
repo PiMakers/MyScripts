@@ -23,8 +23,9 @@ exit() {
     trap "echo FuckYouToo" RETURN
     [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
     if [ -z ${iSCSi} ]; then
-        cleanUp
+        [ "${BASH_SOURCE}" == "${0}" ] && cleanUp
     fi
+    set +e
     kill -2 $$
 }
 
@@ -68,8 +69,8 @@ check_dependency() {
 }
 
 NFS_VERS=4
-IMG_FOLDER=/mnt/LinuxData/OF/img
-
+IMG_FOLDER=/mnt/LinuxData/Install/img
+OVERLAY=0
 HOST_IP=$(echo $(hostname -I) | sed 's/ .*//')
 NFS_ROOT=/nfs
 TEMP=/tmp
@@ -178,7 +179,7 @@ fi
         fi
         ###############################
             OVERLAY_FS_ROOT=${ROOT_FS}
-        ${SUDO} mkdir -p -m 777 ${OVERLAY_FS_ROOT}
+        ${SUDO} mkdir -pv -m 777 ${OVERLAY_FS_ROOT}
         LOWER_DIRS=${RPI_ROOT_FS}
         ${SUDO} mount -v -t overlay -o lowerdir=${LOWER_DIRS},upperdir=${UPPER_DIR}/data,workdir=${UPPER_DIR}/work,index=on,nfs_export=on,redirect_dir=on none ${OVERLAY_FS_ROOT}
         # ${SUDO} mount -v -t overlay -o lowerdir=${RPI_ROOT_FS}/etc:${RPI_ROOT_FS}/opt:${RPI_ROOT_FS}/bin,upperdir=${UPPER_DIR}/data,workdir=${UPPER_DIR}/work,index=on,nfs_export=on,redirect_dir=on   none ${OVERLAY_FS_ROOT}
@@ -188,6 +189,8 @@ fi
         ${SUDO} mkdir -p -m 777 ${BOOT_FS}
     fi
      ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
+     ${SUDO} mkdir -pv -m 777 ${ROOT_FS}/mnt/LinuxData/OF
+     ${SUDO} mount -v --bind /mnt/LinuxData/OF ${ROOT_FS}/mnt/LinuxData/OF || echo "error mounting /mnt/LinuxData/OF"
     # ${SUDO} mount --bind  /mnt/LinuxData/OF/usbboot/boot ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
 }
 
@@ -255,7 +258,6 @@ EOF
 
 
 configure_dnsmasq() {
-    [ -f /etc/dnsmasq.conf.orig ] || ${SUDO} cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig || echo "dnsmasq.conf backup failed!!!"
     ${SUDO} bash -c 'cat > /etc/dnsmasq.d/bootserver.conf' << EOF
 #PXE BootServer by PiMaker®
 #bind-dynamic
@@ -267,7 +269,7 @@ local-service
 
 port=0
 #interface=eth0
-interface=enp0s25
+#interface=enp0s25
 
 dhcp-script=/bin/echo
 
@@ -330,27 +332,30 @@ enable_ssh() {
 create_ssh_keypair() {
     # SUDO=sudo
     # ROOT_FS=/nfs/root
+    HOSTNAME=$(hostname -s)
+    
     if [ ${OVERLAY} == 1 ]; then
         #local ROOT_FS=${UPPER_DIR}/data
         echo "KapdBe!"
     fi
-        ${SUDO} mkdir -p -m 700 ${ROOT_FS}/home/pi/.ssh
+        ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/pi/.ssh
         ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/pi
-        ${SUDO} cat ~/.ssh/PiMaker@NUC.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys
-        #${SUDO} cat ~/.ssh/id_rsa.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys
+        [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
+        #${SUDO} cat ~/.ssh/PiMaker@NUC.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
+        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
         ${SUDO} chmod 600 ${ROOT_FS}/home/pi/.ssh/authorized_keys
         ${SUDO} chown 1000:1000 ${ROOT_FS}/home/pi/.ssh/authorized_keys
 
-if [ ${OVERLAY} == 2 ]; then
-    ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
-    ${SUDO} cp -a /etc/localtime "${ROOT_FS}/etc"
-#fi
-#if [ -d "${ROOT_FS}/etc/default" ]; then
-    ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
-#fi
-#if [ -d "${ROOT_FS}/etc/console-setup" ]; then
-    ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
-fi
+    if [ ${OVERLAY} == 2 ]; then
+        ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
+        ${SUDO} cp -a /etc/localtime "${ROOT_FS}/etc"
+    #fi
+    #if [ -d "${ROOT_FS}/etc/default" ]; then
+        ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
+    #fi
+    #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
+        ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
+    fi
 
 }
 
@@ -383,6 +388,7 @@ usbboot() {
 }
 
 cleanUp() {
+# if [ "${BASH_SOURCE}" == "${0}" ]; then
     ${SUDO} service 'dnsmasq' stop
     ${SUDO} service 'nfs-kernel-server' stop
 
@@ -394,7 +400,6 @@ cleanUp() {
         ${SUDO} cp ${ROOT_FS}/etc/fstab.orig ${ROOT_FS}/etc/fstab
     fi
 
-
     sync
     ${SUDO} umount -lv ${BOOT_FS}
 
@@ -404,14 +409,13 @@ cleanUp() {
     if [ ${OVERLAY} == 1 ]; then
         ${SUDO} umount -lv ${RPI_ROOT_FS}
         ${SUDO} rm -R ${RPI_ROOT_FS}
+
+        if $(zenity --question --text="remove ${UPPER_DIR}?" --extra-button="Save img" --display=${DISPLAY}); then
+
+            echo "removing ${UPPER_DIR} ..."
+            ${SUDO} rm -R ${UPPER_DIR} 
+        fi
     fi
-
-    if $(zenity --question --text="remove ${UPPER_DIR}?" --extra-button="Save img" --display=${DISPLAY}); then
-
-        echo "removing ${UPPER_DIR} ..."
-        ${SUDO} rm -R ${UPPER_DIR} 
-    fi
-
 
     ${SUDO} losetup -d $LOOP_DEVICE || echo "hopp!!!!!!!!!!!!!!!!"
     ${SUDO} rm -R ${ROOT_FS} #${BOOT_FS}
@@ -422,10 +426,38 @@ cleanUp() {
     ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
 
     ${SUDO} service 'nfs-kernel-server' restart
+    #else
+        # CleanUp variabels
+        # NFS_VERS=4
+        #IMG_FOLDER=/mnt/LinuxData/Install/img
+        # OVERLAY=0
+        # HOST_IP=$(echo $(hostname -I) | sed 's/ .*//')
+        # NFS_ROOT=/nfs
+        # TEMP=/tmp
+
+        # [ $OVERLAY == 1 ] && OVERLAY_FS_ROOT=${NFS_ROOT}/root && NFS_ROOT=/tmp
+
+
+        # ROOT_FS=${NFS_ROOT}/root
+        # BOOT_FS=${NFS_ROOT}/boot
+
+        # RPI_ROOT_FS=${ROOT_FS}
+
+        # BOOT_FS=${ROOT_FS}/boot
+        if [ $OVERLAY == 1 ]; then
+            RPI_ROOT_FS=${TEMP}/root
+            UPPER_DIR=${TEMP}/upper
+        fi
+
+        # serials="b0c7e328 dc:a6:32:66:0a:2c"
+        echo "Sourced CleanUp happend!!!"
+# fi
+
 }
 
-if [ -z ${iSCSi} ]; then
-check_root
+#if [ -z ${iSCSi} ]; then
+run() {
+# check_root //movedToRoot!
 check_dependency
 get_img
 mount_image
@@ -454,8 +486,10 @@ do
     echo "sleeping..."
     sleep 10
 done
-fi
-
+}
+#fi
+check_root
+[ "${BASH_SOURCE}" == "${0}" ] && run
 exit
 export DISPLAY=192.168.1.10:0
 export LIBGL_ALWAYS_INDIRECT=1

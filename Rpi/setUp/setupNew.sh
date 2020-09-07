@@ -11,7 +11,10 @@
 # sed -i '/<pattern>/s/^#*/#/g' file #(to comment out)
 # sed -i '/<pattern>/s/^#*//g' file #(to uncomment)
 
-set -e
+# /nfs/root/etc/xdg/lxsession/LXDE-pi/sshpwd.sh
+#set -e
+
+export LC_ALL=C
 
 check_root() {
     # Must be root to install the hotspot
@@ -31,9 +34,29 @@ check_root() {
         fi
     fi
 }
-################
-export LC_ALL=C
 
+# if sourced, exit with "return"
+Brexit() {
+    trap "echo FuckYou!!!" EXIT
+    trap "echo FuckYouToo" RETURN
+    [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
+    if [ -z ${iSCSi} ]; then
+        echo cleanUp
+    fi
+    set +e
+    kill -2 $$
+}
+
+execMode() {
+    
+    [ "${BASH_SOURCE}" == "${0}" ] && SOURCED=0 || SOURCED=1
+}
+
+detectSystem() {
+    ARCH=$(dpkg --print-architecture)
+    OS_NAME=$(sed '/^ID=/!d;s/^.*=//' /etc/os-release)
+    ${SUDO} dmidecode -t system
+}
 error () {
     echo "ERROR: $1"
 }
@@ -56,9 +79,10 @@ set_defaults() {
     # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
     sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo "export LC_ALL=C" >> $HOME/.bashrc
 }
-# update_upgrade
-update_upgrade () {
-  ${SUDO} apt -y update
+
+updateUpgrade () {
+  echo "Updating..."
+  ${SUDO} apt update
   echo "Upgrading..."
   ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
   ${SUDO} apt autoclean
@@ -194,6 +218,7 @@ EOF
       ${SUDO} ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
 }
 
+#exit
 more() {
 # Populate `/etc/udev/rules.d/70-persistent-net.rules`
 
@@ -309,18 +334,18 @@ NewPi(){
 
 }
 
-setup() {
-check_root
-relativeSoftLinks &
-update_upgrade
-enable_ssh
-change_login_pwd
-set_hostname
-add_wpa_supplicant_conf ## setup wifi inet
+setupNew() {
+    check_root
+    relativeSoftLinks &
+    updateUpgrade
+    enable_ssh
+    change_login_pwd
+    set_hostname
+    add_wpa_supplicant_conf ## setup wifi inet
 }
 
 # change_login_pwd
-setup
+[ "${BASH_SOURCE}" == "${0}" ] && setupNew
 
 
 # set_defaults
