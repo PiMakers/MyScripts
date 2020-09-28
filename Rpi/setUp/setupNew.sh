@@ -16,82 +16,105 @@
 
 export LC_ALL=C
 
-check_root() {
-    # Must be root to install the hotspot
-    echo ":::"
-    if [[ $EUID -eq 0 ]];then
-        echo "::: You are root - OK"
-    else
-        echo "::: sudo will be used for the install."
-        # Check if it is actually installed
-        # If it isn't, exit because the install cannot complete
-        if [[ $(dpkg-query -s sudo) ]];then
-            export SUDO="sudo"
-            export SUDOE="sudo -E"
-        else
-            echo "::: Please install sudo or run this as root."
-            exit 1
-        fi
-    fi
-}
-
-# if sourced, exit with "return"
-Brexit() {
-    trap "echo FuckYou!!!" EXIT
-    trap "echo FuckYouToo" RETURN
-    [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
-    if [ -z ${iSCSi} ]; then
-        echo cleanUp
-    fi
-    set +e
-    kill -2 $$
-}
-
-execMode() {
-    
-    [ "${BASH_SOURCE}" == "${0}" ] && SOURCED=0 || SOURCED=1
-}
-
-detectSystem() {
-    ARCH=$(dpkg --print-architecture)
-    OS_NAME=$(sed '/^ID=/!d;s/^.*=//' /etc/os-release)
-    ${SUDO} dmidecode -t system
-}
-error () {
-    echo "ERROR: $1"
-}
-
-set_defaults() {
-    IS_RASPBIAN_LITE=0
-    MAC_ADDRESS="$(cat /sys/class/net/wlan0/address)" || error ${MAC_ADDRESS}
-    CLIENT_SSID="Ste@diAP"
-    #"${1}"
-    CLIENT_PASSPHRASE="AsdfghjklkjhgfdsAsdfghjkl"
-    #"${2}"
-    AP_SSID="PubHubAP"
-    #"${3}"
-    AP_PASSPHRASE="12345678"
-    #"${4}"
-    ROOT=$(dirname "$0")
-    OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
-    IS_CHROOTED=$(echo "${SUDO_COMMAND}" | grep -qv chroot; echo "$?")
-
-    # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
-    sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo "export LC_ALL=C" >> $HOME/.bashrc
-}
-
-updateUpgrade () {
-  echo "Updating..."
-  ${SUDO} apt update
-  echo "Upgrading..."
-  ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
-  ${SUDO} apt autoclean
-  ${SUDO} apt clean
-  echo "update Done!"
+create_ssh_keypair() {
+    [ ${VERBOSE} ] && echo ":: Creating ssh keypair..."
+    HOSTNAME=$(hostname -s)
+    ${SUDO} mkdir -pv -m 700 ${RPI_ROOT_FS}/home/pi/.ssh
+    ${SUDO} chown -R 1000:1000 ${RPI_ROOT_FS}/home/pi
+    [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
+    # add ssh key to ssh-agent:
+    eval "$(ssh-agent -s)"
+    ${SUDO} ssh-add ~/.ssh/testkey@${HOSTNAME}
+    ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
+    ${SUDO} chmod 600 ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys
+    ${SUDO} chown 1000:1000 ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys
 }
 
 enable_ssh() {
-    ${SUDO} touch /boot/ssh
+    [ ${VERBOSE} ] && echo ":: Enabling ssh ..."
+    [ -z ${RPI_ROOT_FS} ] && read -p "Press a key To continue..."
+    if [ ! -h ${RPI_ROOT_FS}/etc/systemd/system/multi-user.target.wants/ssh.service ]; then
+        ${SUDO} ln -s /lib/systemd/system/ssh.service ${RPI_ROOT_FS}/etc/systemd/system/multi-user.target.wants/ssh.service
+    fi
+}
+
+do_blanking() {
+    ## disable Screen blanking from raspi-config:
+    # raspi-config nonint do_blanking 1
+    [ ${VERBOSE} ] && echo ":: Disabling screen blanking ..."    
+    ${SUDO} mkdir -pv ${RPI_ROOT_FS}/etc/X11/xorg.conf.d/
+    cat << EOF | sed 's/^.\{8\}//' | sudo tee  ${RPI_ROOT_FS}/etc/X11/xorg.conf.d/10-blanking.conf 1>/dev/null
+        Section "Extensions"
+            Option      "DPMS" "Disable"
+        EndSection
+
+        Section "ServerLayout"
+            Identifier "ServerLayout0"
+            Option "StandbyTime" "0"
+            Option "SuspendTime" "0"
+            Option "OffTime"     "0"
+            Option "BlankTime"   "0"
+        EndSection
+EOF
+}
+
+disableScreenBlanking() {
+    ## /etc/X11/default-display-manager
+    ## https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
+    ## /usr/share/raspi-ui-overrides/applications/mimeinfo.cache
+    #sudo nano /etc/lightdm/lightdm.conf
+    #Anywhere below the [SeatDefaults] header, add:
+    #xserver-command=X -s 0 -dpms
+    #This will set your blanking timeout to 0 and turn off your display power management signaling.
+    # desktop
+    if [ -f ${${RPI_ROOT_FS}}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
+        ${SUDO} sed -r -i '/(noblank|off|-dpms)/d' ${RPI_ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee -a ${RPI_ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart 1>/dev/null
+            @xset s noblank
+            @xset s off
+            @xset -dpms
+            #@xset dpms 0 0 0
+EOF
+    fi
+}
+
+removeWelcomeToPi() {
+    [ ${VERBOSE} ] && echo ":: Remove \"Welcome to Raspberry Pi\" ..."
+        [ -z ${RPI_ROOT_FS} ] && read -p "Press a key To continue..."
+    ${SUDO} mv ${RPI_ROOT_FS}/etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.disabled
+}
+
+removeSshWarning() {
+    [ ${VERBOSE} ] && echo ":: Remove \"SSH Warning\" ..."
+        [ -z ${RPI_ROOT_FS} ] && read -p "Press a key To continue..."
+    ${SUDO} mv ${RPI_ROOT_FS}/etc/xdg/autostart/pprompt.desktop /etc/xdg/autostart/pprompt.desktop.disabled
+}
+
+getRpiKernelModules() {
+    if [ ! -d ${DEV_DIR}/GitHub/RpiFirmware ]; then
+        cd ${DEV_DIR}/GitHub
+        git clone --depth=1 https://github.com/raspberrypi/firmware.git RpiFirmware
+    fi
+    for m in $(ls ${DEV_DIR}/GitHub/RpiFirmware/modules)
+        do
+            echo "** $m **"
+            ${SUDO} ln -s ${DEV_DIR}/GitHub/RpiFirmware/modules/${m} /lib/modules/${m}
+            ls -la /lib/modules/${m}
+        done
+
+
+}
+
+## remote X
+## https://wiki.x2go.org/doku.php/wiki:repositories:raspbian
+######################
+
+getLastAptUpdate()
+{
+    local aptDate="$(stat -c %Y '/var/cache/apt')"
+    local nowDate="$(date +'%s')"
+
+    echo $((nowDate - aptDate)) # in seconds
 }
 
 change_login_pwd() {
@@ -124,8 +147,10 @@ Install_OF_dependencies() {
     echo "Installing OF dependences ..."
     BASE_URL="https://raw.githubusercontent.com/openframeworks/openFrameworks/master/scripts/linux"
     OS=$(cat  /etc/os-release | grep '^ID=' | sed s/^'ID='//) && echo "OS=$OS"
-    curl -l ${BASE_URL}/$OS/install_dependencies.sh | sed 's/$ROOT/${OF_ROOT}/g; 2 i\\n\"1\"=\"-y\"' | ${SUDOE} bash -s
-    curl -l ${BASE_URL}/$OS/install_codecs.sh | sed 's/$ROOT/${OF_ROOT}/g; 2 i\\n\"1\"=\"-y\"' | ${SUDOE} bash -s
+    # curl -l ${BASE_URL}/$OS/install_dependencies.sh | sed 's/$ROOT/${OF_ROOT}/g; 2 i\\n\"1\"=\"-y\"' | ${SUDOE} bash -s -- -y
+    # curl -l ${BASE_URL}/$OS/install_codecs.sh | sed 's/$ROOT/${OF_ROOT}/g; 2 i\\n\"1\"=\"-y\"' | ${SUDOE} bash -s
+    curl -l ${BASE_URL}/$OS/install_dependencies.sh | ${SUDO} bash -s -- -y
+    curl -l ${BASE_URL}/$OS/install_codecs.sh | ${SUDO} bash -s -- -y
     echo "Done!"
 }
 
@@ -222,7 +247,7 @@ EOF
 more() {
 # Populate `/etc/udev/rules.d/70-persistent-net.rules`
 
-create_virtual_interface(){
+create_virtual_interface() {
 ${SUDO} bash -c 'cat > /etc/udev/rules.d/70-persistent-net.rules' << EOF
 SUBSYSTEM=="ieee80211", ACTION=="add|change", ATTR{macaddress}=="${MAC_ADDRESS}", KERNEL=="phy0", \
 RUN+="/sbin/iw phy phy0 interface add ap0 type __ap", \
@@ -231,7 +256,7 @@ EOF
 }
 
 # Populate `/etc/dnsmasq.conf`
-configure_dnsmasq(){
+configure_dnsmasq() {
 [ -f /etc/dnsmasq.conf.orig ] || ${SUDO} cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig || echo "dnsmasq.conf backup failed!!!"
 ${SUDO} bash -c 'cat > /etc/dnsmasqd/VirtualAp.conf' << EOF
 interface=lo,ap0
@@ -245,7 +270,7 @@ EOF
 }
 
 # Populate `/etc/hostapd/hostapd.conf`
-configure_hostapd(){
+configure_hostapd() {
 ${SUDO} bash -c 'cat > /etc/hostapd/hostapd.conf' << EOF
 ctrl_interface=/var/run/hostapd
 ctrl_interface_group=0
@@ -334,8 +359,83 @@ NewPi(){
 
 }
 
+# if sourced, exit with "return"
+Brexit() {
+    trap "echo FuckYou!!!" EXIT
+    trap "echo FuckYouToo" RETURN
+    [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
+    if [ -z ${iSCSi} ]; then
+        echo cleanUp
+    fi
+    set +e
+    kill -2 $$
+}
+
+execMode() {
+    
+    [ "${BASH_SOURCE}" == "${0}" ] && SOURCED=0 || SOURCED=1
+}
+
+detectSystem() {
+    ARCH=$(dpkg --print-architecture)
+    OS_NAME=$(sed '/^ID=/!d;s/^.*=//' /etc/os-release)
+    ${SUDO} dmidecode -t system
+}
+error () {
+    echo "ERROR: $1"
+}
+
+set_defaults() {
+    IS_RASPBIAN_LITE=0
+    MAC_ADDRESS="$(cat /sys/class/net/wlan0/address)" || error ${MAC_ADDRESS}
+    CLIENT_SSID="Ste@diAP"
+    #"${1}"
+    CLIENT_PASSPHRASE="AsdfghjklkjhgfdsAsdfghjkl"
+    #"${2}"
+    AP_SSID="PubHubAP"
+    #"${3}"
+    AP_PASSPHRASE="12345678"
+    #"${4}"
+    ROOT=$(dirname "$0")
+    OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
+    IS_CHROOTED=$(echo "${SUDO_COMMAND}" | grep -qv chroot; echo "$?")
+
+    # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
+    sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo "export LC_ALL=C" >> $HOME/.bashrc
+}
+
+updateUpgrade () {
+  echo "Updating..."
+  ${SUDO} apt update
+  echo "Upgrading..."
+  ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
+  ${SUDO} apt autoclean
+  ${SUDO} apt clean
+  echo "update Done!"
+}
+
+check_root2() {
+    # Must be root to install the hotspot
+    echo ":::"
+    if [[ $EUID -eq 0 ]];then
+        echo "::: You are root - OK"
+    else
+        echo "::: sudo will be used for the install."
+        # Check if it is actually installed
+        # If it isn't, exit because the install cannot complete
+        if [[ $(dpkg-query -s sudo) ]];then
+            export SUDO="sudo"
+            export SUDOE="sudo -E"
+        else
+            echo "::: Please install sudo or run this as root."
+            exit 1
+        fi
+    fi
+}
+
+
 setupNew() {
-    check_root
+    check_root2
     relativeSoftLinks &
     updateUpgrade
     enable_ssh
