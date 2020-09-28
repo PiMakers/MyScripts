@@ -19,6 +19,8 @@
 
 # /mnt/LinuxData/OF/myGitHub/MyScripts/Rpi/Boot/NetBoot.sh
 
+trap "cleanUp" INT
+
 # if sourced, exit with "return"
 exit() {
     trap "echo FuckYou!!!" EXIT
@@ -27,7 +29,7 @@ exit() {
     # if [ -z ${iSCSi} ]; then
         [ "${BASH_SOURCE}" == "${0}" ] && cleanUp
     # fi
-    kill -2 $$
+    ${SUDO} kill -2 $$
 }
 
 check_root() {
@@ -70,15 +72,15 @@ check_dependency() {
 }
 
 NFS_VERS=4
-IMG_FOLDER=/mnt/LinuxData/img
-IMG_FOLDER='/mnt/LinuxData/Install/img'
+IMG_FOLDER=/mnt/LinuxData/Install/img
 OVERLAY=0
 HOST_IP=$(hostname -I | sed 's/ .*//')
 NFS_ROOT=/nfs
 TEMP=/tmp
 TEMP=/mnt/LinuxData/tmp
 serials="b0c7e328 dc:a6:32:66:0a:2c"
-
+# /proc/device-tree/model|serial:
+# Raspberry Pi 3 Model B Rev 1.2 | 00000000b0c7e328
 # [ $OVERLAY == 1 ] && OVERLAY_FS_ROOT=${NFS_ROOT}/root && NFS_ROOT=/tmp
 
 
@@ -168,18 +170,18 @@ mountImage() {
     if [ ${OVERLAY} == 2 ]; then    
         # overlayfs hacks
         ${SUDO} mkdir -p -m 0755 ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d
-    #        ${SUDO} bash -c "cat > ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d/nfs_on_overlayfs.conf" << EOF
-    #[Service]
-    #IPAddressAllow=10.42.1.0/24
-    #EOF
+        #        ${SUDO} bash -c "cat > ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d/nfs_on_overlayfs.conf" << EOF
+        #[Service]
+        #IPAddressAllow=10.42.1.0/24
+        #EOF
     fi
     if [ ${OVERLAY} == 1 ]; then
-    ################################
-    #        ${SUDO} mkdir -p -m 0755 ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d
-    #        ${SUDO} bash -c "cat > ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d/nfs_on_overlayfs.conf" << EOF
-    #[Service]
-    #IPAddressAllow=192.168.1.0/24
-    #EOF
+        ################################
+        #        ${SUDO} mkdir -p -m 0755 ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d
+        #        ${SUDO} bash -c "cat > ${UPPER_DIR}/data/etc/systemd/system/systemd-logind.service.d/nfs_on_overlayfs.conf" << EOF
+        #[Service]
+        #IPAddressAllow=192.168.1.0/24
+        #EOF
 
         if true; then
             ## read -p "Press a key to continue..."
@@ -219,7 +221,7 @@ mountImage() {
     fi
      ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
          ${SUDO} mkdir -p -m 777 ${RPI_ROOT_FS}/mnt/LinuxData/OF
-    ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
+    # ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
     # ${SUDO} mount --bind  /mnt/LinuxData/OF/usbboot/boot ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
 }
 
@@ -238,27 +240,25 @@ prepare_cmdline() {
                 AUTOCONF=dhcp
                 IP=${CLIENT_IP}:${SERVER_IP}:${GW_IP}:${NETMASK}:${HOSTNAME}:${DEVICE}:${AUTOCONF}
 
-    if [ ! -f ${BOOT_FS}/cmdline.txt.orig ];then
-        ${SUDO} cp ${BOOT_FS}/cmdline.txt ${BOOT_FS}/cmdline.txt.orig
-    fi
     if [ "$NFS_VERS" == 3 ]; then
         local NFS_BOOT_TAG="${ROOT_FS},vers=3,rsize=32768,wsize=32768,hard,intr"
     else
         local NFS_BOOT_TAG="/root,vers=4.1,proto=tcp,port=2049,nolock"
     fi
-        ${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.nfsboot.${DEVICE}" << EOF
-#dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${ROOT_FS},vers=3, rw ip=dhcp elevator=deadline rootwait plymouth.ignore-serial-consoles noswap #init=/bin/ro-root.sh
-dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
-#dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:/pi/root rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
+        #${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.nfsboot.${DEVICE}" << EOF
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${BOOT_FS}/cmdline.nfsboot.${DEVICE} 1>/dev/null
+            #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${ROOT_FS},vers=3, rw ip=dhcp elevator=deadline rootwait plymouth.ignore-serial-consoles noswap #init=/bin/ro-root.sh
+            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
+            #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:/pi/root rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
 EOF
     #KERNEL_TAG="[0-9][0-9]+"
-    PI0_KERNEL_VERSION=$(ls /lib/modules | sed '/[0-9][0-9]+.*/!d')
+    PI0_KERNEL_VERSION=$(ls ${ROOT_FS}/lib/modules | sed '/[0-9][0-9]+.*/!d')
     
     ${SUDO} sed -r -i '/(cmdline=|include)/d'  ${BOOT_FS}/config.txt
     echo "cmdline=cmdline.nfsboot.${DEVICE}" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
     ## pi0 starthere
     echo "include config.pi0" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
-    cat << EOF | ${SUDO} tee -a ${BOOT_FS}/config.pi0 1>/dev/null
+    cat << EOF | ${SUDO} tee ${BOOT_FS}/config.pi0 1>/dev/null
     [pi0]
     # cmdline
     cmdline=cmdline.pi0.nfsboot
@@ -273,7 +273,7 @@ EOF
 
                 KERNEL_VERSION=$(ls ${RPI_ROOT_FS}/lib/modules | sed '/[0-9][0-9]+/!d')
                 # sudo update-initramfs -c -k ${KERNEL_VERSION}
-                CLIENT_IP=10.42.0.14
+                CLIENT_IP=10.42.0.15
                 SERVER_IP=10.42.0.1 # ${CLIENT_IP%.*}.1
                 GW_IP=
                 NETMASK=255.255.255.0
@@ -281,10 +281,11 @@ EOF
                 DEVICE=usb0
                 AUTOCONF=static
                 IP=${CLIENT_IP}:${SERVER_IP}:${GW_IP}:${NETMASK}:${HOSTNAME}:${DEVICE}:${AUTOCONF}
-        ${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.pi0.nfsboot" << EOF
-# pi0 USB-boot:
-dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:${ROOT_FS} rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
-#dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
+        # ${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.pi0.nfsboot" << EOF
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${BOOT_FS}/cmdline.pi0.nfsboot 1>/dev/null
+            # pi0 USB-boot:
+            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:${ROOT_FS} rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
+            #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${SERVER_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
 EOF
 
     ## /proc/cmdline iscsi
@@ -336,32 +337,34 @@ configure_nfs() {
     # delete all trailing blank lines at end of file
     ${SUDO} sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/exports
     if [ "$NFS_VERS" == 4 ]; then
-    ${SUDO} bash -c 'cat >> /etc/exports' << EOF
+    #${SUDO} bash -c 'cat >> /etc/exports' << EOF
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee /etc/exports 1>/dev/null
 
-# NFSv.4                                                                 PxeServer
-${NFS_ROOT} ${HOST_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
-${ROOT_FS} ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
+            # NFSv.4                                                                 PxeServer
+            ${NFS_ROOT} ${HOST_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
+            ${ROOT_FS} ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
 
-# ${ROOT_FS}/etc ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt)   #PxeServer
-# ${ROOT_FS}/home/pi ${HOST_IP%.*}.0/24(rw,fsid=1000,sync,no_subtree_check,insecure,no_root_squash,crossmnt)   #PxeServer
+            # ${ROOT_FS}/etc ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt)   #PxeServer
+            # ${ROOT_FS}/home/pi ${HOST_IP%.*}.0/24(rw,fsid=1000,sync,no_subtree_check,insecure,no_root_squash,crossmnt)   #PxeServer
 
-# Pi0                                                                 PxeServer
-${NFS_ROOT} ${CLIENT_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
-${ROOT_FS} ${CLIENT_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
+            # Pi0                                                                 PxeServer
+            ${NFS_ROOT} ${CLIENT_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
+            ${ROOT_FS} ${CLIENT_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
 EOF
     else
-    ${SUDO} bash -c 'cat >> /etc/exports' << EOF
+        #${SUDO} bash -c 'cat >> /etc/exports' << EOF
+        cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee /etc/exports 1>/dev/null
 
-# NFSv.3                                                                 PxeServer
-/mnt/LinuxData/OF *(rw,no_subtree_check,no_root_squash,fsid=1000)       #PxeServer
-${BOOT_FS} *(rw,sync,no_subtree_check,no_root_squash,crossmnt)          #PxeServer
-${ROOT_FS} *(rw,sync,no_subtree_check,no_root_squash,crossmnt,fsid=0)   #PxeServer
+            # NFSv.3                                                                 PxeServer
+            /mnt/LinuxData/OF *(rw,no_subtree_check,no_root_squash,fsid=1000)       #PxeServer
+            ${BOOT_FS} *(rw,sync,no_subtree_check,no_root_squash,crossmnt)          #PxeServer
+            ${ROOT_FS} *(rw,sync,no_subtree_check,no_root_squash,crossmnt,fsid=0)   #PxeServer
 EOF
     #${SUDO} /mnt/LinuxData/OF/usbboot/rpiboot -l -d /nfs/root/boot
     fi
 }
-# sudo service systemd-resolved stop
-# ${SUDO} systemctl is-active -q systemd-resolved
+    # sudo service systemd-resolved stop
+    # ${SUDO} systemctl is-active -q systemd-resolved
 configure_dnsmasq() {
     #${SUDO} bash -c 'cat > /etc/dnsmasq.d/bootserver.conf' << EOF
     cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee /etc/dnsmasq.d/bootserver.conf  1>/dev/null
@@ -447,8 +450,6 @@ enable_ssh() {
 }
 
 create_ssh_keypair() {
-    # SUDO=sudo
-    # ROOT_FS=/nfs/root
     HOSTNAME=$(hostname -s)
     
     if [ ${OVERLAY} == 1 ]; then
@@ -458,7 +459,6 @@ create_ssh_keypair() {
         ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/pi/.ssh
         ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/pi
         [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
-        #${SUDO} cat ~/.ssh/PiMaker@NUC.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
         ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
         ${SUDO} chmod 600 ${ROOT_FS}/home/pi/.ssh/authorized_keys
         ${SUDO} chown 1000:1000 ${ROOT_FS}/home/pi/.ssh/authorized_keys
@@ -466,12 +466,12 @@ create_ssh_keypair() {
     if [ ${OVERLAY} == 2 ]; then
         ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
         ${SUDO} cp -a /etc/localtime "${ROOT_FS}/etc"
-    #fi
-    #if [ -d "${ROOT_FS}/etc/default" ]; then
-        ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
-    #fi
-    #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
-        ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
+        #fi
+        #if [ -d "${ROOT_FS}/etc/default" ]; then
+            ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
+        #fi
+        #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
+            ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
     fi
 }
 
@@ -504,21 +504,13 @@ prepare_dhcpcd() {
 EOF
 }
 
-usbboot() {
-    # ssh -X pi@10.42.0.14 -oStrictHostKeyChecking=no
-    # gnome-terminal -t TITLE --wait -- ${SUDO} ${RPIBOOT_DIR}/rpiboot -d ${BOOT_FS} -v -l -o &
-    /mnt/LinuxData/OF/usbboot/rpiboot -d ${BOOT_FS} &
-    PID=$! && echo $PID
-}
-
 startRpiBoot() {
     RPIBOOT_DIR=/mnt/LinuxData/OF/GitHub/usbboot
     if [ ! -f ${BOOT_FS}/bootcode.bin.orig ]; then
         ${SUDO} mv ${BOOT_FS}/bootcode.bin ${BOOT_FS}/bootcode.bin.orig
-        ${SUDO} cp -v ${RPIBOOT_DIR}/msd/bootcode.bin ${BOOT_FS}/bootcode.bin
-        #${SUDO} curl -LJ https://github.com/raspberrypi/firmware/raw/master/boot/bootcode.bin -o ${RPI_BOOT_FS}/bootcode.bin
     fi
-    # gnome-terminal -t TITLE --wait -e "${SUDO} ${RPIBOOT_DIR}/rpiboot -d ${RPI_BOOT_FS} -v -l -o" &
+    ${SUDO} cp -v ${RPIBOOT_DIR}/msd/bootcode.bin ${BOOT_FS}/bootcode.bin
+    #${SUDO} curl -LJ https://github.com/raspberrypi/firmware/raw/master/boot/bootcode.bin -o ${RPI_BOOT_FS}/bootcode.bin
     gnome-terminal -t TITLE --wait -- ${SUDO} ${RPIBOOT_DIR}/rpiboot -d ${BOOT_FS} -v -l -o &
 }
 
@@ -533,9 +525,6 @@ cleanUp() {
     #sudo ln -s /lib/systemd/system/triggerhappy.service /etc/systemd/system/multi-user.target.wants/triggerhappy.service
     if [ -f ${ROOT_FS}/etc/fstab.orig ]; then
         ${SUDO} mv ${ROOT_FS}/etc/fstab.orig ${ROOT_FS}/etc/fstab
-    fi
-    if [ -f ${BOOT_FS}/cmdline.txt.orig ]; then
-        ${SUDO} mv ${BOOT_FS}/cmdline.txt.orig ${BOOT_FS}/cmdline.txt
     fi
 
     sync
@@ -593,29 +582,6 @@ cleanUp() {
 # fi
 }
 
-## /etc/X11/default-display-manager
-## https://www.bitpi.co/2015/02/14/prevent-raspberry-pi-from-sleeping/
-## /usr/share/raspi-ui-overrides/applications/mimeinfo.cache
-#sudo nano /etc/lightdm/lightdm.conf
-#Anywhere below the [SeatDefaults] header, add:
-#xserver-command=X -s 0 -dpms
-#This will set your blanking timeout to 0 and turn off your display power management signaling.
-prevent_from_sleeping() {
-    # desktop
-    if [ -f ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
-    ${SUDO} sed -r -i '/(noblank|off|-dpms)/d' ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart
-    ${SUDO} bash -c "cat >> ${ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart" << EOF
-@xset s noblank
-@xset s off
-@xset -dpms
-EOF
-    fi
-if [ -d /opt/vc/src/hello_pi ]; then
-    ${SUDO} service lightdm restart
-fi
-# cmdline
-}
-
 run() {
     # check_root //movedToRoot!
     check_dependency
@@ -629,9 +595,10 @@ run() {
     # setup options
     enable_ssh
     create_ssh_keypair
+    
     #prepare_dhcpcd
 
-    ${SUDO} rm -f ${ROOT_FS}/etc/rc3.d/S01resize2fs_once
+    # ${SUDO} rm -f ${ROOT_FS}/etc/rc3.d/S01resize2fs_once
     # ${SUDO} rm -f ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/triggerhappy.service
     #exit
 
@@ -641,6 +608,7 @@ run() {
     ${SUDO} service rpcbind restart
     ${SUDO} service nfs-kernel-server restart
     ${SUDO} service dnsmasq restart
+    startRpiBoot
 
     while ! res=$(zenity --question --text="Close the bootserver?" --extra-button="Save img" --display=${DISPLAY})
     do
@@ -657,11 +625,14 @@ run() {
     done
 }
 #fi
+
+trap 'echo "SIGINT traped" && cleanUp' INT
 check_root
 [ "${BASH_SOURCE}" == "${0}" ] && run
 exit
-export DISPLAY=192.168.1.10:0
-export LIBGL_ALWAYS_INDIRECT=1
+
+# export DISPLAY=192.168.1.10:0
+# export LIBGL_ALWAYS_INDIRECT=1
 
 #:
 #tail -F /nfs/root/var/log/syslog | grep "unsafe path transition"
@@ -778,23 +749,6 @@ prepare_initramfs() {
             fi
         done
     ${SUDO} update-initramfs -c -k $(echo $(uname -r) | sed 's/-v7//')
-}
-
-get_latest_image() {
-    cd ${DOWNLOAD_DIR}
-    if [ ! -f $LATEST_VERSION.img ]; then
-        echo -e "$LATEST_VERSION.img not found.\nSearching for $LATEST_VERSION.zip ..."
-        if [ ! -f $LATEST_VERSION.zip ]; then
-            echo "$LATEST_VERSION.zip not found. Downloading ..."
-            download_latest_raspbian || echo "Error download latest raspbian"
-        else echo "$LATEST_VERSION.zip found!"
-        fi
-        unzip $LATEST_VERSION.zip || (echo "Error unzip latest raspbian" && exit 101)
-    else 
-        echo "$LATEST_VERSION.img founded!"
-    fi
-    ${SUDO} cp -v ${LATEST_VERSION}.img ${TEMP_DIR}
-    cd ${TEMP_DIR}
 }
 
 usbboot() {
