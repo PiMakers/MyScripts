@@ -39,7 +39,6 @@ check_root() {
 set_defaults() {
     export LC_ALL=C
     export REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
-    echo "REMOTE_GIT_BASE_URL = ${REMOTE_GIT_BASE_URL}..."
     #"${2}"
     WLAN_AP=wlan0
     AP_SSID="T.I.Remote"
@@ -72,22 +71,23 @@ update_upgrade () {
 
 # Install dependencies
 Install_dependencies () {
-  echo "Installing dependences (dnsmasq hostapd haveged) ..."
-  list="dnsmasq hostapd haveged"
-  ${SUDO} apt -y install ${list}    #dnsmasq hostapd haveged #arp-scan nfs-kernel-server haveged
-  ${SUDO} service hostapd stop && ${SUDO} service dnsmasq stop
+    echo "Installing dependences (dnsmasq hostapd haveged) ..."
+    list="dnsmasq hostapd haveged"
+    ${SUDO} apt -y install ${list}    #dnsmasq hostapd haveged #arp-scan nfs-kernel-server haveged
+    ${SUDO} service hostapd stop && ${SUDO} service dnsmasq stop
 
-  echo "Done!"			
+    echo "${FUNCNAME[0]} Done!"
 }
 
 configure_hostapd(){
-    echo "Configurering hostapd"
-    echo "Writing conf (/etc/hostapd/hostapd.conf) ..."
-    ${SUDO} systemctl unmask hostapd.service
+    echo "Configuring hostapd"
+    ${SUDO} systemctl unmask hostapd
+    ${SUDO} systemctl enable hostapd
     [ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
-    cat << EOF | ${SUDO} tee /etc/hostapd/hostapd.conf 
+        cat << EOF | ${SUDO} tee /etc/hostapd/hostapd.conf 
     # PiMaker
-
+    
+    country_code=HU
     ctrl_interface=/var/run/hostapd
     ctrl_interface_group=0
     interface=${WLAN_AP}
@@ -110,25 +110,22 @@ EOF
     ${SUDO} sed -i 's/^#DAEMON_CONF\=\"\"/DAEMON_CONF\=\"\/etc\/hostapd\/hostapd.conf"/' /etc/default/hostapd
     [[ $IS_CHROOT == 0 ]] && echo "Resarting hostapd service..."
     [[ $IS_CHROOT == 0 ]] && ${SUDO} service hostapd restart
-    echo "$0: Done!"
+    echo "${FUNCNAME[0]} Done!"
 }
 
-# Populate `/etc/dnsmasq.conf`
 configure_dnsmasq(){
-    [ -f /etc/dnsmasq.conf ] && [ ! -f /etc/dnsmasq.conf.orig ] && \
-        ${SUDO} cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
-    ${SUDO} bash -c 'cat > /etc/dnsmasq.conf' << EOF
-interface=lo,wlan0
-#bind-interfaces
-server=8.8.8.8
-domain-needed
-bogus-priv
-dhcp-range=10.0.0.2,10.0.0.5,1000d
-address=/#/10.0.0.1
+    cat  << EOF | sed 's/^.\{8\}//' | ${SUDO} tee /etc/dnsmasq.d/T.I.conf.bak
+        interface=lo,wlan0
+        #bind-interfaces
+        server=8.8.8.8
+        domain-needed
+        bogus-priv
+        dhcp-range=10.0.0.2,10.0.0.5,1000d
+        address=/#/10.0.0.1
 EOF
     [[ $IS_CHROOT == 0 ]] && echo "Resarting dnsmasq service..."
     [[ $IS_CHROOT == 0 ]] && ${SUDO} service dnsmasq restart
-    echo "$0 Done!"
+    echo "${FUNCNAME[0]} Done!"
 }
 
 configure_dhcpcd () {
@@ -137,15 +134,17 @@ configure_dhcpcd () {
         ${SUDO} sed -i /T.I.App/d /etc/dhcpcd.conf
         ${SUDO} bash -c 'cat >> /etc/dhcpcd.conf' << EOF
 interface wlan0                                 # T.I.App
-static ip_address=10.0.0.1/24                   # T.I.App
+    static ip_address=10.0.0.1/24               # T.I.App
+    nohook wpa_supplicant                       # T.I.App
 EOF
     [[ $IS_CHROOT == 0 ]] && echo "Resarting dhcpcd service..."
     [[ $IS_CHROOT == 0 ]] && ${SUDO} service dhcpcd restart
-    echo "$0 Done!"
+    echo "${FUNCNAME[0]} Done!"
 }
 
 # silent_boot https://scribles.net/silent-boot-on-raspbian-stretch-in-console-mode/
 silent_boot_to_CLI() {
+
     echo -e "1. Set boot to console mode (vs. grafical.target)\n"
     ${SUDO} systemctl set-default multi-user.target
     # ${SUDO} sed -i '/^ExecStart=/ s/--no clear/--skip-login --noclear --noissue --login-options "-f pi"/' /lib/systemd/system/getty@.service
@@ -190,7 +189,7 @@ install_app () {
     mv Works/TothIlonkaApp ~/
     rm -rf Works
     cat TothIlonkaApp/videos/SplittedVideos/T.I.Final/Final* > TothIlonkaApp/videos/T.I.Final.mp4
-    rm -rf TothIlonkaApp/videos/SplittedVideos/T.I.Final
+    #rm -rf TothIlonkaApp/videos/SplittedVideos/T.I.Final
     cat TothIlonkaApp/videos/SplittedVideos/T.I.FinalLoop/FinalLoop* > TothIlonkaApp/videos/T.I.FinalLoop.mp4
     rm -rf TothIlonkaApp/videos/SplittedVideos
     ##TODO Add startup script to .bashrc and silent boot 
@@ -219,7 +218,7 @@ Install_dependencies
 configure_dhcpcd
 configure_dnsmasq
 configure_hostapd
-silent_boot_to_CLI
-install_app
+#silent_boot_to_CLI
+#install_app
 echo "T.I.App install done"
 #create_virtual_interface
