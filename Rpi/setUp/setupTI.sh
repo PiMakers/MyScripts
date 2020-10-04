@@ -38,7 +38,7 @@ check_root() {
 
 set_defaults() {
     export LC_ALL=C
-
+    REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
     #"${2}"
     WLAN_AP=wlan0
     AP_SSID="T.I.Remote"
@@ -55,12 +55,15 @@ set_defaults() {
 
 # update_upgrade
 update_upgrade () {
-  ${SUDO} apt -y update
-  echo "Upgrading..."
-  ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
-  ${SUDO} apt autoclean
-  ${SUDO} apt clean
-  echo "update Done!"
+  curl ${REMOTE_GIT_BASE_URL}/Rpi/setUp/setupNew.sh | bash -s
+  if [ getLastAptUpdate > 7 ]; then
+        ${SUDO} apt -y update
+        echo "Upgrading..."
+        ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
+        ${SUDO} apt autoclean
+        ${SUDO} apt clean
+        echo "update Done!"
+  fi
 }
 
 # Install dependencies
@@ -69,13 +72,14 @@ Install_dependencies () {
   list="dnsmasq hostapd haveged"
   ${SUDO} apt -y install ${list}    #dnsmasq hostapd haveged #arp-scan nfs-kernel-server haveged
   ${SUDO} service hostapd stop && ${SUDO} service dnsmasq stop
-  
+
   echo "Done!"			
 }
 
 configure_hostapd(){
     echo "Configurering hostapd"
     echo "Writing conf (/etc/hostapd/hostapd.conf) ..."
+    ${SUDO} systemctl unmask hostapd.service
     [ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
     ${SUDO} cat > /etc/hostapd/hostapd.conf << EOF
     # PiMaker
