@@ -63,6 +63,8 @@ update_upgrade () {
         ${SUDO} apt autoclean
         ${SUDO} apt clean
         echo "update Done!"
+  else
+        echo "update Skipped!"
   fi
 }
 
