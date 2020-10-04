@@ -90,6 +90,7 @@ configure_hostapd(){
         ctrl_interface=/var/run/hostapd
         ctrl_interface_group=0
         country_code=HU
+        interface=${WLAN_AP}
         driver=nl80211
         ssid=${AP_SSID}
         hw_mode=g
@@ -132,11 +133,10 @@ configure_dhcpcd () {
         ${SUDO} cp /etc/dhcpcd.conf /etc/dhcpcd.conf.orig
         ${SUDO} sed -i /T.I.App/d /etc/dhcpcd.conf
         ${SUDO} bash -c 'cat >> /etc/dhcpcd.conf' << EOF
-interface wlan0                                 # T.I.App
+interface ${WLAN_AP}                                 # T.I.App
     static ip_address=10.0.0.1/24               # T.I.App
     nohook wpa_supplicant                       # T.I.App
 EOF
-    [[ $IS_CHROOT == 0 ]] && echo "Resarting dhcpcd service..."
     [[ $IS_CHROOT == 0 ]] && ${SUDO} service dhcpcd restart
     echo "${FUNCNAME[0]} Done!"
 }
