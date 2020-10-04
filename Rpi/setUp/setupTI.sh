@@ -56,7 +56,7 @@ set_defaults() {
 # update_upgrade
 update_upgrade () {
   curl ${REMOTE_GIT_BASE_URL}/Rpi/setUp/setupNew.sh | bash -s
-  if [ getLastAptUpdate > 7 ]; then
+  if [ ${getLastAptUpdate} > 7 ]; then
         ${SUDO} apt -y update
         echo "Upgrading..."
         ${SUDO} apt -y upgrade 2>&1 | grep -q autoremove && ${SUDO} apt -y autoremove --purge || echo "NOTHING TO AUTOREMOVE"
