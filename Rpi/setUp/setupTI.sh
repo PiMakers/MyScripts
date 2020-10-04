@@ -46,7 +46,7 @@ set_defaults() {
     #"${3}"
     AP_PASSPHRASE="TI159550"
     #"${4}"
-    ROOT=$(dirname "$0")
+    #ROOT=$(dirname "$0")
 
     [ -f /etc/os-release ] && OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
 
