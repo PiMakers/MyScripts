@@ -85,7 +85,7 @@ configure_hostapd(){
     echo "Writing conf (/etc/hostapd/hostapd.conf) ..."
     ${SUDO} systemctl unmask hostapd.service
     [ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
-    ${SUDO} cat > /etc/hostapd/hostapd.conf << EOF
+    cat << EOF | ${SUDO} tee /etc/hostapd/hostapd.conf 
     # PiMaker
 
     ctrl_interface=/var/run/hostapd
@@ -132,10 +132,10 @@ EOF
 }
 
 configure_dhcpcd () {
-[ -f /etc/dhcpcd.conf ] && [ ! -f /etc/dhcpcd.conf.orig ] && \
-    ${SUDO} cp /etc/dhcpcd.conf /etc/dhcpcd.conf.orig
-    ${SUDO} sed -i /T.I.App/d /etc/dhcpcd.conf
-    ${SUDO} bash -c 'cat >> /etc/dhcpcd.conf' << EOF
+    [ -f /etc/dhcpcd.conf ] && [ ! -f /etc/dhcpcd.conf.orig ] && \
+        ${SUDO} cp /etc/dhcpcd.conf /etc/dhcpcd.conf.orig
+        ${SUDO} sed -i /T.I.App/d /etc/dhcpcd.conf
+        ${SUDO} bash -c 'cat >> /etc/dhcpcd.conf' << EOF
 interface wlan0                                 # T.I.App
 static ip_address=10.0.0.1/24                   # T.I.App
 EOF
@@ -187,7 +187,7 @@ EOF
 install_app () {
     cd
     git clone --depth=1 https://github.com/PiMakers/Works.git
-    mv Works/TothIlonkaApp TothIlonkaApp
+    mv Works/TothIlonkaApp ~/
     rm -rf Works
     cat TothIlonkaApp/videos/SplittedVideos/T.I.Final/Final* > TothIlonkaApp/videos/T.I.Final.mp4
     rm -rf TothIlonkaApp/videos/SplittedVideos/T.I.Final
