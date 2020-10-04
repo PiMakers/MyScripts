@@ -57,6 +57,7 @@ set_defaults() {
 # update_upgrade
 update_upgrade () {
   curl ${REMOTE_GIT_BASE_URL}/Rpi/setUp/setupNew.sh | bash -s
+  echo "REMOTE_GIT_BASE_URL = ${REMOTE_GIT_BASE_URL}..."
   if [ ${getLastAptUpdate} > 7 ]; then
         ${SUDO} apt -y update
         echo "Upgrading..."
