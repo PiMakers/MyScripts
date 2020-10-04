@@ -12,6 +12,9 @@
 # sed -i '/<pattern>/s/^#*//g' file #(to uncomment)
 # http://www.sgv417.jp/~makopi/blog/wp-content/uploads/2017/09/03-VPN_Router_Mode.txt
 
+## PIMAKER_BASE_ADDR=https://raw.githubusercontent.com/PiMakers
+# SCRIPT_ADDR=/MyScripts/edit/Rpi/setUp/setupTI.sh  # | bash -s
+## Rpi/Boot/overlay+nfs.sh
 set -e
 
 check_root() {
@@ -34,20 +37,20 @@ check_root() {
 }
 
 set_defaults() {
-export LC_ALL=C
+    export LC_ALL=C
 
-#"${2}"
-WLAN_AP=wlan0
-AP_SSID="T.I.Remote"
-#"${3}"
-AP_PASSPHRASE="TI159550"
-#"${4}"
-ROOT=$(dirname "$0")
+    #"${2}"
+    WLAN_AP=wlan0
+    AP_SSID="T.I.Remote"
+    #"${3}"
+    AP_PASSPHRASE="TI159550"
+    #"${4}"
+    ROOT=$(dirname "$0")
 
-[ -f /etc/os-release ] && OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
+    [ -f /etc/os-release ] && OS=$(cat  /etc/os-release | sed '/^'ID='/!d;s/^'ID='//')
 
-# (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
-sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo -e "\nexport LC_ALL=C" >> $HOME/.bashrc || echo "no bashrc"
+    # (grep 'export LC_ALL=C' /boot/config.txt | sed -i 's/#//' || echo ".bashrc already patched" ) || \
+    sed -i '/export LC_ALL=C/d' $HOME/.bashrc && echo -e "\nexport LC_ALL=C" >> $HOME/.bashrc || echo "no bashrc"
 }
 
 # update_upgrade
@@ -63,37 +66,38 @@ update_upgrade () {
 # Install dependencies
 Install_dependencies () {
   echo "Installing dependences (dnsmasq hostapd haveged) ..."
-  list="dnsmasq hostapd haveged node.js npm"
+  list="dnsmasq hostapd haveged"
   ${SUDO} apt -y install ${list}    #dnsmasq hostapd haveged #arp-scan nfs-kernel-server haveged
   ${SUDO} service hostapd stop && ${SUDO} service dnsmasq stop
+  
   echo "Done!"			
 }
 
 configure_hostapd(){
-echo "Configurering hostapd"
-echo "Writing conf (/etc/hostapd/hostapd.conf) ..."
-[ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
-${SUDO} cat > /etc/hostapd/hostapd.conf << EOF
-# PiMaker
+    echo "Configurering hostapd"
+    echo "Writing conf (/etc/hostapd/hostapd.conf) ..."
+    [ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
+    ${SUDO} cat > /etc/hostapd/hostapd.conf << EOF
+    # PiMaker
 
-ctrl_interface=/var/run/hostapd
-ctrl_interface_group=0
-interface=${WLAN_AP}
-driver=nl80211
-ssid=${AP_SSID}
-hw_mode=g
-channel=11
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-wpa=2
-wpa_passphrase=${AP_PASSPHRASE}
-wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP CCMP
-rsn_pairwise=CCMP
+    ctrl_interface=/var/run/hostapd
+    ctrl_interface_group=0
+    interface=${WLAN_AP}
+    driver=nl80211
+    ssid=${AP_SSID}
+    hw_mode=g
+    channel=11
+    wmm_enabled=0
+    macaddr_acl=0
+    auth_algs=1
+    wpa=2
+    wpa_passphrase=${AP_PASSPHRASE}
+    wpa_key_mgmt=WPA-PSK
+    wpa_pairwise=TKIP CCMP
+    rsn_pairwise=CCMP
 EOF
 
-# Populate `/etc/default/hostapd`
+    # Populate `/etc/default/hostapd`
     [ -f /etc/default/hostapd.orig ] || ${SUDO} cp /etc/default/hostapd /etc/default/hostapd.orig
     ${SUDO} sed -i 's/^#DAEMON_CONF\=\"\"/DAEMON_CONF\=\"\/etc\/hostapd\/hostapd.conf"/' /etc/default/hostapd
     [[ $IS_CHROOT == 0 ]] && echo "Resarting hostapd service..."
@@ -136,10 +140,10 @@ EOF
 silent_boot_to_CLI() {
     echo -e "1. Set boot to console mode (vs. grafical.target)\n"
     ${SUDO} systemctl set-default multi-user.target
-#    ${SUDO} sed -i '/^ExecStart=/ s/--no clear/--skip-login --noclear --noissue --login-options "-f pi"/' /lib/systemd/system/getty@.service
+    # ${SUDO} sed -i '/^ExecStart=/ s/--no clear/--skip-login --noclear --noissue --login-options "-f pi"/' /lib/systemd/system/getty@.service
     echo "2. Remove autologin message by modify autologin service\n"
-#    ${SUDO} raspi-config nonint do_boot_behaviour B2
-#    ${SUDO} sed -i '/^ExecStart=/ s/--noclear/--skip-login --noclear --noissue --login-options "-f pi"/ %' /lib/systemd/system/getty@.service
+    # ${SUDO} raspi-config nonint do_boot_behaviour B2
+    # ${SUDO} sed -i '/^ExecStart=/ s/--noclear/--skip-login --noclear --noissue --login-options "-f pi"/ %' /lib/systemd/system/getty@.service
     ${SUDO} ln -fs /etc/systemd/system/autologin@.service /etc/systemd/system/getty.target.wants/getty@tty1.service
     ${SUDO} bash -c 'cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf' << EOF
 [Service]
