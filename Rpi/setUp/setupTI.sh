@@ -15,7 +15,7 @@
 ## PIMAKER_BASE_ADDR=https://raw.githubusercontent.com/PiMakers
 # SCRIPT_ADDR=/MyScripts/edit/Rpi/setUp/setupTI.sh  # | bash -s
 ## Rpi/Boot/overlay+nfs.sh
-set -e
+#set -e
 
 check_root() {
     # Must be root to install the hotspot
