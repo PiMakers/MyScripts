@@ -38,7 +38,7 @@ check_root() {
 
 set_defaults() {
     export LC_ALL=C
-    export REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
+    #export REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
     #"${2}"
     WLAN_AP=wlan0
     AP_SSID="T.I.Remote"
@@ -84,25 +84,24 @@ configure_hostapd(){
     ${SUDO} systemctl unmask hostapd
     ${SUDO} systemctl enable hostapd
     [ -f /etc/hostapd/hostapd.conf.orig ] || ${SUDO} cp /etc/hostapd/hostapd.conf /etc/hostapd/hostapd.conf.orig
-        cat << EOF | ${SUDO} tee /etc/hostapd/hostapd.conf 
-    # PiMaker
-    
-    country_code=HU
-    ctrl_interface=/var/run/hostapd
-    ctrl_interface_group=0
-    interface=${WLAN_AP}
-    driver=nl80211
-    ssid=${AP_SSID}
-    hw_mode=g
-    channel=11
-    wmm_enabled=0
-    macaddr_acl=0
-    auth_algs=1
-    wpa=2
-    wpa_passphrase=${AP_PASSPHRASE}
-    wpa_key_mgmt=WPA-PSK
-    wpa_pairwise=TKIP CCMP
-    rsn_pairwise=CCMP
+        cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee /etc/hostapd/hostapd.conf 
+        # PiMaker
+        
+        ctrl_interface=/var/run/hostapd
+        ctrl_interface_group=0
+        country_code=HU
+        driver=nl80211
+        ssid=${AP_SSID}
+        hw_mode=g
+        channel=11
+        wmm_enabled=0
+        macaddr_acl=0
+        auth_algs=1
+        wpa=2
+        wpa_passphrase=${AP_PASSPHRASE}
+        wpa_key_mgmt=WPA-PSK
+        wpa_pairwise=TKIP CCMP
+        rsn_pairwise=CCMP
 EOF
 
     # Populate `/etc/default/hostapd`
