@@ -38,7 +38,7 @@ check_root() {
 
 set_defaults() {
     export LC_ALL=C
-    REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
+    export REMOTE_GIT_BASE_URL=https://raw.githubusercontent.com/PiMakers/MyScripts/edit
     echo "REMOTE_GIT_BASE_URL = ${REMOTE_GIT_BASE_URL}..."
     #"${2}"
     WLAN_AP=wlan0
