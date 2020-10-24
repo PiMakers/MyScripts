@@ -21,7 +21,7 @@ if [[ ! -f /etc/dhcpcd.conf.orig ]]; then
     echo "backup dhcpcd.config ..."
     sudo cp /etc/dhcpcd.conf /etc/dhcpcd.conf.orig
 fi
-sudo cat >> /etc/dhcpcd.conf << EOF
+    cat  << EOF | sudo tee /etc/dhcpcd.conf
 interface wlan0
     static ip_address=10.0.0.1/24
     nohook wpa_supplicant
@@ -31,11 +31,7 @@ sudo systemctl daemon-reload
 }
 
 configure_dnsmasq () {
-if [[ ! -f /etc/dnsmasq.conf.orig ]]; then
-    echo "BackUp dnsmasq.conf..."
-    sudo cp /etc/dnsmasq.conf /etc/dnsmasq.conf.orig  || echo "hello"
-fi
-sudo cat > /etc/dnsmasq.conf << EOF
+    cat << EOF | sudo tee /etc/dnsmasq.d/TI.conf
 interface=wlan0      # Use the require wireless interface - usually wlan0
 dhcp-range=10.0.0.2,10.0.0.10,255.255.255.0,24h
 EOF
