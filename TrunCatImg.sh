@@ -51,7 +51,7 @@ Now copy the new image over to your phone, where it should act exactly the same 
 }
 
 #[ -z PATH_TO_IMG ] && 
-PATH_TO_IMG="${HOME}/2018-11-13-raspbian-stretch_T.I.img"
+#PATH_TO_IMG="${HOME}/2018-11-13-raspbian-stretch_T.I.img"
 
 check_root() {
     # Must be root to install the hotspot
@@ -74,19 +74,18 @@ check_root() {
 
 
 truncate_img () {
-
     export LOOP_DEVICE=$(${SUDO} losetup -f)
     ${SUDO} losetup $LOOP_DEVICE $1
     ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
-#    ${SUDO} gparted $LOOP_DEVICE
+    ${SUDO} gparted $LOOP_DEVICE
     ${SUDO} losetup -d $LOOP_DEVICE
     local END_BLOCK=$( ${SUDO} fdisk -lo "End" $1 | sed '$!d')
     local END_SIZE=$( ${SUDO} fdisk -s --bytes -lo "Size" $1 )
     echo -e "END_BLOCK = ${END_BLOCK}\nEND_SIZE = ${END_SIZE}"
     # truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
     local SIZE=$(($(( ${END_BLOCK} + 1 ))*512)) && echo "SIZE = ${SIZE}"
-#    ${SUDO} truncate --size=${SIZE} $1
+    ${SUDO} truncate --size=${SIZE} $1
 }
 
 check_root
-truncate_img  ${PATH_TO_IMG}
+truncate_img  $1
