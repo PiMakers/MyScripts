@@ -18,7 +18,7 @@ IMG_ARCH="armhf"                               # armhf | arm64
 OS_TYPE=""                                     # lite | full | ""
 OS_VERS="latest"                               # by_date | latest 
 
-check_root() {
+check_root3() {
     # Must be root to install the hotspot
     echo ":::"
     if [[ $EUID -eq 0 ]];then
@@ -31,7 +31,7 @@ check_root() {
             export SUDO="sudo"
             export SUDOE="sudo -E"
         else
-            echo "::: Please install sudo or run this as root."
+            echo "::: Please install sudo or runDlRaspbian this as root."
             exit
         fi
     fi
@@ -62,7 +62,7 @@ dl_raspbian() {
     if [ $? = 5  ];then 
         SET_DEFAULTS=1
         res=$(zenity --warning --extra-button="Retry" --timeout=${WARNING_TIMEOUT} --ellipsize --text="Default options:\nOS_NAME: ${OS_NAME}\nIMG_ARCH: ${IMG_ARCH}\nOS_VERS: ${OS_VERS}" )
-        if [ ${res} == "Retry" ]; then
+        if [ "${res}" == "Retry" ]; then
             SET_DEFAULTS=0
         fi
         
@@ -136,12 +136,17 @@ dl_raspbian() {
                 IMG_NAME+="_$m"
             done
         DL_URL=${BASE_URL}/${IMG_NAME}
-        IMG_NAME=$(curl ${DL_URL} | sed '/href/!d; s/.zip.*/.zip/; s/.*\///')
+        IMG_NAME=$(curl ${DL_URL} | sed '/compressed.gif/!d; s/.zip.*/.zip/; s/.*\///')
     else
-        DL_URL=${BASE_URL}/${OS_NAME}/images
+        for m in ${OS_TYPE} ${IMG_ARCH}
+            do
+                IMG_NAME+="_$m"
+            done
+        DL_URL=${BASE_URL}/${OS_NAME/_${IMG_ARCH}/}${IMG_NAME}/images
         OS_LIST=$(curl -LJs ${DL_URL} | sed '/folder/!d;s/^.*href="/ o /g;s|/.*||')
         OS_VERS=$(zenity --list  --radiolist --column="" --column="select OS to download" ${OS_LIST})
         DL_URL=${DL_URL}/${OS_VERS}
+        #https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-08-24/2020-08-20-raspios-buster-armhf-lite.zip
         IMG_NAME=$(curl -LJs ${DL_URL} | sed '/torrent/!d;s/^.*href="//g;s|/.*||;s/.torrent.*//')
         DL_URL=${DL_URL}/${IMG_NAME}
     fi
@@ -164,9 +169,9 @@ extractImg() {
     echo $IMG
     if [ ${IMG##*.}=="zip" ];then
         #if [ ! -f ${IMG_FOLDER}/${IMG%.*}.img ];then
-                mkdir -pv ${IMG_FOLDER}
-                unzip $IMG -d ${IMG_FOLDER}/ || ( rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
-                dl_raspbian && exit )
+            mkdir -pv ${IMG_FOLDER}
+            ${SUDO} unzip $IMG -d ${IMG_FOLDER}/ || ( ${SUDO} rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
+            dl_raspbian && exit )
 
         #fi
             IMG=$(basename ${IMG%.*}.img)
@@ -217,64 +222,66 @@ chrootRaspbian() {
 
 # Program start here
 
-run() {
-check_root
+runDlRaspbian() {
+check_root3
 dl_raspbian
 extractImg
 }
 
-[ "${BASH_SOURCE}" == "${0}" ] && run
-exit
-# install dependecies
-${SUDO} apt-get install -y qemu qemu-user-static binfmt-support
+[ "${BASH_SOURCE}" == "${0}" ] && runDlRaspbian
 
-# download raspbian image
-download_latest
+more() {
+    # install dependecies
+    ${SUDO} apt-get install -y qemu qemu-user-static binfmt-support
 
-# extract raspbian image
-cd ${DOWNLOAD_DIR}
-latest_version
-unzip ${LATEST_VERSION}.zip
+    # download raspbian image
+    download_latest
 
-# extend raspbian image by 1gb
-dd if=/dev/zero bs=1M count=1024 >> ${LATEST_VERSION}.img
+    # extract raspbian image
+    cd ${DOWNLOAD_DIR}
+    latest_version
+    unzip ${LATEST_VERSION}.zip
 
-# set up image as loop device
-LOOP_DEVICE=$(${SUDO} losetup -f)
-${SUDO} losetup -P ${LOOP_DEVICE} ${LATEST_VERSION}.img
+    # extend raspbian image by 1gb
+    dd if=/dev/zero bs=1M count=1024 >> ${LATEST_VERSION}.img
 
-${SUDO} parted "$LOOP_DEVICE" u s resizepart 2 100%
-# check file system
-${SUDO} e2fsck -f -y -v -C 0 ${LOOP_DEVICE}p2
+    # set up image as loop device
+    LOOP_DEVICE=$(${SUDO} losetup -f)
+    ${SUDO} losetup -P ${LOOP_DEVICE} ${LATEST_VERSION}.img
 
-#expand partition
-${SUDO} resize2fs -p ${LOOP_DEVICE}p2
+    ${SUDO} parted "$LOOP_DEVICE" u s resizepart 2 100%
+    # check file system
+    ${SUDO} e2fsck -f -y -v -C 0 ${LOOP_DEVICE}p2
 
-# mount partition
-${SUDO} mount -o rw ${LOOP_DEVICE}p2  /mnt
-${SUDO} mount -o rw ${LOOP_DEVICE}p1 /mnt/boot
+    #expand partition
+    ${SUDO} resize2fs -p ${LOOP_DEVICE}p2
 
-# mount binds
-${SUDO} mount --bind /dev /mnt/dev/
-${SUDO} mount --bind /sys /mnt/sys/
-${SUDO} mount --bind /proc /mnt/proc/
-${SUDO} mount --bind /dev/pts /mnt/dev/pts
+    # mount partition
+    ${SUDO} mount -o rw ${LOOP_DEVICE}p2  /mnt
+    ${SUDO} mount -o rw ${LOOP_DEVICE}p1 /mnt/boot
 
-# ld.so.preload fix
-sed -i 's/^/#/g' /mnt/etc/ld.so.preload
+    # mount binds
+    ${SUDO} mount --bind /dev /mnt/dev/
+    ${SUDO} mount --bind /sys /mnt/sys/
+    ${SUDO} mount --bind /proc /mnt/proc/
+    ${SUDO} mount --bind /dev/pts /mnt/dev/pts
 
-# copy qemu binary
-cp /usr/bin/qemu-arm-static /mnt/usr/bin/
+    # ld.so.preload fix
+    sed -i 's/^/#/g' /mnt/etc/ld.so.preload
 
-# chroot to raspbian
-${SUDO} chroot /mnt /bin/bash
-	# do stuff...
+    # copy qemu binary
+    cp /usr/bin/qemu-arm-static /mnt/usr/bin/
 
-# revert ld.so.preload fix
-sed -i 's/^#//g' /mnt/etc/ld.so.preload
+    # chroot to raspbian
+    ${SUDO} chroot /mnt /bin/bash
+        # do stuff...
 
-# unmount everything
-${SUDO} umount -lv /mnt/{dev/pts,dev,sys,proc,boot,}
+    # revert ld.so.preload fix
+    sed -i 's/^#//g' /mnt/etc/ld.so.preload
 
-# unmount loop device
-${SUDO} losetup -d ${LOOP_DEVICE}
+    # unmount everything
+    ${SUDO} umount -lv /mnt/{dev/pts,dev,sys,proc,boot,}
+
+    # unmount loop device
+    ${SUDO} losetup -d ${LOOP_DEVICE}
+}

@@ -11,7 +11,7 @@
 # sed -i '/<pattern>/s/^#*/#/g' file #(to comment out)
 # sed -i '/<pattern>/s/^#*//g' file #(to uncomment)
 
-# /nfs/root/etc/xdg/lxsession/LXDE-pi/sshpwd.sh
+# /nfs/root/etc/xdg/lxsession/LXDE-pi/sshpwd.sh 
 #set -e
 
 export LC_ALL=C
@@ -109,12 +109,11 @@ getRpiKernelModules() {
 ## https://wiki.x2go.org/doku.php/wiki:repositories:raspbian
 ######################
 
-getLastAptUpdate()
-{
+getLastAptUpdate() {
     local aptDate="$(stat -c %Y '/var/cache/apt')"
     local nowDate="$(date +'%s')"
 
-    echo $((nowDate - aptDate)) # in seconds
+    echo $(( (nowDate - aptDate)/60/60/24 )) # in seconds / mins / hours /days
 }
 
 change_login_pwd() {
@@ -372,7 +371,6 @@ Brexit() {
 }
 
 execMode() {
-    
     [ "${BASH_SOURCE}" == "${0}" ] && SOURCED=0 || SOURCED=1
 }
 
@@ -381,6 +379,7 @@ detectSystem() {
     OS_NAME=$(sed '/^ID=/!d;s/^.*=//' /etc/os-release)
     ${SUDO} dmidecode -t system
 }
+
 error () {
     echo "ERROR: $1"
 }

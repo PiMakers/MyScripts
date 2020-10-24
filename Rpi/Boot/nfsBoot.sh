@@ -20,11 +20,12 @@
 # /mnt/LinuxData/OF/myGitHub/MyScripts/Rpi/Boot/NetBoot.sh
 
 trap "cleanUp" INT
-
+#    trap 'echo "FuckYou!!!" && cleanUp' EXIT
+    trap "echo FuckYouToo" RETURN
 # if sourced, exit with "return"
 exit() {
-    trap "echo FuckYou!!!" EXIT
-    trap "echo FuckYouToo" RETURN
+#    trap "echo FuckYou!!!" EXIT
+#    trap "echo FuckYouToo" RETURN
     [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
     # if [ -z ${iSCSi} ]; then
         [ "${BASH_SOURCE}" == "${0}" ] && cleanUp
@@ -78,6 +79,8 @@ HOST_IP=$(hostname -I | sed 's/ .*//')
 NFS_ROOT=/nfs
 TEMP=/tmp
 TEMP=/mnt/LinuxData/tmp
+MAKE_INITRAMFS=1
+
 serials="b0c7e328 dc:a6:32:66:0a:2c"
 # /proc/device-tree/model|serial:
 # Raspberry Pi 3 Model B Rev 1.2 | 00000000b0c7e328
@@ -219,6 +222,8 @@ mountImage() {
     if [ "$NFS_VERS" == 3 ]; then
         ${SUDO} mkdir -p -m 777 ${BOOT_FS}
     fi
+     # LEDE doesn't have /root/boot
+     ${SUDO} mkdir -pv -m 777 ${BOOT_FS}
      ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
          ${SUDO} mkdir -p -m 777 ${RPI_ROOT_FS}/mnt/LinuxData/OF
     # ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
@@ -254,14 +259,14 @@ EOF
     #KERNEL_TAG="[0-9][0-9]+"
     PI0_KERNEL_VERSION=$(ls ${ROOT_FS}/lib/modules | sed '/[0-9][0-9]+.*/!d')
     
-    ${SUDO} sed -r -i '/(cmdline=|include)/d'  ${BOOT_FS}/config.txt
+    ${SUDO} sed -r -i '/(cmdline=|include config)/d'  ${BOOT_FS}/config.txt
     echo "cmdline=cmdline.nfsboot.${DEVICE}" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
     ## pi0 starthere
     echo "include config.pi0" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
     cat << EOF | ${SUDO} tee ${BOOT_FS}/config.pi0 1>/dev/null
     [pi0]
     # cmdline
-    cmdline=cmdline.pi0.nfsboot
+    cmdline=cmdline.nfsboot.pi0
  
     # set initramfs
     initramfs initrd.img-${PI0_KERNEL_VERSION} followkernel
@@ -281,10 +286,10 @@ EOF
                 DEVICE=usb0
                 AUTOCONF=static
                 IP=${CLIENT_IP}:${SERVER_IP}:${GW_IP}:${NETMASK}:${HOSTNAME}:${DEVICE}:${AUTOCONF}
-        # ${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.pi0.nfsboot" << EOF
-        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${BOOT_FS}/cmdline.pi0.nfsboot 1>/dev/null
+        # ${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.nfsboot.pi0" << EOF
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${BOOT_FS}/cmdline.nfsboot.pi0 1>/dev/null
             # pi0 USB-boot:
-            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:${ROOT_FS} rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
+            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${SERVER_IP}:${ROOT_FS} rw ip=${IP} elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
             #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${SERVER_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
 EOF
 
@@ -315,6 +320,33 @@ EOF
     # ISCSI_TARGET_NAME=iqn.1961-06.NUC.local:rpis
     # ISCSI_TARGET_IP=10.42.0.1
     # ISCSI_TARGET_PORT=3260
+}
+
+createInitramfs() {
+    if [ -f ${RPI_ROOT_FS}/etc/initramfs-tools/modules -a MAKE_INITRAMFS == 1]; then
+        ## modules needed by overlayfs, usb-boot (open-iscsi added while installed) 13463858
+        modules+=(overlay)
+        ## modules needed by usb-boot:
+        modules+=(g_ether)
+        modules+=(libcomposite)
+        modules+=(u_ether)
+        modules+=(udc-core)
+        modules+=(usb_f_rndis)
+        modules+=(usb_f_ecm)
+
+        for m in ${modules[@]}
+            do
+                if [ ! $(grep -q $m ${RPI_ROOT_FS}/etc/initramfs-tools/modules) ]; then
+                    echo $m | ${SUDO} tee -a ${RPI_ROOT_FS}/etc/initramfs-tools/modules
+                    echo "added $m to modules"
+                fi
+            done        
+
+        ${SUDO} chroot ${RPI_ROOT_FS} update-initramfs -v -c -k 5.4.51+
+    else
+        echo "update-initramfs tools not installed! Skip..."
+        MAKE_INITRAMFS=0
+    fi
 }
 
 prepare_fstab() {
@@ -367,7 +399,7 @@ EOF
     # ${SUDO} systemctl is-active -q systemd-resolved
 configure_dnsmasq() {
     #${SUDO} bash -c 'cat > /etc/dnsmasq.d/bootserver.conf' << EOF
-    cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee /etc/dnsmasq.d/bootserver.conf  1>/dev/null
+    cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee /etc/dnsmasq.d/nfsBoot.conf  1>/dev/null
         #PXE BootServer by PiMaker®
         bind-dynamic
         log-dhcp
@@ -391,7 +423,6 @@ configure_dnsmasq() {
         dhcp-no-override
         dhcp-script=/bin/echo
 
-        #pxe-service=x86PC, "PXE Boot Menu", pxelinux
         dhcp-boot=pxelinux.0
         dhcp-range=tag:piserver,${HOST_IP},proxy
         pxe-service=tag:piserver,0,"Raspberry Pi Boot"
@@ -491,17 +522,23 @@ enable_inet_for_usbboot() {
     ${SUDO} iptables ${append_or_del} FORWARD -i ${IFACE_INET} -o ${IFACE_USB} -j ACCEPT
 }
 
-prepare_dhcpcd() {
+prepareDhcpcd() {
+    if [ ${PI0} == 1 ]; then
+    CLIENT_IFACE=usb0   # if PI0 OTG
     ${SUDO} sed -i '/PxeServer/d' ${ROOT_FS}/etc/dhcpcd.conf
     # delete all trailing blank lines at end of file
     ${SUDO} sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' ${ROOT_FS}/etc/dhcpcd.conf
     cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee -a ${ROOT_FS}/etc/dhcpcd.conf
 
         ## Enable inet for OTG ethernet (PxeServer)
-        interface usb0                  #PxeServer
-        static ip_address=10.42.0.14    #PxeServer
-        static routers=10.42.0.1        #PxeServer
+        interface ${CLIENT_IFACE}           #PxeServer
+        static ip_address=${${CLIENT_IP}}   #PxeServer
+        static routers=${SERVER_IP}         #PxeServer
 EOF
+    fi
+    if [ ${EXEC_ON_PI0} == 1 ]; then
+        ${SUDO} service dhcpcd restart
+    fi
 }
 
 startRpiBoot() {
@@ -582,9 +619,9 @@ cleanUp() {
 # fi
 }
 
-run() {
+runNfsBoot() {
     # check_root //movedToRoot!
-    check_dependency
+    # check_dependency
     get_img
     #resize_image
     mountImage
@@ -595,8 +632,8 @@ run() {
     # setup options
     enable_ssh
     create_ssh_keypair
-    
-    #prepare_dhcpcd
+    #createInitramfs
+    #prepareDhcpcd
 
     # ${SUDO} rm -f ${ROOT_FS}/etc/rc3.d/S01resize2fs_once
     # ${SUDO} rm -f ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/triggerhappy.service
@@ -608,9 +645,9 @@ run() {
     ${SUDO} service rpcbind restart
     ${SUDO} service nfs-kernel-server restart
     ${SUDO} service dnsmasq restart
-    startRpiBoot
+    #startRpiBoot
 
-    while ! res=$(zenity --question --text="Close the bootserver?" --extra-button="Save img" --display=${DISPLAY})
+    while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --display=${DISPLAY})
     do
         echo $res
         if [ "${res}" == "Save img" ];then
@@ -628,8 +665,27 @@ run() {
 
 trap 'echo "SIGINT traped" && cleanUp' INT
 check_root
-[ "${BASH_SOURCE}" == "${0}" ] && run
+[ "${BASH_SOURCE}" == "${0}" ] && runNfsBoot
 exit
+
+unmount_image(){
+	sync
+	sleep 1
+	local LOOP_DEVICES
+	LOOP_DEVICES=$(losetup --list | grep "$(basename "${1}")" | cut -f1 -d' ')
+	for LOOP_DEV in ${LOOP_DEVICES}; do
+		if [ -n "${LOOP_DEV}" ]; then
+			local MOUNTED_DIR
+			MOUNTED_DIR=$(mount | grep "$(basename "${LOOP_DEV}")" | head -n 1 | cut -f 3 -d ' ')
+			if [ -n "${MOUNTED_DIR}" ] && [ "${MOUNTED_DIR}" != "/" ]; then
+				unmount "$(dirname "${MOUNTED_DIR}")"
+			fi
+			sleep 1
+			losetup -d "${LOOP_DEV}"
+		fi
+	done
+}
+export -f unmount_image
 
 # export DISPLAY=192.168.1.10:0
 # export LIBGL_ALWAYS_INDIRECT=1
@@ -654,7 +710,6 @@ exit
 
 #sudo curl https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start.elf -o /nfs/boot/start.elf
 
-## The umount command will fail to detach the share when the mounted volume is in use. \
 ## To find out which processes are accessing the NFS share, use the fuser command:
 # fuser -m MOUNT_POINT
 
@@ -694,7 +749,7 @@ exit
 # 
 
 
-# ssh pwd warning: /run/sshwarn + /etc/xdg/lxsession/LXDE-pi/sshpwd.sh  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# ssh pwd warning: /run/sshwarn + /etc/xdg/lxsession/LXDE-pi/sshpwd.sh  remove with sudo apt purge ppromt
 
 pepe() {
     # remove previous modifications
@@ -705,7 +760,7 @@ pepe() {
 }
 
 remove_unused() {
-    ${SUDO} apt update
+    ${SUDO} apt -q update
     # BusterFull all:
     ${SUDO} apt purge -y python-games mu-editor minecraft-pi piwiz scratch* wolfram* claws-mail libreoffice* \
     geany* greenfoot-unbundled nodered bluej realvnc-vnc-viewer thonny sonic-pi*
@@ -756,5 +811,4 @@ usbboot() {
 }
 
 ## kali fstab
-
 # mount -t tmpfs tmpfs /var/log/journal -o defaults,mode=755

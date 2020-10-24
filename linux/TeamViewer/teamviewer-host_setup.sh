@@ -1,5 +1,13 @@
+#x https://pimylifeup.com/raspberry-pi-teamviewer/
 #!/bin/bash
 
+curl https://download.teamviewer.com/download/linux/teamviewer-host_armhf.deb -O 
+sudo apt -y --fix-broken install
+sudo teamviewer passwd TI159550
+teamviewer info
+sudo teamviewer setup
+
+tmp() {
 [ -z TEAMVIEWER_PASSWD ] && TEAMVIEWER_PASSWD=passwd
 echo "TEAMVIEWER_PASSWDs=$TEAMVIEWER_PASSWD"
 
@@ -47,3 +55,4 @@ TeamViewerID=$(teamviewer info | sed '/TeamViewer ID:/!d; s/.*  //')
  # teamviewer repo disable              disable repository updates 
  # teamviewer repo main [stable]        make all TeamViewer packages available (default) 
  # teamviewer repo tv14 [stable]        make TeamViewer 14 packages available stable omit preview and beta releases 
+}
