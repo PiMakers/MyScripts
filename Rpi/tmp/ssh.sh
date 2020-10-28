@@ -37,7 +37,7 @@ ssh_defaults () {
 	target_host=${TARGET_HOST} && echo "target_host = $target_host"
 	# target_ip="192.168.0.102" && echo "target ip = $target_ip"
 	target_ip="$target_host" && echo "target ip = $target_ip"
-	login="pimaker" && echo "login name = $login"
+	login=${SSH_CLIENT_USER} && echo "login name = $login"
 	passwd="raspi" && echo "password = $passwd"
 	# ssh-keygen -c [-P passphrase] [-C comment] [-f keyfile]
 	ssh_keyname="$USER@$target_host" && echo "default ssh_keyname = $ssh_keyname"
@@ -81,6 +81,7 @@ keyfile=$ssh_key_path$ssh_keyname
 	echo "test newly created key for ${login}@${target_ip}..."
 	options=
 	ssh $options $login@${target_ip} echo "success!!!!" || echo "$login@${target_ip} Bassza meg something went wrong!!!"
+	unset TARGET_HOST SSH_CLIENT_USER SSH_CLIENT_HOST TARGET_HOST
 }
 
 others () {

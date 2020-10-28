@@ -280,7 +280,7 @@ PXEDHCPproxyAndTFTPserver() {
     
     cat << EOF | sudo tee /etc/dnsmasq.d/bootserver.conf 
     port=0
-    dhcp-range=${NETWORK_SUBNET},proxy
+    dhcp-range=${SERVER_IP},proxy
     log-dhcp
     log-queries
 

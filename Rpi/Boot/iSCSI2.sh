@@ -68,10 +68,13 @@ detect_system () {
 }
 
 install_dependencies() {
-    if [ $(getLastAptUpdate) > 10 ]; then
+    if [[ "$(getLastAptUpdate)" > 10 ]]; then
+        [ ${VERBOSE} ] && echo ":: Updating ..."
         sudo apt -qqq update
         sudo apt -qqq dist-upgrade
     fi
+    
+    [ ${VERBOSE} ] && echo ":: Installing dependencies ..."
     aptList+=(tgt)               # targeting iSCSI
     aptList+=(dnsmasq)           # tftp boot server
     aptList+=(binfmt-support)    # cross compile arm
@@ -88,6 +91,7 @@ install_dependencies() {
 
 #IMAGE section
 getImg(){
+    [ ${VERBOSE} ] && echo ":: Get rpi img ..."
     sudo mkdir -pv ${IMG_FOLDER}
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename=${RPI_IMG_DIR}/any.img 2>/dev/null); then
         # TODO download script
@@ -156,12 +160,6 @@ iscsiSettings() {
     TARGET_IQN="${IQN}:Pi${IMG_ARCH}"
     INITIATOR_IQN="${IQN}.initiator:${IMG_ARCH}"
 
-    ISCSI_TARGET_PORT=3260
-}
-
-chrootScript() {
-    CMD=sh.sh
-    iscsiSettings
     if [ -z $WSL_DISTRO_NAME ]; then 
         if [ "${IMG_ARCH}" == "armel" ]; then
             SERVER_IP=10.42.0.1
@@ -173,6 +171,13 @@ chrootScript() {
         SERVER_IP=$(ipconfig.exe | sed '/IPv4/!d;s/.*: //' | sed -n 1p)
     fi
     ISCSI_TARGET_IP=${SERVER_IP}
+    ISCSI_TARGET_PORT=3260
+}
+
+chrootScript() {
+    CMD=sh.sh
+    iscsiSettings
+
     [ ${VERBOSE} ] && echo ":: ISCSI_TARGET_IP = ${ISCSI_TARGET_IP}"
 
     CLIENT_IP=
@@ -182,7 +187,7 @@ chrootScript() {
 
     [ ${VERBOSE} ] && echo ":: CMD = ${RPI_BOOT_FS}/${CMD}"
     
-    PI_KERNEL_VERSION_NUM=$(ls ${RPI_ROOT_FS}/lib/modules | sed '/-v8+.*/!d;s/-v8+//')
+    PI_KERNEL_VERSION_NUM=$(ls ${RPI_ROOT_FS}/lib/modules | sed '/-v7+.*/!d;s/-v7+//')
     [ ${VERBOSE} ] && echo ":: PI_KERNEL_VERSION_NUM = ${PI_KERNEL_VERSION_NUM}"
 
 
@@ -213,12 +218,12 @@ chrootScript() {
         ${SUDO} sed  -i '1i [PI3]' ${RPI_BOOT_FS}/config.iscsi.pi3.${IMG_ARCH}
         # echo -e "# enable OTG\ndtoverlay=dwc2" | ${SUDO} tee -a ${RPI_BOOT_FS}/config.iscsi.pi3.${IMG_ARCH}
         echo "initramfs initrd.img-${PI_KERNEL_VERSION_NUM}${KERNEL_TAG} followkernel" | ${SUDO} tee -a ${RPI_BOOT_FS}/config.iscsi.pi3.${IMG_ARCH}
-        echo "cmdline=cmdline.iscsi.pi3.${IMG_ARCH}" | ${SUDO} tee -a ${RPI_BOOT_FS}/config.iscsi.pi3.${IMG_ARCH}
+        echo "# cmdline=cmdline.iscsi.pi3.${IMG_ARCH}" | ${SUDO} tee -a ${RPI_BOOT_FS}/config.iscsi.pi3.${IMG_ARCH}
 
     CMDLINE_IP=${CLIENT_IP}:${SERVER_IP}:${GW_IP}:${NETMASK}:${HOSTNAME}:${DEVICE}:${AUTOCONF}
     [ ${VERBOSE} ] && echo ":: CMDLINE_IP = ${CMDLINE_IP}"
     
-    sed "s/quiet .*//;s/$/ip=dhcp ISCSI_INITIATOR=${INITIATOR_IQN} ISCSI_TARGET_NAME=$TARGET_IQN ISCSI_TARGET_IP=$ISCSI_TARGET_IP ISCSI_TARGET_PORT=${ISCSI_TARGET_PORT} rw/" \
+    sed "s/quiet .*//;s/$/ip=${CMDLINE_IP} ISCSI_INITIATOR=${INITIATOR_IQN} ISCSI_TARGET_NAME=${TARGET_IQN} ISCSI_TARGET_IP=${ISCSI_TARGET_IP} ISCSI_TARGET_PORT=${ISCSI_TARGET_PORT} rw/" \
     ${RPI_BOOT_FS}/cmdline.txt | ${SUDO} tee ${RPI_BOOT_FS}/cmdline.iscsi.pi3.${IMG_ARCH} 1>/dev/null
 
     if [ ${PI0} == 1 ]; then
@@ -268,19 +273,43 @@ chrootScript() {
             echo ":: PI0 = ${PI0}"
         fi
         if [ ${PI0} = 1 ]; then
-            update-initramfs -u -k ${PI_KERNEL_VERSION_NUM}+
-            update-initramfs -u -k ${PI_KERNEL_VERSION_NUM}-v7+
+            [ -f /boot/initrd.img-${PI_KERNEL_VERSION_NUM}+ ] || update-initramfs -c -k ${PI_KERNEL_VERSION_NUM}+
+            [ -f /boot/initrd.img-${PI_KERNEL_VERSION_NUM}-v7+ ] || update-initramfs -c -k ${PI_KERNEL_VERSION_NUM}-v7+
         elif [ ${PI0} = 0 ]; then
-            update-initramfs -u -k ${PI_KERNEL_VERSION_NUM}-v8+
+            [ -f /boot/initrd.img-${PI_KERNEL_VERSION_NUM}-v7+ ] || update-initramfs -c -k ${PI_KERNEL_VERSION_NUM}-v8+
         fi
 
         ## remove open-iscsi unloaded module
         sed -i 's/^ib_iser/#ib_iser/' /lib/modules-load.d/open-iscsi.conf
 EOF
     sudo chmod +x ${RPI_BOOT_FS}/${CMD}
+
+    cat << EOF | sed 's/^.\{8\}//' | sudo tee ${RPI_ROOT_FS}/etc/iscsi/iscsi.initramfs 1>/dev/null
+        ISCSI_INITIATOR=${INITIATOR_IQN}
+        ISCSI_TARGET_NAME=${TARGET_IQN}
+        ISCSI_TARGET_IP=${ISCSI_TARGET_IP}
+        ISCSI_TARGET_PORT=3260
+        # ISCSI_USERNAME="username"
+        # ISCSI_PASSWORD="password"
+        # ISCSI_IN_USERNAME="in_username"
+        # ISCSI_IN_PASSWORD="in_password"
+        # ISCSI_TARGET_GROUP=1
+EOF
 }
 
 createInitramfs() {
+    cat << EOF | sed 's/^.\{8\}//' | sudo tee ${RPI_ROOT_FS}/etc/iscsi/iscsi.initramfs 1>/dev/null
+        ISCSI_INITIATOR="${INITIATOR_IQN}
+        ISCSI_TARGET_NAME=${TARGET_IQN}
+        ISCSI_TARGET_IP=${ISCSI_TARGET_IP}
+        ISCSI_TARGET_PORT=3260
+        # ISCSI_USERNAME="username"
+        # ISCSI_PASSWORD="password"
+        # ISCSI_IN_USERNAME="in_username"
+        # ISCSI_IN_PASSWORD="in_password"
+        # ISCSI_TARGET_GROUP=1
+EOF
+        
         ## modules needed by overlayfs, usb-boot (open-iscsi added while installed) 13463858
         modules=(overlay)
         ## modules needed by usb-boot:
@@ -296,12 +325,14 @@ createInitramfs() {
                 if [ ! $(grep -q $m ${RPI_ROOT_FS}/etc/initramfs-tools/modules) ]; then
                     echo $m | ${SUDO} tee -a ${RPI_ROOT_FS}/etc/initramfs-tools/modules
                     echo "added $m to modules"
+                elif [ PI0 == 0 ]; then
+                    echo " ***********************R"
                 fi
             done        
         if [ ${VERBOSE} = 1 ]; then
             echo ":: PI0 = ${PI0}"
         fi
-        ${SUDO} chroot ${RPI_ROOT_FS} update-initramfs -v -c -k 5.4.51-v7+
+        ${SUDO} chroot ${RPI_ROOT_FS} update-initramfs -c -k ${PI_KERNEL_VERSION_NUM}${KERNEL_TAG}
 }
 
 # ip=<rpi ip>:<iscsi server ip>:<your router ip>:<rpi netmask>:<rpi hostname>:eth0:off
@@ -358,7 +389,7 @@ prepare_img() {
         # ${SUDO} sed -i 's/v7l/${PLATFORM}/' ${RPI_ROOT_FS}/etc/ld.so.preload
     fi
 
-    ${SUDO} rm -v ${RPI_ROOT_FS}/usr/bin/qemu-*-static
+    [ -f ${RPI_ROOT_FS}/usr/bin/qemu-*-static ] && ${SUDO} rm -v ${RPI_ROOT_FS}/usr/bin/qemu-*-static
     ${SUDO} rm -v ${RPI_ROOT_FS}/etc/resolv.conf
 
     if [ -f ${RPI_ROOT_FS}/root/Xauthority ]; then
@@ -369,9 +400,9 @@ prepare_img() {
         fi
     fi
 
-    ${SUDO} mkdir -pv /rpi
-    ${SUDO} umount -lv ${RPI_BOOT_FS}
-    ${SUDO} umount -lv ${RPI_ROOT_FS}
+    #${SUDO} mkdir -pv /rpi
+    # ${SUDO} umount -lv ${RPI_BOOT_FS}
+    # ${SUDO} umount -lv ${RPI_ROOT_FS}
     
 }
 #with chroot 14879652
@@ -411,7 +442,7 @@ cleanUp() {
 
 #trap 'echo "catched INT" && cleanExit' INT
 trap 'echo "catched RETURN" ' RETURN
-trap 'echo "catched EXIT && cleanExit" ' EXIT
+trap 'echo "catched EXIT && cleanExit" && cleanExit' EXIT
 
 
 ## https://www.geek-share.com/detail/2555438287.html
@@ -425,27 +456,39 @@ create_iscsi_conf() {
     ## Target-level Directives:
     backing-store ${iSCSI_ROOT}/blocks/${IMG##*/}
     # direct-store <path>
-    ##  This overrides the "default-driver" global directive!
-    # driver                # iscsi (default)| iser
-    # initiator-address ${ISCSI_INITIATOR_IP}   # ALL | ${ISCSI_INITIATOR_IP}
+    # driver  iscsi                     # iscsi*|iser
+    # initiator-address ALL             # ALL* | ${ISCSI_INITIATOR_IP}
     initiator-name ${INITIATOR_IQN}
     ## If no "incominguser" is specified, it is not used. This directive may be used multiple times per target.
     # incominguser <user> <userpassword>
     ## If no "outgoinguser" is specified, it is not used. This directive may be used multiple times per target.
     # outgoinguser <user> <userpassword>
-    ##  Define the tid of the controller. Default is next available integer.
-    # controller_tid <val>
+    # controller_tid <val>              # Default is next available integer.
  </target>
 EOF
-
-    TGT_ID=1
-    sudo tgtd
-    sudo tgt-admin --delete --force all
-    # tgtadm -C 0 --lld iscsi --op bind --mode target --tid 1 -Q iqn.1961-06.NUC.local.initiator:armhf
-    sudo tgtadm --lld iscsi --mode target --op new --tid ${TGT_ID} --targetname xxpiarmhfxx
-	sudo tgtadm --lld iscsi --mode logicalunit --op new --tid ${TGT_ID} --lun 1 --backing-store /mnt/LinuxData/iscsi/blocks/2020-08-20-raspios-buster-armhf.img --bstype rdwr
-    sudo tgtadm --lld iscsi --mode target --op show
     sudo tgt-admin -e
+    [ ${VERBOSE} ] && sudo tgtadm --lld iscsi --mode target --op show
+
+    # create_tg
+}
+
+create_tg() {
+    local TGT_ID=1
+    local iSCSI_ROOT=/mnt/LinuxData/iscsi
+    local IMG=/mnt/LinuxData/iscsi/blocks/2020-08-20-raspios-buster-armhf.img
+    # TARGET_IQN=iqn.1961-06.ubuntu.local:Piarmhf
+    # INITIATOR_IQN="iqn.1961-06.ubuntu.local.initiator:armhf"
+    local BACKING_STORE=${IMG}                                         # ${iSCSI_ROOT}/blocks/${IMG##*/}
+    sudo tgtd
+    # sudo tgt-admin --delete --force all
+    sudo tgtadm --lld iscsi --op delete --mode target --tid ${TGT_ID} --force
+    # tgtadm -C 0 --lld iscsi --op bind --mode target --tid 1 -Q iqn.1961-06.NUC.local.initiator:armhf
+    sudo tgtadm --lld iscsi --mode target --op new --tid ${TGT_ID} --targetname ${TARGET_IQN}
+    sudo tgtadm --lld iscsi --mode target --op bind --tid ${TGT_ID} --initiator-name=${INITIATOR_IQN}
+    sudo tgtadm --lld iscsi --op bind --mode target --tid ${TGT_ID} -I ALL
+	sudo tgtadm --lld iscsi --mode logicalunit --op new --tid ${TGT_ID} --lun 1 --backing-store ${BACKING_STORE} --bstype rdwr
+    sudo tgtadm --lld iscsi --mode target --op show
+    # sudo tgt-admin -e
     [ ${VERBOSE} ] && sudo tgtadm --lld iscsi --mode target --op show
 }
 
@@ -479,8 +522,9 @@ TFTPserver() {
             esac
         done
 
-if [ ! -f /etc/dnsmasq.d/tftp.conf ]; then
+    if [ ! -f /etc/dnsmasq.d/tftp.conf ]; then
     cat << EOF | sed 's/^.\{8\}//' | sudo tee /etc/dnsmasq.d/00_tftp.conf 1>/dev/null
+        port=0
         bind-dynamic
         log-dhcp
         log-queries
@@ -495,7 +539,7 @@ if [ ! -f /etc/dnsmasq.d/tftp.conf ]; then
         # pxe-service=0,"Raspberry Pi Boot   "
         pxe-prompt="Boot Raspberry Pi", 1
         dhcp-no-override
-        dhcp-reply-delay=1
+        # dhcp-reply-delay=1
         # dhcp-range=tag:piserver,192.168.0.53,proxy
         pxe-service=tag:piserver,0,"Raspberry Pi Boot"
         dhcp-reply-delay=tag:piserver,1
@@ -503,10 +547,10 @@ if [ ! -f /etc/dnsmasq.d/tftp.conf ]; then
         dhcp-host=b8:27:eb:c7:e3:28,set:piserver
         #dhcp-host=b8:27:eb:d0:2e:74,set:piserver    
 EOF
-fi
+    fi
     cat << EOF | sed 's/^.\{8\}//' | sudo tee /etc/dnsmasq.d/iscsi-boot.conf 1>/dev/null
         # PiMaker
-        port=0
+        # port=0
         interface=${WIRED_IFACE}
         dhcp-range=$(hostname -I | sed 's/ .*//'),proxy
 
@@ -539,9 +583,9 @@ startUsbBoot() {
     #${SUDO} curl -LJ https://github.com/raspberrypi/firmware/raw/master/boot/bootcode.bin -o ${RPI_BOOT_FS}/bootcode.bin
     #${SUDO} cp -v ${USBBOOT_DIR}/msd/bootcode.bin ${RPI_BOOT_FS}/bootcode.bin
     ${SUDO} cp -v ${USBBOOT_DIR}/msd/bootcode.bin ${TFTP_ROOT}/bootcode.bin
-    #${SUDO} cp -v ${USBBOOT_DIR}/msd/start.elf ${RPI_BOOT_FS}/start.elf
+    ${SUDO} cp -v ${USBBOOT_DIR}/msd/start.elf ${TFTP_ROOT}/start.elf
     #gnome-terminal -t "Raspberry Pi USBboot" --wait -- ${SUDO} ${USBBOOT_DIR}/rpiboot -d ${RPI_BOOT_FS} -v -l -o &
-    gnome-terminal -t "Raspberry Pi USBboot" -- ${SUDO} ${USBBOOT_DIR}/rpiboot -d ${RPI_BOOT_FS} -v -l -o &
+    gnome-terminal -t "Raspberry Pi USBboot" -- ${SUDO} ${USBBOOT_DIR}/rpiboot -d ${TFTP_ROOT} -v -l -o &
 }
 
 manageServices() {
@@ -578,10 +622,10 @@ hackImg() {
 }
 # 
 run() {
-    # install_dependencies
+    install_dependencies
     getImg
     # extend raspbian image by 1gb
-    #${SUDO} bash -c 'dd if=/dev/zero bs=1M count=1024 >> ${IMG_FOLDER}/${IMG##*/}'
+    # ${SUDO} bash -c 'dd if=/dev/zero bs=1M count=1024 >> ${IMG_FOLDER}/${IMG##*/}'
     mountImg
 
     # setUpNew:
@@ -593,9 +637,10 @@ run() {
 
     chrootScript
     prepare_img
-    create_iscsi_conf
+
     TFTPserver
-    [ "x${PI0}" == "x1" ] && startUsbBoot
+    [ "x${PI0}" == "x3" ] && startUsbBoot
+    create_iscsi_conf
     manageServices    
 }
 

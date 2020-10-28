@@ -23,8 +23,8 @@ create_ssh_keypair() {
     ${SUDO} chown -R 1000:1000 ${RPI_ROOT_FS}/home/pi
     [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
     # add ssh key to ssh-agent:
-    eval "$(ssh-agent -s)"
-    ${SUDO} ssh-add ~/.ssh/testkey@${HOSTNAME}
+    # eval "$(ssh-agent -s)"
+    # ${SUDO} ssh-add ~/.ssh/testkey@${HOSTNAME}
     ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
     ${SUDO} chmod 600 ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys
     ${SUDO} chown 1000:1000 ${RPI_ROOT_FS}/home/pi/.ssh/authorized_keys
