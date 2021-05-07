@@ -19,6 +19,31 @@
 
 # /mnt/LinuxData/OF/myGitHub/MyScripts/Rpi/Boot/NetBoot.sh
 
+VERBOSE=1
+MOUNT_DEV_DIR=1
+PI_SERIAL=b0c7e328          # Raspberry Pi 3 Model B Rev 1.2 Main Dev:192.168.1.3
+DEV_DIR=/mnt/LinuxData/OF
+MYSCRIPTS_DIR=${DEV_DIR}/myGitHub/MyScripts
+SCRIPT_NAME=${BASH_SOURCE[0]##*/}
+SCRIPT_PATH=${BASH_SOURCE[0]%/*}
+cd ${SCRIPT_PATH}
+    SCRIPTS_LIST+=(
+        ${MYSCRIPTS_DIR}/Rpi/rpiUtils.sh
+        ${MYSCRIPTS_DIR}/Rpi/setUp/setupNew.sh
+        ${MYSCRIPTS_DIR}/Rpi/Boot/dl_raspbian.sh
+        )
+    for sh in ${SCRIPTS_LIST[@]}
+        do
+            if [ -f $sh ]; then
+                echo -e "********* \n* ${sh##*/}\n*********" 
+                sed '/sed /d;/() {/!d;s/() {//' $sh
+                . $sh
+            else 
+                echo "::: $sh not found"
+            fi
+        done
+        echo -e "*******************\n* endOfFunctionList\n*******************"
+
 trap "cleanUp" INT
 #    trap 'echo "FuckYou!!!" && cleanUp' EXIT
     trap "echo FuckYouToo" RETURN
@@ -72,16 +97,20 @@ check_dependency() {
     fi
 }
 
-NFS_VERS=4
+NFS_VERS=3
 IMG_FOLDER=/mnt/LinuxData/Install/img
 OVERLAY=0
 HOST_IP=$(hostname -I | sed 's/ .*//')
 NFS_ROOT=/nfs
 TEMP=/tmp
 TEMP=/mnt/LinuxData/tmp
-MAKE_INITRAMFS=1
+MAKE_INITRAMFS=0
+VERBOSE=1
 
 serials="b0c7e328 dc:a6:32:66:0a:2c"
+PI4_serial[0]="177b3502"
+PI4_macs[0]="dc:a6:32:66:0a:2c"
+CM4="e4:5f:01:1f:b7:06"
 # /proc/device-tree/model|serial:
 # Raspberry Pi 3 Model B Rev 1.2 | 00000000b0c7e328
 # [ $OVERLAY == 1 ] && OVERLAY_FS_ROOT=${NFS_ROOT}/root && NFS_ROOT=/tmp
@@ -98,26 +127,39 @@ if [ $OVERLAY == 1 ]; then
     UPPER_DIR=${TEMP}/upper
 fi
 
-get_img(){
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip" --filename=${IMG_FOLDER}/2019-09-26-raspbian-buster-full-netboot.img 2>/dev/null); then
+#IMAGE section
+getImg(){
+    [ ${VERBOSE} ] && echo ":: Geting rpi img ..."
+    sudo mkdir -pv ${IMG_FOLDER}
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/2021-03-04-raspios-buster-arm64.img" 2>/dev/null); then
         # TODO download script
-        if [ $(zenity --question --text="Download latest image?") ];then
-            echo "Downloding latest image... (not implemented yet)"
-            RASPBIAN_TYPE=lite
-        fi
-        echo "No img selected. Exit"; exit 1
-    else 
-        echo $IMG
-        if [ ${IMG##*.}=="zip" ];then
-            if [ ! -f ${IMG%.*}.img ];then
-                unzip $IMG -d ${IMG_FOLDER}/
+        if $(zenity --question --text="Download image?");then
+            echo "Downloding latest image... (not implemented yet) $PWD"
+            if [ -f ./dl_raspbian.sh ]; then
+                #include ./dl_raspbian.sh
+                dl_raspbian
+                extractImg
+                [ ${VERBOSE} ] && echo ":: IMG = ${IMG} "
             fi
-            IMG=$(basename ${IMG%.*}.img)
-            IMG=${IMG_FOLDER}/$IMG
-            echo $IMG
+            #RASPBIAN_TYPE=lite
+        else
+            echo "No img selected. Exit"
+            cleanUp
         fi
+    elif [ ${IMG##*.}=="zip" ];then
+            if [ ! -f ${IMG%.*}.img ];then
+                sudo unzip -o $IMG -d ${IMG_FOLDER}
+            else
+                sudo cp -v ${IMG%.*}.img ${IMG_FOLDER}
+            fi
+            IMG=${IMG%.*}.img
+    elif [ ${IMG} == ${IMG_FOLDER}/${IMG##*/} ]; then
+                echo "Already set!!!"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+    else
+                sudo cp $IMG ${IMG_FOLDER}
     fi
 }
+
 
 resize_image() {
     RESIZED=0
@@ -146,6 +188,11 @@ resize_image() {
     ${SUDO} touch ${RPI_BOOT}/ResizedImg   
     ${SUDO} losetup -d $LOOP_DEVICE
     RESIZED=1
+}
+
+resizeImage() {
+    local COUNT=1024
+    ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
 }
 
 mountImage() {
@@ -222,11 +269,11 @@ mountImage() {
     if [ "$NFS_VERS" == 3 ]; then
         ${SUDO} mkdir -p -m 777 ${BOOT_FS}
     fi
-     # LEDE doesn't have /root/boot
-     ${SUDO} mkdir -pv -m 777 ${BOOT_FS}
-     ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
-         ${SUDO} mkdir -p -m 777 ${RPI_ROOT_FS}/mnt/LinuxData/OF
-    # ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
+    # LEDE doesn't have /root/boot
+    ${SUDO} mkdir -pv -m 777 ${BOOT_FS}
+    ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
+    ${SUDO} mkdir -p -m 777 ${RPI_ROOT_FS}/mnt/LinuxData/OF
+    ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
     # ${SUDO} mount --bind  /mnt/LinuxData/OF/usbboot/boot ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
 }
 
@@ -358,10 +405,13 @@ prepare_fstab() {
         ${SUDO} cp ${ROOT_FS}/etc/fstab ${ROOT_FS}/etc/fstab.orig
         ${SUDO} sed -i 's/PARTUUID/#PARTUUID/g' ${ROOT_FS}/etc/fstab
     fi
+    
     ## MovedTo mountImage()
-    #        ${SUDO} bash -c "cat >> ${ROOT_FS}/etc/fstab" << EOF
-    #${HOST_IP}:/mnt/LinuxData/OF /mnt/LinuxData/OF nfs4 defaults          0       2 #PxeServer
-    #EOF
+    if false; then 
+            ${SUDO} bash -c "cat >> ${ROOT_FS}/etc/fstab" << EOF
+    ${HOST_IP}:/mnt/LinuxData/OF /mnt/LinuxData/OF nfs4 defaults          0       2 #PxeServer
+EOF
+    fi
 }
 
 configure_nfs() {
@@ -370,7 +420,8 @@ configure_nfs() {
     ${SUDO} sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' /etc/exports
     if [ "$NFS_VERS" == 4 ]; then
     #${SUDO} bash -c 'cat >> /etc/exports' << EOF
-        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee /etc/exports 1>/dev/null
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee -a /etc/exports 1>/dev/null
+            /mnt/LinuxData/OF 192.168.1.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
 
             # NFSv.4                                                                 PxeServer
             ${NFS_ROOT} ${HOST_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
@@ -398,7 +449,6 @@ EOF
     # sudo service systemd-resolved stop
     # ${SUDO} systemctl is-active -q systemd-resolved
 configure_dnsmasq() {
-    #${SUDO} bash -c 'cat > /etc/dnsmasq.d/bootserver.conf' << EOF
     cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee /etc/dnsmasq.d/nfsBoot.conf  1>/dev/null
         #PXE BootServer by PiMaker®
         bind-dynamic
@@ -433,9 +483,23 @@ configure_dnsmasq() {
         dhcp-host=b8:27:eb:d0:2e:74,set:piserver
         # Pi4
         dhcp-host=dc:a6:32:66:0a:2c,set:piserver
+        # CM3+
+        dhcp-host=b8:27:eb:e6:06:53,set:piserver
+        # CM4
+        dhcp-host=dc:a6:32:da:04:2d,set:piserver
+        dhcp-host=e4:5f:01:1f:b7:4e,set:piserver
 EOF
     ${SUDO} systemctl is-active -q systemd-resolved && ${SUDO} service systemd-resolved stop
-    ${SUDO} service dnsmasq start
+    
+    if [ $VERBOSE == 1 ]; then
+        TFTP_DIR=${BOOT_FS}
+        gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --port=0 \
+        --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
+        --pxe-prompt="Boot Raspberry Pi",1 --dhcp-range=${HOST_IP},proxy \
+        --tftp-unique-root=mac --dhcp-reply-delay=1    
+    else
+        ${SUDO} service dnsmasq start
+    fi
 }
 
 hack() {
@@ -482,17 +546,25 @@ enable_ssh() {
 
 create_ssh_keypair() {
     HOSTNAME=$(hostname -s)
+    if [ -f /nfs/root/etc/os-release ]; then
+        . ${ROOT_FS}/etc/os-release
+    fi
     
+    if [ ${ID} == "raspbian" ]; then
+        ID=pi
+    else [ ${ID} = "debian" ]
+        ID=pi
+    fi
     if [ ${OVERLAY} == 1 ]; then
         #local ROOT_FS=${UPPER_DIR}/data
         echo "KapdBe!"
     fi
-        ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/pi/.ssh
-        ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/pi
+        ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/${ID}/.ssh
+        ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/${ID}
         [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
-        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/pi/.ssh/authorized_keys 1>/dev/null
-        ${SUDO} chmod 600 ${ROOT_FS}/home/pi/.ssh/authorized_keys
-        ${SUDO} chown 1000:1000 ${ROOT_FS}/home/pi/.ssh/authorized_keys
+        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/${ID}/.ssh/authorized_keys 1>/dev/null
+        ${SUDO} chmod 600 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
+        ${SUDO} chown 1000:1000 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
 
     if [ ${OVERLAY} == 2 ]; then
         ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
@@ -563,12 +635,13 @@ cleanUp() {
     if [ -f ${ROOT_FS}/etc/fstab.orig ]; then
         ${SUDO} mv ${ROOT_FS}/etc/fstab.orig ${ROOT_FS}/etc/fstab
     fi
-
     sync
+    if `mountpoint /nfs/root/mnt/LinuxData/OF 1>/dev/null`; then
+        ${SUDO} umount -lv /nfs/root/mnt/LinuxData/OF
+    fi
     ${SUDO} umount -lv ${BOOT_FS}
 
     ${SUDO} umount -lv ${ROOT_FS}
-    #${SUDO} umount -lv ${BOOT_FS}
 
     if [ ${OVERLAY} == 1 ]; then
         ${SUDO} umount -lv ${RPI_ROOT_FS}
@@ -588,8 +661,7 @@ cleanUp() {
 
     ${SUDO} sed -i '/PxeServer/d' /etc/exports
 
-    ${SUDO} rm /etc/dnsmasq.d/bootserver.conf
-
+    ${SUDO} rm /etc/dnsmasq.d/nfsBoot.conf
     ${SUDO} service 'nfs-kernel-server' restart
     #else
         # CleanUp variabels
@@ -621,9 +693,10 @@ cleanUp() {
 
 runNfsBoot() {
     # check_root //movedToRoot!
-    # check_dependency
-    get_img
-    #resize_image
+    check_dependency
+    #get_img
+    getImg
+    #resizeImage
     mountImage
     prepare_cmdline
     prepare_fstab
@@ -644,10 +717,11 @@ runNfsBoot() {
 
     ${SUDO} service rpcbind restart
     ${SUDO} service nfs-kernel-server restart
-    ${SUDO} service dnsmasq restart
+    # ${SUDO} service dnsmasq restart
     #startRpiBoot
+    trap 'echo "SIGINT traped" && cleanUp' INT
 
-    while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --display=${DISPLAY})
+    while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --extra-button="KeepRun" --display=${DISPLAY})
     do
         echo $res
         if [ "${res}" == "Save img" ];then
@@ -656,6 +730,14 @@ runNfsBoot() {
                 ${SUDO} mv -v ${IMG} ${res}
             fi
             exit
+        elif [ "${res}" == "KeepRun" ];then
+            export -f cleanUp
+            trap 'echo "EXITED NORMAL"' EXIT
+            echo "Type 'cleanUp' to cleanUp!!!"
+            break
+        elif [ "${res}" == "ok" ];then
+            echo "Type 'OK!!!!!!!!!!!!!!!!' to ${res}!!!"
+        else cleanUp
         fi    
         echo "sleeping..."
         sleep 10
@@ -663,7 +745,6 @@ runNfsBoot() {
 }
 #fi
 
-trap 'echo "SIGINT traped" && cleanUp' INT
 check_root
 [ "${BASH_SOURCE}" == "${0}" ] && runNfsBoot
 exit
@@ -812,3 +893,16 @@ usbboot() {
 
 ## kali fstab
 # mount -t tmpfs tmpfs /var/log/journal -o defaults,mode=755
+
+installUbuntu() {
+#IMG=/mnt/LinuxData/OF/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img
+if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
+# sudo dd if=${IMG} bs=4M of=/dev/mmcblk0 bs=10MB
+xzcat ${IMG} | pv -s 2G  |sudo dd bs=4M of=/dev/mmcblk0
+fi
+}
+# rasbian bootorder:
+# sed -i '/CM4_ENABLE_RPI_EEPROM_UPDATE=1/!d' /etc/default/rpi-eeprom-update
+# echo "CM4_ENABLE_RPI_EEPROM_UPDATE=1" | sudo tee -a /etc/default/rpi-eeprom-update
+
+# CM4_ENABLE_RPI_EEPROM_UPDATE=1 sudo -E rpi-eeprom-config --edit
