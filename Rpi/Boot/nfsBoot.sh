@@ -4,7 +4,7 @@
 ## https://xinau.ch/notes/ubuntu-network-installation-with-pxe/
 
 
-## PAM: https://bbs.archlinux.org/viewtopic.php?id=224912 
+## PAM: https://bbs.archlinux.org/vaiewtopic.php?id=224912 
 #!/bin/bash
 
 ## setenforce 0/1 disable SElinux
@@ -83,6 +83,7 @@ check_dependency() {
     depends_on+=" nfs-kernel-server"
     depends_on+=" zenity"
     depends_on+=" curl"
+    depends_on+=" pv"
     for i in $depends_on; do
         if [[ $(dpkg-query -s $i) ]];then
             echo "$i installed!"
@@ -97,7 +98,7 @@ check_dependency() {
     fi
 }
 
-NFS_VERS=3
+NFS_VERS=4
 IMG_FOLDER=/mnt/LinuxData/Install/img
 OVERLAY=0
 HOST_IP=$(hostname -I | sed 's/ .*//')
@@ -131,7 +132,7 @@ fi
 getImg(){
     [ ${VERBOSE} ] && echo ":: Geting rpi img ..."
     sudo mkdir -pv ${IMG_FOLDER}
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/2021-03-04-raspios-buster-arm64.img" 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO *xz" --filename="${IMG_FOLDER}/2021-03-04-raspios-buster-arm64.img" 2>/dev/null); then
         # TODO download script
         if $(zenity --question --text="Download image?");then
             echo "Downloding latest image... (not implemented yet) $PWD"
@@ -146,17 +147,29 @@ getImg(){
             echo "No img selected. Exit"
             cleanUp
         fi
-    elif [ ${IMG##*.}=="zip" ];then
-            if [ ! -f ${IMG%.*}.img ];then
-                sudo unzip -o $IMG -d ${IMG_FOLDER}
-            else
-                sudo cp -v ${IMG%.*}.img ${IMG_FOLDER}
-            fi
-            IMG=${IMG%.*}.img
-    elif [ ${IMG} == ${IMG_FOLDER}/${IMG##*/} ]; then
-                echo "Already set!!!"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
     else
-                sudo cp $IMG ${IMG_FOLDER}
+        # echo :::::::::::::::::${IMG##*.}
+        IMG_NAME=${IMG##*/}
+        if [ "${IMG##*.}" == "zip" ];then
+                if [ ! -f ${IMG%.*}.img ];then
+                    sudo unzip -o $IMG -d ${IMG_FOLDER}
+                else
+                    sudo cp -v ${IMG%.*}.img ${IMG_FOLDER}
+                fi
+                IMG=${IMG_FOLDER}/${IMG_NAME%.*}.img
+        elif [ ${IMG##*.} == "xz" ];then
+            if [ ! -f ${IMG%.*} ];then
+                ${SUDO}  xzcat ${IMG} | pv -s 2G | ${SUDO} dd bs=4M of=${IMG%.*}
+                IMG=${IMG_FOLDER}/${IMG_NAME%.*}
+            else
+                sudo cp -v ${IMG%.*} ${IMG_FOLDER}
+            fi
+            IMG=${IMG%.*}
+        elif [ ${IMG} == ${IMG_FOLDER}/${IMG##*/} ]; then
+                    echo "Already set!!!"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+        else
+                    sudo cp $IMG ${IMG_FOLDER}
+        fi
     fi
 }
 
@@ -273,8 +286,27 @@ mountImage() {
     ${SUDO} mkdir -pv -m 777 ${BOOT_FS}
     ${SUDO} mount -v ${LOOP_DEVICE}p1 ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
     ${SUDO} mkdir -p -m 777 ${RPI_ROOT_FS}/mnt/LinuxData/OF
-    ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
+    # ${SUDO} mount --bind  /mnt/LinuxData/OF ${RPI_ROOT_FS}/mnt/LinuxData/OF || echo "error mounting ${BOOT_FS}"
     # ${SUDO} mount --bind  /mnt/LinuxData/OF/usbboot/boot ${BOOT_FS} || echo "error mounting ${BOOT_FS}"
+}
+
+detectOS() {
+    if [ -f ${ROOT_FS}/etc/os-release ]; then
+        . ${ROOT_FS}/etc/os-release
+        echo ::ID=${ID}
+    fi
+    
+    case $ID in
+        ubuntu)
+            echo "-----------------------Hurrah!!!!"
+            ;;
+        raspbian|debian)
+            echo "-----------------------RASPberryPi Detected!!!"
+            ID=pi
+            ;;
+        *)
+            echo ID=$ID ---------------------------
+    esac
 }
 
     ## OnExportedFS:
@@ -299,8 +331,8 @@ prepare_cmdline() {
     fi
         #${SUDO} bash -c "cat > ${BOOT_FS}/cmdline.nfsboot.${DEVICE}" << EOF
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${BOOT_FS}/cmdline.nfsboot.${DEVICE} 1>/dev/null
-            #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${ROOT_FS},vers=3, rw ip=dhcp elevator=deadline rootwait plymouth.ignore-serial-consoles noswap #init=/bin/ro-root.sh
-            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${NFS_BOOT_TAG} rw ip=${IP} elevator=deadline rootwait plymouth.ignore-serial-consoles noswap
+            #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${ROOT_FS},vers=3, rw ip=10.42.0.14:10.42.0.1::255.255.255.0:::dhcp elevator=deadline rootwait plymouth.ignore-serial-consoles noswap #init=/bin/ro-root.sh
+            dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${NFS_BOOT_TAG} rw ip=dhcp elevator=deadline rootwait # plymouth.ignore-serial-consoles noswap
             #dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=10.42.0.1:/pi/root rw ip=10.42.0.14:10.42.0.1::255.255.255.0:pi:usb0:static elevator=deadline modules-load=dwc2,g_ether fsck.repair=yes rootwait g_ether.host_addr=5e:a1:4f:5d:cf:d2
 EOF
     #KERNEL_TAG="[0-9][0-9]+"
@@ -502,24 +534,6 @@ EOF
     fi
 }
 
-hack() {
-    # ${SUDO} mkdir -m 755 boot.bak
-    files="bootcode.bin \
-           start.elf \
-           bcm2710-rpi-3-b.dtb \
-           fixup.dat"
-
-    files4="bootcode.bin \
-            start4.elf \
-            bcm2711-rpi-4-b.dtb \
-            fixup4.dat"
-    for file in  $files #$files4
-    do
-        ${SUDO} curl https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/${file} -o ${BOOT_FS}/${file} 2>/dev/null
-    done
-
-}
-
 remove_dphys-swapfile() {
     if [ -h ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service ];then
         ${SUDO} rm ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
@@ -546,15 +560,7 @@ enable_ssh() {
 
 create_ssh_keypair() {
     HOSTNAME=$(hostname -s)
-    if [ -f /nfs/root/etc/os-release ]; then
-        . ${ROOT_FS}/etc/os-release
-    fi
-    
-    if [ ${ID} == "raspbian" ]; then
-        ID=pi
-    else [ ${ID} = "debian" ]
-        ID=pi
-    fi
+
     if [ ${OVERLAY} == 1 ]; then
         #local ROOT_FS=${UPPER_DIR}/data
         echo "KapdBe!"
@@ -636,8 +642,8 @@ cleanUp() {
         ${SUDO} mv ${ROOT_FS}/etc/fstab.orig ${ROOT_FS}/etc/fstab
     fi
     sync
-    if `mountpoint /nfs/root/mnt/LinuxData/OF 1>/dev/null`; then
-        ${SUDO} umount -lv /nfs/root/mnt/LinuxData/OF
+    if `mountpoint ${BOOT_FS}/mnt/LinuxData/OF 1>/dev/null`; then
+        ${SUDO} umount -lv ${BOOT_FS}/mnt/LinuxData/OF
     fi
     ${SUDO} umount -lv ${BOOT_FS}
 
@@ -661,7 +667,7 @@ cleanUp() {
 
     ${SUDO} sed -i '/PxeServer/d' /etc/exports
 
-    ${SUDO} rm /etc/dnsmasq.d/nfsBoot.conf
+    ${SUDO} rm /etc/dnsmasq.d/nfsBoot.conf || true
     ${SUDO} service 'nfs-kernel-server' restart
     #else
         # CleanUp variabels
@@ -769,68 +775,68 @@ unmount_image(){
 export -f unmount_image
 
 # export DISPLAY=192.168.1.10:0
-# export LIBGL_ALWAYS_INDIRECT=1
+    # export LIBGL_ALWAYS_INDIRECT=1
 
-#:
-#tail -F /nfs/root/var/log/syslog | grep "unsafe path transition"
-# sudo apt install ttf-mscorefonts-installer && sudo fc-cache -fv
-# /sys/fs/cgroup/systemd/system.slice/triggerhappy.socket
-# rc2-5 /nfs/root/etc/rc3.d/S01dphys-swapfile -> ../init.d/dphys-swapfile
-# sudo rm /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
-# sudo ln -s /dev/null /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
-# sudo ln -s  /lib/systemd/system/dphys-swapfile.service /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
-# sudo ln -s /lib/systemd/system/ssh.service /nfs/root/etc/systemd/system/multi-user.target.wants/ssh.service
-# sudo ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+    #:
+    #tail -F /nfs/root/var/log/syslog | grep "unsafe path transition"
+    # sudo apt install ttf-mscorefonts-installer && sudo fc-cache -fv
+    # /sys/fs/cgroup/systemd/system.slice/triggerhappy.socket
+    # rc2-5 /nfs/root/etc/rc3.d/S01dphys-swapfile -> ../init.d/dphys-swapfile
+    # sudo rm /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
+    # sudo ln -s /dev/null /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
+    # sudo ln -s  /lib/systemd/system/dphys-swapfile.service /nfs/root/etc/systemd/system/multi-user.target.wants/dphys-swapfile.service
+    # sudo ln -s /lib/systemd/system/ssh.service /nfs/root/etc/systemd/system/multi-user.target.wants/ssh.service
+    # sudo ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
 
-# /nfs/boot/config.txt
-# /nfs/boot/start.elf
-# /nfs/boot/fixup.dat
-# /nfs/boot/cmdline.txt
-# /nfs/boot/bcm2710-rpi-3-b.dtb
-# /nfs/boot/kernel7.img
+    # /nfs/boot/config.txt
+    # /nfs/boot/start.elf
+    # /nfs/boot/fixup.dat
+    # /nfs/boot/cmdline.txt
+    # /nfs/boot/bcm2710-rpi-3-b.dtb
+    # /nfs/boot/kernel7.img
 
-#sudo curl https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start.elf -o /nfs/boot/start.elf
+    #sudo curl https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start.elf -o /nfs/boot/start.elf
 
-## To find out which processes are accessing the NFS share, use the fuser command:
-# fuser -m MOUNT_POINT
+    ## To find out which processes are accessing the NFS share, use the fuser command:
+    # fuser -m MOUNT_POINT
 
-## piserver dnsmasq
-### This is an auto-generated file. DO NOT EDIT
+    ## piserver dnsmasq
+    ### This is an auto-generated file. DO NOT EDIT
 
-#bind-dynamic
-#log-dhcp
-#enable-tftp
-#tftp-root=/var/lib/piserver/tftproot
-#tftp-unique-root=mac
-#local-service
-#host-record=piserver,192.168.0.53
-#dhcp-range=tag:piserver,192.168.0.53,proxy
-#pxe-service=tag:piserver,0,"Raspberry Pi Boot"
-#dhcp-reply-delay=tag:piserver,1
+    #bind-dynamic
+    #log-dhcp
+    #enable-tftp
+    #tftp-root=/var/lib/piserver/tftproot
+    #tftp-unique-root=mac
+    #local-service
+    #host-record=piserver,192.168.0.53
+    #dhcp-range=tag:piserver,192.168.0.53,proxy
+    #pxe-service=tag:piserver,0,"Raspberry Pi Boot"
+    #dhcp-reply-delay=tag:piserver,1
 
-#dhcp-host=b8:27:eb:c7:e3:28,set:piserver
-#dhcp-host=b8:27:eb:d0:2e:74,set:piserver
+    #dhcp-host=b8:27:eb:c7:e3:28,set:piserver
+    #dhcp-host=b8:27:eb:d0:2e:74,set:piserver
 
-## sudo apt install libfreeimage3 libboost-filesystem1.67.0 libpugixml1v5 liburiparser1
+    ## sudo apt install libfreeimage3 libboost-filesystem1.67.0 libpugixml1v5 liburiparser1
 
-#wget https://github.com/raspberrypi/rpi-eeprom/raw/master/firmware/beta/pieeprom-2019-12-03.bin
-#rpi-eeprom-config pieeprom-2019-12-03.bin > bootconf.txt
-#sed -i s/0x1/0x21/g bootconf.txt
-#rpi-eeprom-config --out pieeprom-2019-12-03-netboot.bin --config bootconf.txt pieeprom-2019-12-03.bin
-#sudo rpi-eeprom-update -d -f ./pieeprom-2019-12-03-netboot.bin
-#cat /proc/cpuinfo
+    #wget https://github.com/raspberrypi/rpi-eeprom/raw/master/firmware/beta/pieeprom-2019-12-03.bin
+    #rpi-eeprom-config pieeprom-2019-12-03.bin > bootconf.txt
+    #sed -i s/0x1/0x21/g bootconf.txt
+    #rpi-eeprom-config --out pieeprom-2019-12-03-netboot.bin --config bootconf.txt pieeprom-2019-12-03.bin
+    #sudo rpi-eeprom-update -d -f ./pieeprom-2019-12-03-netboot.bin
+    #cat /proc/cpuinfo
 
-# ROOT_FS=/nfs/root sed -i 's/^exit 0/service ssh start || printf "Could not start ssh service"\n\nexit 0/' ${ROOT_FS}/etc/rc.local
+    # ROOT_FS=/nfs/root sed -i 's/^exit 0/service ssh start || printf "Could not start ssh service"\n\nexit 0/' ${ROOT_FS}/etc/rc.local
 
-# piserver:: /var/lib/piserver/os/Raspbian_Full-2019-09-26/etc/fstab
+    # piserver:: /var/lib/piserver/os/Raspbian_Full-2019-09-26/etc/fstab
 
-# curl https://gist.githubusercontent.com/paul-ridgway/d39cbb30530442dca416734c3ee70162/raw/c490df8be1976dd062a8b5f429ef42ed1b393ecb/ro-root.sh -o ${ROOT_FS}/bin/ro-root.sh
+    # curl https://gist.githubusercontent.com/paul-ridgway/d39cbb30530442dca416734c3ee70162/raw/c490df8be1976dd062a8b5f429ef42ed1b393ecb/ro-root.sh -o ${ROOT_FS}/bin/ro-root.sh
 
-# service systemd-timesyncd status systemd-remount-fs.service
-# 
+    # service systemd-timesyncd status systemd-remount-fs.service
+    # 
 
 
-# ssh pwd warning: /run/sshwarn + /etc/xdg/lxsession/LXDE-pi/sshpwd.sh  remove with sudo apt purge ppromt
+    # ssh pwd warning: /run/sshwarn + /etc/xdg/lxsession/LXDE-pi/sshpwd.sh  remove with sudo apt purge ppromt
 
 pepe() {
     # remove previous modifications
@@ -895,14 +901,32 @@ usbboot() {
 # mount -t tmpfs tmpfs /var/log/journal -o defaults,mode=755
 
 installUbuntu() {
-#IMG=/mnt/LinuxData/OF/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img
-if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
-# sudo dd if=${IMG} bs=4M of=/dev/mmcblk0 bs=10MB
-xzcat ${IMG} | pv -s 2G  |sudo dd bs=4M of=/dev/mmcblk0
-fi
+    #IMG=/mnt/LinuxData/OF/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
+    # sudo dd if=${IMG} bs=4M of=/dev/mmcblk0 bs=10MB
+    xzcat ${IMG} | pv -s 2G  |sudo dd bs=4M of=/dev/mmcblk0
+    fi
 }
-# rasbian bootorder:
-# sed -i '/CM4_ENABLE_RPI_EEPROM_UPDATE=1/!d' /etc/default/rpi-eeprom-update
-# echo "CM4_ENABLE_RPI_EEPROM_UPDATE=1" | sudo tee -a /etc/default/rpi-eeprom-update
+    # rasbian bootorder:
+    # sed -i '/CM4_ENABLE_RPI_EEPROM_UPDATE=1/!d' /etc/default/rpi-eeprom-update
+    # echo "CM4_ENABLE_RPI_EEPROM_UPDATE=1" | sudo tee -a /etc/default/rpi-eeprom-update
 
-# CM4_ENABLE_RPI_EEPROM_UPDATE=1 sudo -E rpi-eeprom-config --edit
+    # CM4_ENABLE_RPI_EEPROM_UPDATE=1 sudo -E rpi-eeprom-config --edit
+
+hack() {
+    # ${SUDO} mkdir -m 755 boot.bak
+    files="bootcode.bin \
+           start.elf \
+           bcm2710-rpi-3-b.dtb \
+           fixup.dat"
+
+    files4="bootcode.bin \
+            start4.elf \
+            bcm2711-rpi-4-b.dtb \
+            fixup4.dat"
+    for file in  $files #$files4
+    do
+        ${SUDO} curl https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/${file} -o ${BOOT_FS}/${file} 2>/dev/null
+    done
+
+}
