@@ -1,4 +1,6 @@
 ## https://libreelec.wiki/configuration/network-boot
+## https://forum.libreelec.tv/thread/20163-rpi4-gpio-using-in-libreelec/
+
 
 #!/bin/bash
 SUDO=sudo
@@ -85,3 +87,11 @@ runLEnfsBoot() {
 trap 'echo "SIGINT !!!" && cleanExit ' INT
 
 [ "${BASH_SOURCE}" == "${0}" ] && runLEnfsBoot
+
+
+commands() {
+    import sys
+    sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
+    PATH=$PATH:/storage/.kodi/addons/script.module.kodi-six/libs/kodi_six
+    kodi-send
+}
