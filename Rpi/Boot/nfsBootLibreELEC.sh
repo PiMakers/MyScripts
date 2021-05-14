@@ -93,5 +93,7 @@ commands() {
     import sys
     sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
     PATH=$PATH:/storage/.kodi/addons/script.module.kodi-six/libs/kodi_six
-    kodi-send
+    kodi-send --host=192.168.0.1 --port=9777 --action="Quit"
+    kodi-send --action='RunScript("/path/to/script.py")'
 }
+
