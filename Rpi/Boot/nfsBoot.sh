@@ -101,7 +101,12 @@ check_dependency() {
 NFS_VERS=4
 IMG_FOLDER=/mnt/LinuxData/Install/img
 OVERLAY=0
-HOST_IP=$(hostname -I | sed 's/ .*//')
+    DHCP=0
+    if [ $DHCP -eq 1 ]; then
+        HOST_IP=$(hostname -I | sed 's/ .*//')
+    else
+        HOST_IP=10.0.0.1
+    fi
 NFS_ROOT=/nfs
 TEMP=/tmp
 TEMP=/mnt/LinuxData/tmp
@@ -523,12 +528,26 @@ configure_dnsmasq() {
 EOF
     ${SUDO} systemctl is-active -q systemd-resolved && ${SUDO} service systemd-resolved stop
     
-    if [ $VERBOSE == 1 ]; then
+    DHCP=0
+
+    if [[ $VERBOSE == 1 ]]; then
         TFTP_DIR=${BOOT_FS}
-        gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --port=0 \
+    
+    if [ $DHCP -eq 1 ]; then      
+        HOST_IP=$(hostname -I | sed 's/ .*//')
+        DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+    else
+        HOST_IP=10.0.0.1
+        DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.100,1h"
+    fi
+    gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
+        --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE}
+        
+        
+        echo dnsmasq --enable-tftp --port=0 \
         --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
         --pxe-prompt="Boot Raspberry Pi",1 --dhcp-range=${HOST_IP},proxy \
-        --tftp-unique-root=mac --dhcp-reply-delay=1    
+        --tftp-unique-root=mac --dhcp-reply-delay=1
     else
         ${SUDO} service dnsmasq start
     fi
@@ -631,6 +650,7 @@ startRpiBoot() {
 
 cleanUp() {
     ${SUDO} pkill rpiboot
+    ${SUDO} pkill dnsmasq
     ${SUDO} service 'dnsmasq' stop
     ${SUDO} service 'nfs-kernel-server' stop
 

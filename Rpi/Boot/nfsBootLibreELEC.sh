@@ -10,10 +10,12 @@ TFTP_DIR=/tftpLE
 IMG_DIR=/mnt/LinuxData/Install/img
 STORAGE_DIR=/mnt/media/storage
 
+DHCP=1
+
 IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.2.6.img
 
 get_img(){
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG_DIR}/2019-09-26-raspbian-buster-full-netboot.img 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
         # TODO download script
         if [ $(zenity --question --text="Download latest image?") ];then
             echo "Downloding latest image... (not implemented yet)"
@@ -42,7 +44,12 @@ mountLE() {
 }
 
 prepare() {
-    HOST_IP=$(hostname -I | sed 's/ .*//')
+    if [ $DHCP -eq 1 ]; then
+        HOST_IP=$(hostname -I | sed 's/ .*//')
+    else
+        HOST_IP=10.0.0.1
+    fi
+
     ${SUDO} mkdir -pv ${STORAGE_DIR}
     echo "boot=NFS=${HOST_IP}:${TFTP_DIR} disk=NFS=${HOST_IP}:/mnt/media/storage rw ip=dhcp rootwait" | \
         ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.LE
@@ -51,14 +58,20 @@ prepare() {
     echo "cmdline=cmdline.nfsboot.LE" | ${SUDO} tee -a ${TFTP_DIR}/distroconfig.txt
 
     ${SUDO} sed -i '/libreELEC/d' /etc/exports
-    echo "/mnt/media/storage      ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC
-${TFTP_DIR}			${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
+    echo "/mnt/media/storage      ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
+    echo "${TFTP_DIR}   	${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
 
     ${SUDO} exportfs -r
     # ${SUDO} exportfs
     ${SUDO} service dnsmasq stop
-    ${SUDO} dnsmasq --enable-tftp --port=0 --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
-        --dhcp-range=${HOST_IP},proxy --tftp-unique-root=mac --dhcp-reply-delay=1
+    
+    if [ $DHCP -eq 1 ]; then      
+        DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+    else
+        DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h"
+    fi
+    ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
+        --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE}
     echo "DNSM_PI=?!"
 }
 
@@ -91,7 +104,7 @@ trap 'echo "SIGINT !!!" && cleanExit ' INT
 
 commands() {
     import sys
-    sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
+    # sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
     PATH=$PATH:/storage/.kodi/addons/script.module.kodi-six/libs/kodi_six
     kodi-send --host=192.168.0.1 --port=9777 --action="Quit"
     kodi-send --action='RunScript("/path/to/script.py")'
