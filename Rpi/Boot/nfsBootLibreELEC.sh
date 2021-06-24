@@ -1,18 +1,27 @@
 ## https://libreelec.wiki/configuration/network-boot
 ## https://forum.libreelec.tv/thread/20163-rpi4-gpio-using-in-libreelec/
 
-
+# sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
 #!/bin/bash
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
 TFTP_DIR=/tftpLE
 IMG_DIR=/mnt/LinuxData/Install/img
-STORAGE_DIR=/mnt/media/storage
+STORAGE_DIR=/mnt/media/storage1
+# STORAGE_DIR=/media/pimaker/STORAGE
+
+mkdir -pv ${STORAGE_DIR}
 
 DHCP=1
+    if [ $DHCP -eq 1 ]; then
+        HOST_IP=$(hostname -I | sed 's/ .*//')
+    else
+        HOST_IP=10.0.0.1
+    fi
 
-IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.2.6.img
+IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.95.3.img
+#LibreELEC-RPi4.arm-9.2.6.img
 
 get_img(){
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
@@ -36,43 +45,104 @@ get_img(){
     fi
 }
 
+resizeImage() {
+    local COUNT=1024
+    ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
+}
+
 mountLE() {
     LOOP_DEVICE=$(${SUDO} losetup -f)
     ${SUDO} losetup -P $LOOP_DEVICE $IMG
     ${SUDO} mkdir -pv ${TFTP_DIR}
-    ${SUDO} mount -v ${LOOP_DEVICE}p1 ${TFTP_DIR} || echo "error mounting ${BOOT_FS}"
+    ${SUDO} mount -v ${LOOP_DEVICE}p1 ${TFTP_DIR} || ( echo "error mounting ${TFTP_DIR}" && exit )
 }
 
 prepare() {
-    if [ $DHCP -eq 1 ]; then
-        HOST_IP=$(hostname -I | sed 's/ .*//')
-    else
-        HOST_IP=10.0.0.1
-    fi
-
     ${SUDO} mkdir -pv ${STORAGE_DIR}
-    echo "boot=NFS=${HOST_IP}:${TFTP_DIR} disk=NFS=${HOST_IP}:/mnt/media/storage rw ip=dhcp rootwait" | \
+    echo "boot=NFS=${HOST_IP}:${TFTP_DIR} disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet" | \
         ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.LE
     
     ${SUDO} sed -i '/nfsboot.LE/d' ${TFTP_DIR}/distroconfig.txt
     echo "cmdline=cmdline.nfsboot.LE" | ${SUDO} tee -a ${TFTP_DIR}/distroconfig.txt
 
     ${SUDO} sed -i '/libreELEC/d' /etc/exports
-    echo "/mnt/media/storage      ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
+    echo "${STORAGE_DIR}      ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
     echo "${TFTP_DIR}   	${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
 
-    ${SUDO} exportfs -r
+    ${SUDO} exportfs -ra
     # ${SUDO} exportfs
     ${SUDO} service dnsmasq stop
     
     if [ $DHCP -eq 1 ]; then      
         DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+        echo "::DHCP = 1 !!!!!!"
     else
         DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h"
     fi
     ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
         --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE}
-    echo "DNSM_PI=?!"
+}
+
+LEversion() {
+    # ${SUDO} 
+    sudo mkdir -pv /mnt/sqfs
+    sudo mount /tftpLE/SYSTEM /mnt/sqfs -t squashfs -o loop
+    . /mnt/sqfs/etc/os-release
+    [ "${VERSION_ID%.*}" -gt 9 ] && echo ":: Ten" || echo ":: Nine"
+    sudo umount -lv /mnt/sqfs
+    sudo rm -r /mnt/sqfs
+
+}
+
+playStartUpVideo() {
+    mkdir -pv ${STORAGE_DIR}/.kodi/addon/service.autoexec
+    if [ "${VERSION_ID%.*}" -lt "10" ]; then
+        echo ":: Version 9 detected"
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/autoexec.py 1>/dev/null
+            import xbmc
+            xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )
+            xbmc.executebuiltin( "PlayerControl(repeat)" )
+EOF
+    else
+        echo ":: Version 10 detected"
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addon/service.autoexec/autoexec.py 1>/dev/null
+            import xbmc
+            xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )
+            xbmc.executebuiltin( "PlayerControl(repeat)" )
+EOF
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/addon.xml 1>/dev/null
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <addon id="service.autoexec" name="Autoexec Service" version="1.0.0" provider-name="your username">
+                <requires>
+                    <import addon="xbmc.python" version="3.0.0"/>
+                </requires>
+                <extension point="xbmc.service" library="autoexec.py">
+                </extension>
+                <extension point="xbmc.addon.metadata">
+                    <summary lang="en_GB">Automatically run python code when Kodi starts.</summary>
+                    <description lang="en_GB">The Autoexec Service will automatically be run on Kodi startup.</description>
+                    <platform>all</platform>
+                    <license>GNU GENERAL PUBLIC LICENSE Version 2</license>
+                </extension>
+            </addon>
+EOF
+    fi
+}
+# ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings/oe_settings.xml - WIZZARD + HOSTNAME!!!! KODI10
+disableSplash() {
+    # mkdir -pv ${STORAGE_DIR}/.kodi/userdata/
+    # Disable LibreELEC Splash
+    echo | sudo tee /tftpLE/oemsplash.png
+    cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/advancedsettings.xml 1>/dev/null    
+        <advancedsettings version="1.0">
+            <services>
+                <webserver>true</webserver>
+                <webserverpassword>raspi</webserverpassword>
+                <webserverusername>KODI</webserverusername>
+            </services>
+            <splash>false</splash>
+        </advancedsettings>    
+EOF
 }
 
 cleanExit() {
@@ -87,17 +157,30 @@ cleanExit() {
     ${SUDO} rm -r ${TFTP_DIR}
     # remove loopdevice
     ${SUDO} losetup -d ${LOOP_DEVICE}
+    exit 0
+}
 
+createSshKey() {
+        HOSTNAME=$(hostname -s)
+        ${SUDO} mkdir -pv -m 700 ${STORAGE_DIR}/.kodi/userdata/.ssh
+        [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
+        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | ${SUDO} tee ${STORAGE_DIR}/.ssh/authorized_keys 1>/dev/null
+        ${SUDO} chmod 600 ${STORAGE_DIR}/.ssh/authorized_keys
 }
 
 runLEnfsBoot() {
+    trap 'echo "SIGINT !!!" && cleanExit ' INT
     get_img
+    #resizeImage
     mountLE
+    playStartUpVideo
+    disableSplash
+    createSshKey
     prepare
     cleanExit
 }
 
-trap 'echo "SIGINT !!!" && cleanExit ' INT
+
 
 [ "${BASH_SOURCE}" == "${0}" ] && runLEnfsBoot
 
