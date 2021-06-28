@@ -20,6 +20,7 @@
 # /mnt/LinuxData/OF/myGitHub/MyScripts/Rpi/Boot/NetBoot.sh
 
 VERBOSE=1
+OVERLAY=0
 MOUNT_DEV_DIR=1
 PI_SERIAL=b0c7e328          # Raspberry Pi 3 Model B Rev 1.2 Main Dev:192.168.1.3
 DEV_DIR=/mnt/LinuxData/OF
@@ -45,8 +46,8 @@ cd ${SCRIPT_PATH}
         echo -e "*******************\n* endOfFunctionList\n*******************"
 
 trap "cleanUp" INT
-#    trap 'echo "FuckYou!!!" && cleanUp' EXIT
-    trap "echo FuckYouToo" RETURN
+    # trap 'echo "FuckYou!!!" && cleanUp' EXIT
+trap "echo FuckYouToo" RETURN
 # if sourced, exit with "return"
 exit() {
 #    trap "echo FuckYou!!!" EXIT
@@ -99,9 +100,7 @@ check_dependency() {
 }
 
 NFS_VERS=4
-IMG_FOLDER=/mnt/LinuxData/Install/img
-OVERLAY=0
-    DHCP=0
+DHCP=1
     if [ $DHCP -eq 1 ]; then
         HOST_IP=$(hostname -I | sed 's/ .*//')
     else
@@ -111,7 +110,6 @@ NFS_ROOT=/nfs
 TEMP=/tmp
 TEMP=/mnt/LinuxData/tmp
 MAKE_INITRAMFS=0
-VERBOSE=1
 
 serials="b0c7e328 dc:a6:32:66:0a:2c"
 PI4_serial[0]="177b3502"
@@ -486,69 +484,63 @@ EOF
     # sudo service systemd-resolved stop
     # ${SUDO} systemctl is-active -q systemd-resolved
 configure_dnsmasq() {
-    cat << EOF | sed 's/^.\{8\}//'| ${SUDO} tee /etc/dnsmasq.d/nfsBoot.conf  1>/dev/null
-        #PXE BootServer by PiMaker®
-        bind-dynamic
-        log-dhcp
-        ## tftp:
-        enable-tftp                         # Enable integrated read-only TFTP server.
-        tftp-root=${ROOT_FS}/boot           # Export files by TFTP only from the specified subtree.
-        tftp-unique-root=mac                # Add client IP or hardware address to tftp-root.
-        # tftp-secure                       # Allow access only to files owned by the user running dnsmasq.
-        tftp-no-fail                        # Do not terminate the service if TFTP directories are inaccessible.
-        # tftp-max=<integer>                # Maximum number of concurrent TFTP transfers (defaults to 50).
-        # tftp-mtu=<integer>                # Maximum MTU to use for TFTP transfers.
-        # tftp-no-blocksize                 # Disable the TFTP blocksize extension.
-        # tftp-lowercase                    # Convert TFTP filenames to lowercase
-        # tftp-port-range=<start>,<end>     # Ephemeral port range for use by TFTP transfers.
-
-        local-service
-
-        # port=0
-        #interface=eth0
-        interface=enp0s25
-        dhcp-no-override
-        dhcp-script=/bin/echo
-
-        dhcp-boot=pxelinux.0
-        dhcp-range=tag:piserver,${HOST_IP},proxy
-        pxe-service=tag:piserver,0,"Raspberry Pi Boot"
-        dhcp-reply-delay=tag:piserver,1
-
-        dhcp-host=b8:27:eb:c7:e3:28,set:piserver
-        ## Headless Pi3
-        dhcp-host=b8:27:eb:d0:2e:74,set:piserver
-        # Pi4
-        dhcp-host=dc:a6:32:66:0a:2c,set:piserver
-        # CM3+
-        dhcp-host=b8:27:eb:e6:06:53,set:piserver
-        # CM4
-        dhcp-host=dc:a6:32:da:04:2d,set:piserver
-        dhcp-host=e4:5f:01:1f:b7:4e,set:piserver
-EOF
+    # SUDO=sudo VERBOSE=1 DHCP=1 BOOT_FS=/nfs/root/boot 
     ${SUDO} systemctl is-active -q systemd-resolved && ${SUDO} service systemd-resolved stop
     
-    DHCP=0
-
     if [[ $VERBOSE == 1 ]]; then
         TFTP_DIR=${BOOT_FS}
     
-    if [ $DHCP -eq 1 ]; then      
-        HOST_IP=$(hostname -I | sed 's/ .*//')
-        DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+        if [ $DHCP -eq 1 ]; then      
+            HOST_IP=$(hostname -I | sed 's/ .*//')
+            DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+        else
+            HOST_IP=10.0.0.1
+            DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.100,1h --port=5353"
+        fi
+        gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
+            --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE} --tftp-unique-root=mac 
+
     else
-        HOST_IP=10.0.0.1
-        DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.100,1h"
-    fi
-    gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
-        --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE}
-        
-        
-        echo dnsmasq --enable-tftp --port=0 \
-        --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
-        --pxe-prompt="Boot Raspberry Pi",1 --dhcp-range=${HOST_IP},proxy \
-        --tftp-unique-root=mac --dhcp-reply-delay=1
-    else
+        cat << EOF | sed 's/^.\{12\}//'| ${SUDO} tee /etc/dnsmasq.d/nfsBoot.conf  1>/dev/null
+            #PXE BootServer by PiMaker®
+            bind-dynamic
+            log-dhcp
+            ## tftp:
+            enable-tftp                         # Enable integrated read-only TFTP server.
+            tftp-root=${ROOT_FS}/boot           # Export files by TFTP only from the specified subtree.
+            tftp-unique-root=mac                # Add client IP or hardware address to tftp-root.
+            # tftp-secure                       # Allow access only to files owned by the user running dnsmasq.
+            tftp-no-fail                        # Do not terminate the service if TFTP directories are inaccessible.
+            # tftp-max=<integer>                # Maximum number of concurrent TFTP transfers (defaults to 50).
+            # tftp-mtu=<integer>                # Maximum MTU to use for TFTP transfers.
+            # tftp-no-blocksize                 # Disable the TFTP blocksize extension.
+            # tftp-lowercase                    # Convert TFTP filenames to lowercase
+            # tftp-port-range=<start>,<end>     # Ephemeral port range for use by TFTP transfers.
+
+            local-service
+
+            # port=0
+            #interface=eth0
+            interface=enp0s25
+            dhcp-no-override
+            dhcp-script=/bin/echo
+
+            dhcp-boot=pxelinux.0
+            dhcp-range=tag:piserver,${HOST_IP},proxy
+            pxe-service=tag:piserver,0,"Raspberry Pi Boot"
+            dhcp-reply-delay=tag:piserver,1
+
+            dhcp-host=b8:27:eb:c7:e3:28,set:piserver
+            ## Headless Pi3
+            dhcp-host=b8:27:eb:d0:2e:74,set:piserver
+            # Pi4
+            dhcp-host=dc:a6:32:66:0a:2c,set:piserver
+            # CM3+
+            dhcp-host=b8:27:eb:e6:06:53,set:piserver
+            # CM4
+            dhcp-host=dc:a6:32:da:04:2d,set:piserver
+            dhcp-host=e4:5f:01:1f:b7:4e,set:piserver
+EOF
         ${SUDO} service dnsmasq start
     fi
 }
@@ -574,12 +566,13 @@ remove_dphys-swapfile() {
 enable_ssh() {
     if [ ! -h ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/ssh.service ]; then
         ${SUDO} ln -s /lib/systemd/system/ssh.service ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/ssh.service
+        [ VERBOSE == 1 ] && echo ":: SSH Enabled"
     fi
 }
 
 create_ssh_keypair() {
-    HOSTNAME=$(hostname -s)
-
+    HOSTNAME=$(hostname -s) 
+    # SUDO=sudo OT_FS=/nfs/root ID=pi
     if [ ${OVERLAY} == 1 ]; then
         #local ROOT_FS=${UPPER_DIR}/data
         echo "KapdBe!"
@@ -715,15 +708,16 @@ cleanUp() {
         # serials="b0c7e328 dc:a6:32:66:0a:2c"
         echo "Sourced CleanUp happend!!!"
 # fi
+#        exit
 }
 
 runNfsBoot() {
     # check_root //movedToRoot!
     check_dependency
-    #get_img
     getImg
     #resizeImage
     mountImage
+    detectOS
     prepare_cmdline
     prepare_fstab
     remove_dphys-swapfile
@@ -745,7 +739,7 @@ runNfsBoot() {
     ${SUDO} service nfs-kernel-server restart
     # ${SUDO} service dnsmasq restart
     #startRpiBoot
-    trap 'echo "SIGINT traped" && cleanUp' INT
+    trap 'echo "SIGINT traped"' INT
 
     while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --extra-button="KeepRun" --display=${DISPLAY})
     do
@@ -922,7 +916,7 @@ usbboot() {
 
 installUbuntu() {
     #IMG=/mnt/LinuxData/OF/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO *.gz" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
     # sudo dd if=${IMG} bs=4M of=/dev/mmcblk0 bs=10MB
     xzcat ${IMG} | pv -s 2G  |sudo dd bs=4M of=/dev/mmcblk0
     fi
