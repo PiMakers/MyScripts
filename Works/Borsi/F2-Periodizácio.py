@@ -2,9 +2,14 @@
 # Set RGB color
 ## www.python-exemplary.com/drucken.php?inhalt_mitte=raspi/en/leddimming.inc.php
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+    import xbmc, xbmcgui
+except:
+    print("XBMC NOT FOUND")
+    exit(1)
 import time
 import random
 
@@ -60,3 +65,5 @@ while True:
     print (f0, f1, f2, f3, f4, f5)
     setLights(f0, f1, f2, f3, f4, f5)
     time.sleep(0.2)
+
+GPIO.cleanup([FLOOR_0, FLOOR_1, FLOOR_2, FLOOR_3, FLOOR_4, FLOOR_5])
