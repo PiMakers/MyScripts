@@ -1,4 +1,8 @@
 #!/usr/bin/python
+#xbmc.executebuidin(Skin.SetBool(isPaused))
+#xbmc.executebuidin(Skin.SetBool(videoEnded))
+#xbmc.executebuidin(Skin.SetBool(videoStarted))
+
 
 import sys
 sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')

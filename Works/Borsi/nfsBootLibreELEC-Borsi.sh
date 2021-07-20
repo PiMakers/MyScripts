@@ -84,10 +84,28 @@ netBoot() {
     else
         DHCP_OPT="--dhcp-range=tag:piserver,${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h --listen-address=127.0.0.1,10.0.0.1 --port=5300"
     fi
-    
-    INTERFACE=eth0  # enp0s25
+
+    for m in $(ls /sys/class/net)
+    do
+        case $m in
+            w*)
+                WIFI_IFACE=$m
+                ;;
+            e*)
+                WIRED_IFACE=$m
+                ;;
+            *)
+                if [ $m != lo ]; then
+                    OTHER_IFACE=$m
+                fi
+                ;;
+        esac
+        echo ":: Wired = ${WIRED_IFACE}"
+    done
+
+    INTERFACE=${WIRED_IFACE}  #eth0  # enp0s25
     MAC="e4:5f:01:1f:b7:42"
-    
+    MAC="*:*:*:*:*:*"
     ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
         --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} # --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
 }
