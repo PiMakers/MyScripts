@@ -3,6 +3,13 @@
 
 # sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
 #!/bin/bash
+# http://192.168.10.2/webfig/#Terminal
+# /interface ethernet poe set ether9 poe-out=off
+# /interface ethernet poe set ether9 poe-out=forced-on
+# /interface ethernet poe set ether9 poe-voltage=high
+# /interface ethernet poe set ether9 poe-out=forced-on poe-voltage=high
+# /interface ethernet comment ether13 comment="F5-Teremhang"
+# /interface ethernet poe monitor ether2
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
@@ -100,14 +107,15 @@ netBoot() {
                 fi
                 ;;
         esac
-        echo ":: Wired = ${WIRED_IFACE}"
     done
 
+    echo ":: Wired = ${WIRED_IFACE}"
     INTERFACE=${WIRED_IFACE}  #eth0  # enp0s25
     MAC="e4:5f:01:1f:b7:42"
     MAC="*:*:*:*:*:*"
+    MAC="e4:5f:01:1f:b6:f4"
     ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
-        --tftp-unique-root=mac --dhcp-reply-delay=1 ${DHCP_OPT} # --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+        --tftp-unique-root=mac ${DHCP_OPT} #--dhcp-reply-delay=1 --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
 }
 
 LEversion() {
@@ -218,7 +226,7 @@ createSshKey() {
         ${SUDO} chmod 600 ${STORAGE_DIR}/.ssh/authorized_keys
         ${SUDO} touch ${STORAGE_DIR}/.cache/services/sshd.conf
         echo "SSH_ARGS=-o 'PasswordAuthentication yes'" | ${SUDO} tee ${STORAGE_DIR}/.cache/services/sshd.conf
-        echo "SSHD_DISABLE_PW_AUTH=true" | ${SUDO} tee -a ${STORAGE_DIR}/.cache/services/sshd.conf
+        echo "SSHD_DISABLE_PW_AUTH=false" | ${SUDO} tee -a ${STORAGE_DIR}/.cache/services/sshd.conf
 }
 
 skinHack() {
@@ -282,7 +290,7 @@ runLEnfsBoot() {
     #playStartUpVideo
     #disableSplash
     #wizzard
-    #createSshKey
+    createSshKey
     netBoot
     cleanExit
 }
