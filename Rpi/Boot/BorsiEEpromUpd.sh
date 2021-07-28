@@ -67,9 +67,10 @@ WLAN	10.0.10.40	e4:5f:01:1f:b7:28
 
 ## Kodi
 
-d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	F3-7.3_WindowToPast(Right)
-9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  F3-8.3_WindowToPast(Center)
-0498982a    e4:5f:01:1f:bb:4d   192.168.10.143  F3-9.3_WindowToPast(Left)
+dd257d82    e4:5f:01:1f:b7:2a   192.168.10.116  F1-Teremhang                192.168.10.2    ether9 
+d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	F3-7.3_WindowToPast(Right)  192.168.10.2    ether21
+9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  F3-8.3_WindowToPast(Center) 192.168.10.2    ether19
+0498982a    e4:5f:01:1f:bb:4d   192.168.10.143  F3-9.3_WindowToPast(Left)   192.168.10.2    ether17
 c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso
 527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8_Fire
 38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints
@@ -79,17 +80,21 @@ c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso
 
 ## Msys
 dbfc9ec4    e4:5f:01:1f:b6:ee
+            e4:5f:01:1f:b6:f1   192.168.10.114  F6-Teremhang    192.168.10.2    ether3
 e70761a7    e4:5f:01:1f:b6:f4
+
 308e7856    e4:5f:01:1f:b6:fa
 d3eadbbe    e4:5f:01:1f:b6:df
+            e4:5f:01:1f:b6:e8   192.168.10.128   F5-Teremhang   192.168.10.2    ether13
+
 
 22537658    e4:5f:01:1f:b7:06
 fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik
-            e4:5f:01:1f:b7:2a   192.168.10.116 F1-Teremhang
 633a808b    e4:5f:01:1f:b7:2d
 3c50280a    e4:5f:01:1f:b7:12
 ac4939a9    e4:5f:01:1f:b7:15
 c8213b42    e4:5f:01:1f:b7:42
+            e4:5f:01:1f:b7:4e   192.168.10.131  F6-Animatik     192.168.10.2    ether2
 f6c82acf    e4:5f:01:1f:b7:51
 a3b621da    e4:5f:01:1f:b7:54
 
@@ -101,6 +106,11 @@ a3b621da    e4:5f:01:1f:b7:54
 ab276eca    e4:5f:01:1f:b9:d6
 2d3b5794    e4:5f:01:1f:b9:f1
 ab8aa887    e4:5f:01:1f:b9:1f
+            e4:5f:01:1f:b9:8e 192.168.10.139  F2-Priodizáció  192.168.10.2    ether1
 
 a35a7fdb    e4:5f:01:1f:ba:3f
+
+# poe-out status: short_circuit
+192.168.10.2    ether5
+
 "
