@@ -47,7 +47,7 @@ if [ $RES ]; then
         echo "BORSI CM4 serials\tmac address:\n" > /boot/BorsiSerials.txt
     fi
     sed -i "/${PI_SERIAL}/d" /boot/BorsiSerials.txt
-    echo "${PI_SERIAL}\t${PI_MAC}" >> /boot/BorsiSerials.txt || true
+    echo -e "${PI_SERIAL}\t${PI_MAC}" >> /boot/BorsiSerials.txt || true
     cat -n /boot/BorsiSerials.txt || true
     sleep 10
     shutdown now 
@@ -131,5 +131,12 @@ a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.132  E6-Clouds_RL                192.
 
 # poe-out status: short_circuit
 192.168.10.2    ether5
+
+New:
+15ee8a1     dc:a6:32:e6:10:09
+580242cc    dc:a6:32:ea:c8:6d (Dobozos) NetBoot
+e809ea80    dc:a6:32:f3:8d:c1   NoNetBoot installed 95.xxx
+            dc:a6:32:e43:ed:6a
+115ee8a1    dc:a6:32:e6:10:09 (E!/1)  NetBoot
 
 "
