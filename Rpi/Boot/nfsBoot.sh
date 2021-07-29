@@ -135,7 +135,7 @@ fi
 getImg(){
     [ ${VERBOSE} ] && echo ":: Geting rpi img ..."
     sudo mkdir -pv ${IMG_FOLDER}
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO *xz" --filename="${IMG_FOLDER}/2021-03-04-raspios-buster-arm64.img" 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO *xz" --filename="${IMG_FOLDER}/2021-05-07-raspios-buster-arm64.img" 2>/dev/null); then
         # TODO download script
         if $(zenity --question --text="Download image?");then
             echo "Downloding latest image... (not implemented yet) $PWD"
@@ -456,7 +456,7 @@ configure_nfs() {
     if [ "$NFS_VERS" == 4 ]; then
     #${SUDO} bash -c 'cat >> /etc/exports' << EOF
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee -a /etc/exports 1>/dev/null
-            /mnt/LinuxData/OF 192.168.1.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
+            # /mnt/LinuxData/OF 192.168.1.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=1000,anongid=1000)  #PxeServer
 
             # NFSv.4                                                                 PxeServer
             ${NFS_ROOT} ${HOST_IP%.*}.0/24(rw,fsid=0,sync,no_subtree_check,no_auth_nlm,insecure,no_root_squash,crossmnt) #PxeServer
@@ -493,12 +493,13 @@ configure_dnsmasq() {
         if [ $DHCP -eq 1 ]; then      
             HOST_IP=$(hostname -I | sed 's/ .*//')
             DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+            ## gnome-terminal -t "tftpBoot" -- sudo dnsmasq --enable-tftp --tftp-root=/nfs/root/boot,enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
         else
             HOST_IP=10.0.0.1
             DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.100,1h --port=5353"
         fi
-        gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --pxe-prompt="Boot Raspberry Pi",1 \
-            --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE} --tftp-unique-root=mac 
+        gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
+            --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-range=${DHCP_RANGE} --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 
 
     else
         cat << EOF | sed 's/^.\{12\}//'| ${SUDO} tee /etc/dnsmasq.d/nfsBoot.conf  1>/dev/null
@@ -873,6 +874,8 @@ remove_unused() {
     ## Unhold or Include Package in Install
     # sudo apt-mark unhold package_name
     ${SUDO} apt upgrade -y && ${SUDO} apt autoremove -y && ${SUDO} apt autoclean && ${SUDO} apt clean
+    ## BorsiNew
+    ${SUDO} apt purge -y pi-bluetooth rp-prefapps thonny rp-bookshelf
 }
 
 prepare_wpa_supplicant() {
@@ -913,12 +916,14 @@ usbboot() {
 
 ## kali fstab
 # mount -t tmpfs tmpfs /var/log/journal -o defaults,mode=755
+# echo dtoverlay=dwc2,dr_mode=host | sudo tee /boot/config.txt # RaspberryPi IO board !!!
 
 installUbuntu() {
     #IMG=/mnt/LinuxData/OF/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.ISO *.gz" --filename="${IMG_FOLDER}/ubuntu-20.04.2-preinstalled-server-arm64+raspi.img" 2>/dev/null); then
     # sudo dd if=${IMG} bs=4M of=/dev/mmcblk0 bs=10MB
-    xzcat ${IMG} | pv -s 2G  |sudo dd bs=4M of=/dev/mmcblk0
+    xzcat ${IMG} | pv -s 2G  | ${SUDO} dd bs=4M of=/dev/mmcblk0
+    # xzcat ${IMG} | ${SUDO} dd bs=4M of=/dev/mmcblk0
     fi
 }
     # rasbian bootorder:

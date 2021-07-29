@@ -60,7 +60,6 @@ try:
             setColor(0,100,0)
             time.sleep(1.0)
             setBlue()
-            setBlue()
 
 except KeyboardInterrupt:
     print ("CleaningUp...")
