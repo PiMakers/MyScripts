@@ -78,7 +78,7 @@ c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso                   192.
 
 # UnKnonw state or other problem
 ac4939a9    e4:5f:01:1f:b7:15   192.168.10.102  E2-Piocák                   192.168.10.1                ??????????
-e70761a7    e4:5f:01:1f:b6:f4   192.168.10.146  E2-Teremhang                192.168.10.110  ether1
+e70761a7    e4:5f:01:1f:b6:f4   192.168.10.146  E2-Teremhang                192.168.10.110  ether2
                                                 E4-Mese                     192.168.10.1
 a3b621da    e4:5f:01:1f:b7:54
 d3eadbbe    e4:5f:01:1f:b6:df
@@ -101,7 +101,7 @@ fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik                 192.
 633a808b    e4:5f:01:1f:b7:2d   192.168.10.118  E9-5.16b_KurucnotaTarogato  192.168.10.111
 c8213b42    e4:5f:01:1f:b7:42   192.168.10.108  E3-Latin                    192.168.10.1
             e4:5f:01:1f:b7:4e   192.168.10.131  F6-Animatik                 192.168.10.2    ether2
-f6c82acf    e4:5f:01:1f:b7:51                   E6-Clouds_FR                192.168.10.1
+f6c82acf    e4:5f:01:1f:b7:51   192.168.10.126  E6-Clouds_FR                192.168.10.1
             e4:5f:01:1f:b7:a8   192.168.10.166  E7-Tenger                   192.168.10.110  ether8
             e4:5f:01:1f:b7:b7   192.168.10.135  E9-5.20ab_SK_Ruszin         192.168.10.111                    
             e4:5f:01:1f:b7:78   192.168.10.101  E6-Clouds_RR
