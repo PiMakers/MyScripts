@@ -3,8 +3,8 @@
 import sys
 sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
 import RPi.GPIO as GPIO
-import time
-import xbmc
+import xbmc, xbmcgui
+
 
 button = 14
 red    = 15
@@ -12,7 +12,7 @@ green  = 18
 blue   = 23
 
 def setup():
-	xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
+	#xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
        # GPIO.BCM = GPIO number GPIO.BOARD = PIN number
        GPIO.setmode(GPIO.BCM)
        GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -39,11 +39,13 @@ def loop():
                   GPIO.output(blue, True)
 
                xbmc.log(msg='Button Pressed...', level=xbmc.LOGINFO)
+               xbmcgui.log(msg='Button Pressed...', level=xbmc.LOGINFO)
                xbmc.executebuiltin( "PlayerControl(Next)" )
                counter += 1
                counter = counter%3
+
                while GPIO.input(button) == False:
-                    time.sleep(0.2)
+                    xbmc.sleep(0.2)
 
 def endprogram():
        GPIO.output(red, False)
@@ -54,11 +56,11 @@ def endprogram():
 
 if __name__ == '__main__':
 
-          setup()
-          try:
-                 loop()
+   setup()
+   try:
+      loop()
 
-          except KeyboardInterrupt:
-        xbmc.log( msg='keyboard interrupt detected', level=xbmc.LOGERROR)
-         print ('keyboard interrupt detected')
-                 endprogram()
+   except:
+      xbmc.log( msg='keyboard interrupt detected', level=xbmc.LOGERROR)
+      print ('keyboard interrupt detected')
+      endprogram()
