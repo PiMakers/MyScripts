@@ -69,8 +69,6 @@ echo " \
 192.168.10.122	08:55:31:d4:f1:ce	(Unknown)
 192.168.10.200	2c:f0:5d:15:ea:3e	(Unknown)
 
-## NotShure
-192.168.10.102	e4:5f:01:1f:b7:15	(E2-Pioca?)
 
 ## Server fb59ee8e
 LAN	192.168.10.167	e4:5f:01:1f:b7:27 
@@ -82,44 +80,54 @@ dd257d82    e4:5f:01:1f:b7:2a   192.168.10.116  F1-Teremhang                192.
 d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	F3-7.3_WindowToPast(Right)  192.168.10.2    ether21
 9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  F3-8.3_WindowToPast(Center) 192.168.10.2    ether19
 0498982a    e4:5f:01:1f:bb:4d   192.168.10.143  F3-9.3_WindowToPast(Left)   192.168.10.2    ether17
-c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso
-527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8_Fire
-38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints
-79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  E9-5.15b_MemoryTrees
-6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  E9-5.3b_SZOBROK
 
+c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso                   192.168.10.1
+527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8-Fire                     192.168.10.110  ether5        
+6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  E9-5.3b_SZOBROK             192.168.10.112
+38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  
+79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  E9-5.15b_MemoryTrees        192.168.10.111
+
+# UnKnonw state or other problem
+ac4939a9    e4:5f:01:1f:b7:15   192.168.10.102  E2-Piocák                   192.168.10.1                ??????????
+e70761a7    e4:5f:01:1f:b6:f4   192.168.10.146  E2-Teremhang                192.168.10.110  ether1
+                                                E4-Mese                     192.168.10.1
+a3b621da    e4:5f:01:1f:b7:54
+d3eadbbe    e4:5f:01:1f:b6:df
 
 ## Msys
-dbfc9ec4    e4:5f:01:1f:b6:ee
-            e4:5f:01:1f:b6:f1   192.168.10.114  F6-Teremhang    192.168.10.2    ether3
-e70761a7    e4:5f:01:1f:b6:f4
+            dc:a6:32:da:04:2d   192.168.10.194  E9-5.5b_TenkesKapitánya     192.168.10.112
 
-308e7856    e4:5f:01:1f:b6:fa
-d3eadbbe    e4:5f:01:1f:b6:df
-            e4:5f:01:1f:b6:e8   192.168.10.128   F5-Teremhang   192.168.10.2    ether13
+dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  E9-FundationFilm            192.168.10.112
+            e4:5f:01:1f:b6:e8   192.168.10.128  F5-Teremhang                192.168.10.2    ether13
+            e4:5f:01:1f:b6:f1   192.168.10.114  F6-Teremhang                192.168.10.2    ether3
+308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  E9-5,6a_Indulók             192.168.10.112
+            e4:5f:01:1f:b6:fd   192.168.10.159  E7-Mikes                    192.168.10.110  ether1
 
 
-22537658    e4:5f:01:1f:b7:06
-fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik
-633a808b    e4:5f:01:1f:b7:2d
-3c50280a    e4:5f:01:1f:b7:12
-ac4939a9    e4:5f:01:1f:b7:15
-c8213b42    e4:5f:01:1f:b7:42
-            e4:5f:01:1f:b7:4e   192.168.10.131  F6-Animatik     192.168.10.2    ether2
-f6c82acf    e4:5f:01:1f:b7:51
-a3b621da    e4:5f:01:1f:b7:54
+            e4:5f:01:1f:b7:00   192.168.10.187  E9-Szalagos                 192.168.10.112
+            e4:5f:01:1f:b7:03   192.168.10.123  E7-Animatik                 192.168.10.1
+22537658    e4:5f:01:1f:b7:06   192.168.10.119  E7-Hadászat                 192.168.10.1
+fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik                 192.168.10.1
+3c50280a    e4:5f:01:1f:b7:12   192.168.10.127  E6-Clouds_FL                192.168.10.1
+633a808b    e4:5f:01:1f:b7:2d   192.168.10.118  E9-5.16b_KurucnotaTarogato  192.168.10.111
+c8213b42    e4:5f:01:1f:b7:42   192.168.10.108  E3-Latin                    192.168.10.1
+            e4:5f:01:1f:b7:4e   192.168.10.131  F6-Animatik                 192.168.10.2    ether2
+f6c82acf    e4:5f:01:1f:b7:51                   E6-Clouds_FR                192.168.10.1
+            e4:5f:01:1f:b7:a8   192.168.10.166  E7-Tenger                   192.168.10.110  ether8
+            e4:5f:01:1f:b7:b7   192.168.10.135  E9-5.20ab_SK_Ruszin         192.168.10.111                    
+            e4:5f:01:1f:b7:78   192.168.10.101  E6-Clouds_RR
 
-1f8638a0    e4:5f:01:1f:b8:89
-6cbcac49    e4:5f:01:1f:b8:5f
-7db7a8e2    e4:5f:01:1f:b8:92
-79fee1e9    e4:5f:01:1f:b8:d7
+6cbcac49    e4:5f:01:1f:b8:5f   192.168.10.124  E1-Heraldika                --------------  ------
+1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  E9-5.2a_Rémisztő            192.168.10.112
+7db7a8e2    e4:5f:01:1f:b8:92   192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112
 
-ab276eca    e4:5f:01:1f:b9:d6
-2d3b5794    e4:5f:01:1f:b9:f1
-ab8aa887    e4:5f:01:1f:b9:1f
-            e4:5f:01:1f:b9:8e 192.168.10.139  F2-Priodizáció  192.168.10.2    ether1
+ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  E9-ReBurial                 192.168.10.111
+2d3b5794    e4:5f:01:1f:b9:f1   192.168.10.117  E8-MyHero                   192.168.10.1
+            e4:5f:01:1f:b9:1c   192.168.10.103  E9-5.16a_Radio              192.168.10.111
+ab8aa887    e4:5f:01:1f:b9:1f   192.168.10.129  E2-Vizelet                  192.168.10.1
+            e4:5f:01:1f:b9:8e   192.168.10.139  F2-Priodizáció              192.168.10.2    ether1
 
-a35a7fdb    e4:5f:01:1f:ba:3f
+a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.132  E6-Clouds_RL                192.168.10.1
 
 # poe-out status: short_circuit
 192.168.10.2    ether5
