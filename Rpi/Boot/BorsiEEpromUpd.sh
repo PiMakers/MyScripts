@@ -31,8 +31,8 @@ TMP_DIR=/tmp
         [none]
         FREEZE_VERSION=0
 EOF
-
-CM4_ENABLE_RPI_EEPROM_UPDATE=1 sudo -E rpi-eeprom-config --apply ${TMP_DIR}/boot.conf && RES="$?"
+SUDOE='sudo -E'
+CM4_ENABLE_RPI_EEPROM_UPDATE=1 ${SUDOE} rpi-eeprom-config --apply ${TMP_DIR}/boot.conf && RES="$?"
 
 echo "::RES = $RES ---------------------------------------------------------" 
 if [ $RES ]; then
@@ -71,28 +71,35 @@ echo " \
 
 
 ## Server fb59ee8e
-LAN	192.168.10.167	e4:5f:01:1f:b7:27 
+LAN:
+a3b621da    e4:5f:01:1f:b7:54   192.168.10.142
+
+???:
 WLAN	10.0.10.40	e4:5f:01:1f:b7:28
 
 ## Kodi
 
-dd257d82    e4:5f:01:1f:b7:2a   192.168.10.116  F1-Teremhang                192.168.10.2    ether9 
+35b00be8    dc:a6:32:e4:ed:6a   192.168.10.162  F1-Teremhang                192.168.10.2    ether9
 d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	F3-7.3_WindowToPast(Right)  192.168.10.2    ether21
 9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  F3-8.3_WindowToPast(Center) 192.168.10.2    ether19
 0498982a    e4:5f:01:1f:bb:4d   192.168.10.143  F3-9.3_WindowToPast(Left)   192.168.10.2    ether17
 
 c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso                   192.168.10.1
+580242cc    dc:a6:32:ea:c8:6d   192.168.10.152  E4-Mese                     192.168.10.1
+
 527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8-Fire                     192.168.10.110  ether5        
 6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  E9-5.3b_SZOBROK             192.168.10.112
 38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  
 79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  E9-5.15b_MemoryTrees        192.168.10.111
 
+
 # UnKnonw state or other problem
 ac4939a9    e4:5f:01:1f:b7:15   192.168.10.102  E2-Piocák                   192.168.10.1                ??????????
 e70761a7    e4:5f:01:1f:b6:f4   192.168.10.146  E2-Teremhang                192.168.10.110  ether2
-                                                E4-Mese                     192.168.10.1
-a3b621da    e4:5f:01:1f:b7:54
+
+
 d3eadbbe    e4:5f:01:1f:b6:df
+	192.168.10.167	e4:5f:01:1f:b7:27 
 
 ## Msys
             dc:a6:32:da:04:2d   192.168.10.194  E9-5.5b_TenkesKapitánya     192.168.10.112
@@ -133,10 +140,9 @@ a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.132  E6-Clouds_RL                192.
 192.168.10.2    ether5
 
 New:
-15ee8a1     dc:a6:32:e6:10:09
-580242cc    dc:a6:32:ea:c8:6d (Dobozos) NetBoot
-e809ea80    dc:a6:32:f3:8d:c1   NoNetBoot installed 95.xxx
-            dc:a6:32:e43:ed:6a
-115ee8a1    dc:a6:32:e6:10:09 (E!/1)  NetBoot
+15ee8a1     dc:a6:32:e6:10:09   192.168.10.154 E2-Teremhang
+
+e809ea80    dc:a6:32:f3:8d:c1   192.168.10.156   NoNetBoot installed 95.xxx F1-teremhang
+
 
 "
