@@ -1,3 +1,5 @@
+# Borsi Animatics
+
 import sys
 sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
 
@@ -20,35 +22,35 @@ class ButtonPlayer(xbmc.Player):
     self.ended = False
 
     # set pin order here, according to playlist.m3u
-    self.pinOrder = [self.green, self.blue, self.red]
+    self.pinOrder = [self.blue, self.green, self.red]
 
-    xbmc.executebuiltin('PlayMedia(/storage/.kodi/userdata/playlists/video/playlist.m3u)')
+    xbmc.executebuiltin('PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)')
     xbmc.executebuiltin('PlayerControl(RepeatAll)')
-    
+
     self.initGPIO()
     self.initVideo()
-    
+
     monitor = xbmc.Monitor()
     while not monitor.abortRequested():
       if monitor.waitForAbort(1):
         GPIO.cleanup()
       else:
         self.playVideo()
-    
+
   def initGPIO(self):
     GPIO.setwarnings(False)
     GPIO.cleanup([self.button, self.red, self.green, self.blue])
-    
+
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(self.button, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
     GPIO.add_event_detect(self.button, GPIO.RISING, bouncetime = 300, callback = self.onButtonPressed)
-    
+
     GPIO.setup(self.red, GPIO.OUT)
     GPIO.setup(self.green, GPIO.OUT)
     GPIO.setup(self.blue, GPIO.OUT)
-    
+
     self.setLedColor()
-    
+
   def initVideo(self):
     self.started = False
     while not self.isPlaying():
@@ -75,16 +77,17 @@ class ButtonPlayer(xbmc.Player):
       self.started = True
       xbmc.executebuiltin('PlayList.PlayOffset(' + str(mod - self.modCurrent) + ')')
     self.modCurrent = mod
-    
+
   def onPlayBackEnded(self):
     self.ended = True
     self.keyPresses += 1
     self.setLedColor()
     self.initVideo()
-    
+
   def setLedColor(self):
     for i in range(len(self.pinOrder)):
       GPIO.output(self.pinOrder[i], self.pinOrder[self.keyPresses % len(self.pinOrder)] == self.pinOrder[i])
 
 if __name__ == '__main__':
+  xbmc.executebuiltin( "SetVolume(30)" )
   ButtonPlayer()
