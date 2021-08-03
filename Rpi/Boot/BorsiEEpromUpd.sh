@@ -137,14 +137,15 @@ fb59ee8e	e4:5f:01:1f:b7:27   192.168.10.167	E2-Piocák                   192.168
 c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso                   192.168.10.1
 580242cc    dc:a6:32:ea:c8:6d   192.168.10.152  E4-Mese                     192.168.10.1
 
+
 f6c82acf    e4:5f:01:1f:b7:51   192.168.10.126  E6-Clouds_FR                192.168.10.113  ether2
 fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik                 192.168.10.113  ether4
-
 043ab7a6    e4:5f:01:1f:b7:03   192.168.10.123  E7-Animatik                 192.168.10.1
 527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8-Fire                     192.168.10.110  ether5
 
 dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  E9-FundationFilm            192.168.10.112  ether1
 ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  E9-ReBurial                 192.168.10.111  ether7
+1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  E9-5.2a_Scary               192.168.10.112  ether7
 6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  E9-5.3b_SZOBROK             192.168.10.112  ether6
 717dca63    dc:a6:32:da:04:2d   192.168.10.194  E9-5.5b_TenkesKapitánya     192.168.10.112  ether3
 38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  ether6  
@@ -153,13 +154,8 @@ ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  E9-ReBurial                 192.
 
 ## Msys
 
-
-
-
-
 308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  E9-5,6a_Indulók             192.168.10.112  ether4
             e4:5f:01:1f:b6:fd   192.168.10.159  E7-Mikes                    192.168.10.110  ether1
-
 
             e4:5f:01:1f:b7:00   192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
 22537658    e4:5f:01:1f:b7:06   192.168.10.119  E7-Hadászat                 192.168.10.1
@@ -172,7 +168,7 @@ c8213b42    e4:5f:01:1f:b7:42   192.168.10.108  E3-Latin                    192.
             e4:5f:01:1f:b7:78   192.168.10.101  E6-Clouds_RR
 
 6cbcac49    e4:5f:01:1f:b8:5f   192.168.10.124  E1-Heraldika                --------------  ------
-1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  E9-5.2a_Rémisztő            192.168.10.112  ether7
+
 7db7a8e2    e4:5f:01:1f:b8:92   192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5
 
 2d3b5794    e4:5f:01:1f:b9:f1   192.168.10.117  E8-MyHero                   192.168.10.1
@@ -185,9 +181,8 @@ a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.132  E6-Clouds_RL                192.
 # poe-out status: short_circuit
 192.168.10.2    ether5
 
+
 New:
-
-
 e809ea80    dc:a6:32:f3:8d:c1   192.168.10.156   NoNetBoot installed 95.xxx F1-teremhang
 
 
