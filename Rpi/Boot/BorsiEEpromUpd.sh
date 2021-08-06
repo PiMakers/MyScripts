@@ -1,6 +1,21 @@
 ## https://onedrive.live.com/?cid=04E1AFAA94739671&id=4E1AFAA94739671%21330810&parId=4E1AFAA94739671%21307716&o=OneUp
 
 #!/bin/bash
+hopp() {
+    mkdir -pv /var/media/OF
+    mount 192.168.1.20:/mnt/LinuxData/OF /media/OF
+    /media/OF/myGitHub/MyScripts/Rpi/Boot/BorsiEEpromUpd.sh
+}
+
+
+. /etc/os-release
+if [ $ID == "libreelec" ]; then
+    mount -oremount,rw /flash
+    TMP_DIR=/storage/.kodi/temp
+else
+    SUDOE='sudo -E'
+    TMP_DIR=/tmp
+fi
 
 TMP_DIR=/tmp
 
