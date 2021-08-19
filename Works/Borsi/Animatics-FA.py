@@ -24,6 +24,7 @@ class ButtonPlayer(xbmc.Player):
     # set pin order here, according to playlist.m3u
     self.pinOrder = [self.blue, self.green, self.red]
 
+    xbmc.executebuiltin( "SetVolume(30)" )
     xbmc.executebuiltin('PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)')
     xbmc.executebuiltin('PlayerControl(RepeatAll)')
 
@@ -89,5 +90,4 @@ class ButtonPlayer(xbmc.Player):
       GPIO.output(self.pinOrder[i], self.pinOrder[self.keyPresses % len(self.pinOrder)] == self.pinOrder[i])
 
 if __name__ == '__main__':
-  xbmc.executebuiltin( "SetVolume(30)" )
   ButtonPlayer()
