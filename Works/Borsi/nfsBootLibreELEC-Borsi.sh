@@ -189,7 +189,7 @@ disableSplash() {
                 <memorysize>139460608</memorysize>
                 <readfactor>20</readfactor>
             </cache>
-        </advancedsettings>    
+        </advancedsettings>
 EOF
 }
 
