@@ -7,8 +7,8 @@ hopp() {
     /media/OF/myGitHub/MyScripts/Rpi/Boot/BorsiEEpromUpd.sh
 }
 
-
 . /etc/os-release
+
 if [ $ID == "libreelec" ]; then
     mount -oremount,rw /flash
     TMP_DIR=/storage/.kodi/temp
@@ -87,6 +87,7 @@ echo " \
     ether3      F6-Teremhang
     ether 4-8   -
     ether9      F1-Teremhang
+    ether 10-12 -
     ether13     F5-Teremhang
     ether17     F3-9.3_WindowToPast(Left)
     ether19     F3-8.3_WindowToPast(Center)
@@ -141,52 +142,57 @@ WLAN	10.0.10.40	e4:5f:01:1f:b7:28
 #########
 
 # FSZ:
-35b00be8    dc:a6:32:e4:ed:6a   192.168.10.162  F1-Teremhang                192.168.10.2    ether9
-d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	F3-7.3_WindowToPast(Right)  192.168.10.2    ether21
-9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  F3-8.3_WindowToPast(Center) 192.168.10.2    ether19
-0498982a    e4:5f:01:1f:bb:4d   192.168.10.143  F3-9.3_WindowToPast(Left)   192.168.10.2    ether17
-e0814bfd    e4:5f:01:1f:b6:e8   192.168.10.128  F5-Teremhang                192.168.10.2    ether13
-aabe2c95    e4:5f:01:1f:b7:4e   192.168.10.131  F6-Animatik                 192.168.10.2    ether2
-656e4acc    e4:5f:01:1f:b6:f1   192.168.10.148  F6-Teremhang                192.168.10.2    ether3
+35b00be8    dc:a6:32:e4:ed:6a   192.168.10.162  f1-teremhang.local              F1-Teremhang                192.168.10.2    ether9  40
+72d9e3f4    e4:5f:01:1f:b9:8e   192.168.10.118  f2-periodizacio.local           F2-Periodizáció             192.168.10.2    ether1
+0498982a    e4:5f:01:1f:bb:4d   192.168.10.114  f3-windowtopast-left.local      F3-9.3_WindowToPast(Left)   192.168.10.2    ether17
+9e959b9a    e4:5f:01:1f:b6:e5   192.168.10.137  f3-windowtopast-center.local    F3-8.3_WindowToPast(Center) 192.168.10.2    ether19
+d3cb90f9    e4:5f:01:1f:b9:df   192.168.10.144	f3-windowtopast-right.local     F3-7.3_WindowToPast(Right)  192.168.10.2    ether21
+e0814bfd    e4:5f:01:1f:b6:e8   192.168.10.128  f5-teremhang.local              F5-Teremhang                192.168.10.2    ether13
+aabe2c95    e4:5f:01:1f:b7:4e   192.168.10.131  f6-animatik.local               F6-Animatik                 192.168.10.2    ether2
+656e4acc    e4:5f:01:1f:b6:f1   192.168.10.148  f6-teremhang.local              F6-Teremhang                192.168.10.2    ether3
 
 
 # EMELET:
-fb59ee8e	e4:5f:01:1f:b7:27   192.168.10.167	E2-Piocák                   192.168.10.1
-115ee8a1    dc:a6:32:e6:10:09   192.168.10.154  E2-Teremhang                192.168.10.110  ether2
+fb59ee8e	e4:5f:01:1f:b7:27   192.168.10.167	e2-piocak.local                 E2-Piocák                   192.168.10.1
+115ee8a1    dc:a6:32:e6:10:09   192.168.10.107  e2-teremhang.local              E2-Teremhang                192.168.10.110  ether2
 
-c8213b42    e4:5f:01:1f:b7:42   192.168.10.108  E3-Latin                    192.168.10.1
+c8213b42    e4:5f:01:1f:b7:42   192.168.10.108  e3-latin.local                  E3-Latin                    192.168.10.1
 
-c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  E4-Bolcso                   192.168.10.1
-580242cc    dc:a6:32:ea:c8:6d   192.168.10.152  E4-Mese                     192.168.10.1
+c15e7df5    e4:5f:01:1f:b7:4b   192.168.10.147  e4-bolcso.local                 E4-Bolcso                   192.168.10.1
+580242cc    dc:a6:32:ea:c8:6d   192.168.10.152  e4-mese.local                   E4-Mese                     192.168.10.1
 
 
-3c50280a    e4:5f:01:1f:b7:12   192.168.10.127  E6-CloudsFL                192.168.10.1
-f6c82acf    e4:5f:01:1f:b7:51   192.168.10.126  E6-Clouds_FR                192.168.10.113  ether2
-a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.100  E6-Clouds_RL                192.168.10.1
-49407160    e4:5f:01:1f:b7:78   192.168.10.101  E6-Clouds_RR                192.168.10.1
-fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  E6-Animatik                 192.168.10.113  ether4
+3c50280a    e4:5f:01:1f:b7:12   192.168.10.127  E6-CloudsFL                 192.168.10.1
+f6c82acf    e4:5f:01:1f:b7:51   192.168.10.126  e6-cloudsfr.local               E6-Clouds_FR                192.168.10.113  ether2
+a35a7fdb    e4:5f:01:1f:ba:3f   192.168.10.100  e6-cloudsrl.local               E6-Clouds_RL                192.168.10.1
+49407160    e4:5f:01:1f:b7:78   192.168.10.101  e6-cloudsrr.local               E6-Clouds_RR                192.168.10.1
+fed64f9e    e4:5f:01:1f:b7:0f   192.168.10.141  e6-animatik.local               E6-Animatik                 192.168.10.113  ether4
 
-ac4939a9    e4:5f:01:1f:b7:15   192.168.10.104  E7-Tenger                   192.168.10.110  ether8
-043ab7a6    e4:5f:01:1f:b7:03   192.168.10.123  E7-Animatik                 192.168.10.1
+ac4939a9    e4:5f:01:1f:b7:15   192.168.10.104  e7-tenger.local                 E7-Tenger                   192.168.10.110  ether8
+043ab7a6    e4:5f:01:1f:b7:03   192.168.10.123  e7-animatik.local               E7-Animatik                 192.168.10.1
 
-527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  E8-Fire                     192.168.10.110  ether5
+527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  e8-fire.local                   E8-Fire                     192.168.10.110  ether5
 
-dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  E9-FundationFilm            192.168.10.112  ether1
-ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  E9-ReBurial                 192.168.10.111  ether7
-1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  E9-5.2a_Scary               192.168.10.112  ether7
-6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  E9-5.3b_SZOBROK             192.168.10.112  ether6
-717dca63    dc:a6:32:da:04:2d   192.168.10.194  E9-5.5b_TenkesKapitánya     192.168.10.112  ether3
-308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  E9-5,6a_Indulók             192.168.10.112  ether4
+dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  e9-fundationfilm.local          E9-FundationFilm            192.168.10.112  ether1
+ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  e9-reburial.local               E9-ReBurial                 192.168.10.111  ether7
+1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  e9-5-2a-scary.local             E9-5.2a_Scary               192.168.10.112  ether7
+6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  e9-5-3b-szobrok.local           E9-5.3b_SZOBROK             192.168.10.112  ether6
+717dca63    dc:a6:32:da:04:2d   192.168.10.194  e9-5-5b-tenkeskapitanya.local   E9-5.5b_TenkesKapitánya     192.168.10.112  ether3
+308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  e9-5-6a-marses.local            E9-5,6a_Indulók             192.168.10.112  ether4
 38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  ether6
-79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  E9-5.15b_MemoryTrees        192.168.10.111  ether3
+79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  e9-5-15b-memorytrees.local      E9-5.15b_MemoryTrees        192.168.10.111  ether3
+633a808b    e4:5f:01:1f:b7:2d   192.168.10.105  E9-5.16b_KurucnotaTarogato  192.168.10.111  ether8
 
+
+# 14 tarogato
+# 25 Torok sip
 
 ## Msys
 37c8c5c7    e4:5f:01:1f:b6:fd   192.168.10.159  E7-Mikes                    192.168.10.110  ether1
 
 7db7a8e2    e4:5f:01:1f:b8:92   192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5
 6a4fe60d    e4:5f:01:1f:b9:1c   192.168.10.103  E9-5.16a_Radio              192.168.10.111  ether1
-633a808b    e4:5f:01:1f:b7:2d   192.168.10.118  E9-5.16b_KurucnotaTarogato  192.168.10.111  ether8
+ 
             e4:5f:01:1f:b7:b7   192.168.10.135  E9-5.20ab_SK_Ruszin         192.168.10.111  ether4                  
 
 96facade    e4:5f:01:1f:b7:00   192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
@@ -194,7 +200,7 @@ ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  E9-ReBurial                 192.
 6cbcac49    e4:5f:01:1f:b8:5f   192.168.10.124  E1-Heraldika                --------------  ------
 2d3b5794    e4:5f:01:1f:b9:f1   192.168.10.117  E8-MyHero                   192.168.10.1
 ab8aa887    e4:5f:01:1f:b9:1f   192.168.10.129  E2-Vizelet                  192.168.10.1
-72d9e3f4    e4:5f:01:1f:b9:8e   192.168.10.139  F2-Priodizáció              192.168.10.2    ether1
+
                                                 E3-InventáriumA
                                                 E3-InventáriumB
 # poe-out status: short_circuit
