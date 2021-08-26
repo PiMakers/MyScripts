@@ -34,7 +34,7 @@ TMP_DIR=/tmp
         ENABLE_SELF_UPDATE=1
 
         # default=0 silent=1
-        DISABLE_HDMI=0
+        DISABLE_HDMI=1
 
         #DHCP_TIMEOUT=45000
         #DHCP_REQ_TIMEOUT=4000
