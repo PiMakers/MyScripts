@@ -13,6 +13,7 @@ if [ $ID == "libreelec" ]; then
     mount -oremount,rw /flash
     TMP_DIR=/storage/.kodi/temp
 else
+    SUDO=sudo
     SUDOE='sudo -E'
     TMP_DIR=/tmp
 fi
@@ -23,30 +24,30 @@ TMP_DIR=/tmp
         [all]
         BOOT_UART=0
         WAKE_ON_GPIO=1
-        POWER_OFF_ON_HALT=0
+        POWER_OFF_ON_HALT=1
 
         # Try  Network -> MSD/USB -> SD- > Loop
-        BOOT_ORDER=0xf412
+        BOOT_ORDER=0xf12
 
         # Set to 0 to prevent bootloader updates from USB/Network boot
         # For remote units EEPROM hardware write protection should be used.
         ENABLE_SELF_UPDATE=1
 
         # default=0 silent=1
-        DISABLE_HDMI=1
+        DISABLE_HDMI=0
 
         #DHCP_TIMEOUT=45000
         #DHCP_REQ_TIMEOUT=4000
-        #TFTP_FILE_TIMEOUT=30000
+        TFTP_FILE_TIMEOUT=30000
         #TFTP_IP=
         #TFTP_PREFIX=0
-        SD_BOOT_MAX_RETRIES=1
-        NET_BOOT_MAX_RETRIES=2
+        SD_BOOT_MAX_RETRIES=0
+        NET_BOOT_MAX_RETRIES=0
 
         [none]
         FREEZE_VERSION=0
 EOF
-SUDOE='sudo -E'
+
 CM4_ENABLE_RPI_EEPROM_UPDATE=1 ${SUDOE} rpi-eeprom-config --apply ${TMP_DIR}/boot.conf && RES="$?"
 
 echo "::RES = $RES ---------------------------------------------------------" 
@@ -59,13 +60,13 @@ if [ $RES ]; then
     PI_SERIAL=`cat /proc/cpuinfo | grep Serial | awk -F ': ' '{print $2}' | tail -c 8`
     PI_MAC=`ip addr show eth0 | grep ether | awk '{print $2}'`
     if [ ! -f /boot/BorsiSerials.txt ]; then
-        echo "BORSI CM4 serials\tmac address:\n" > /boot/BorsiSerials.txt
+        echo -e "BORSI CM4\n serials:\tmac address:\n" | ${SUDO} tee -a /boot/BorsiSerials.txt
     fi
-    sed -i "/${PI_SERIAL}/d" /boot/BorsiSerials.txt
-    echo -e "${PI_SERIAL}\t${PI_MAC}" >> /boot/BorsiSerials.txt || true
-    cat -n /boot/BorsiSerials.txt || true
-    sleep 10
-    shutdown now 
+    #${SUDO} sed -i "/${PI_SERIAL}/d" /boot/BorsiSerials.txt
+    #echo -e "${PI_SERIAL}\t${PI_MAC}" ${SUDO} tee -a /boot/BorsiSerials.txt || true
+    #cat -n /boot/BorsiSerials.txt || true
+    #sleep 10
+    #${SUDO} shutdown now 
 else
     echo "---------------------------------------------------------------"
     echo "-                       FAILED!!!!!!!!                        -"
@@ -202,8 +203,9 @@ ab8aa887    e4:5f:01:1f:b9:1f   192.168.10.129  E2-Vizelet                  192.
 
 
 New:
-e809ea80    dc:a6:32:f3:8d:c1   192.168.10.156   NoNetBoot installed 95.xxx F1-teremhang
-            e4:5f:01:1f:b7:a8   192.168.10.166  E7-Tenger                   192.168.10.110  ether8
+e809ea80    dc:a6:32:f3:8d:c1
+94dbd852    e4:5f:01:1f:b7:a8
+
 
     STATION_NAME=F6-Animatik
     STATION_NAME=E9-5.5b_TenkesKapitánya
@@ -231,4 +233,4 @@ e809ea80    dc:a6:32:f3:8d:c1   192.168.10.156   NoNetBoot installed 95.xxx F1-t
 
 
 
-"
+" >/dev/null
