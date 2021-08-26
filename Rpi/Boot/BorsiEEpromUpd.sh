@@ -181,10 +181,7 @@ ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  e9-reburial.local               
 38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  ether6
 79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  e9-5-15b-memorytrees.local      E9-5.15b_MemoryTrees        192.168.10.111  ether3
 633a808b    e4:5f:01:1f:b7:2d   192.168.10.105  E9-5.16b_KurucnotaTarogato  192.168.10.111  ether8
-
-
-# 14 tarogato
-# 25 Torok sip
+821e1006    e4:5f:01:1f:b7:b7   192.168.10.102  e9-5-20abszlovakruszin.local    E9-5.20ab_SK_Ruszin         192.168.10.111  ether4
 
 ## Msys
 37c8c5c7    e4:5f:01:1f:b6:fd   192.168.10.159  E7-Mikes                    192.168.10.110  ether1
@@ -192,8 +189,6 @@ ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  e9-reburial.local               
 7db7a8e2    e4:5f:01:1f:b8:92   192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5
 6a4fe60d    e4:5f:01:1f:b9:1c   192.168.10.103  E9-5.16a_Radio              192.168.10.111  ether1
  
-            e4:5f:01:1f:b7:b7   192.168.10.135  E9-5.20ab_SK_Ruszin         192.168.10.111  ether4                  
-
 96facade    e4:5f:01:1f:b7:00   192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
 22537658    e4:5f:01:1f:b7:06   192.168.10.119  E7-Hadászat                 192.168.10.1
 6cbcac49    e4:5f:01:1f:b8:5f   192.168.10.124  E1-Heraldika                --------------  ------
