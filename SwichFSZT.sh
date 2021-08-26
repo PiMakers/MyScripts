@@ -18,12 +18,36 @@ swichQOff(){
         done
 }
 
-if [ "x$1" == "xON" ]; then
-    swichOn
-elif [ "x$1" == "xOFF" ]; then
-    swichOff
-elif [ "x$1" == "xQOFF" ]; then
-    swichQOff
-else
-    swichOn
-fi
+swichMon(){
+    for port in ${fsz}
+        do
+            echo "Monitoring ROUTER 2 port: ${port}"
+            /home/pi/MyScripts/MikroTik.sh MON 143 2 ${port} &
+            PID="$!"
+            echo $PID >> /tmp/PIDS.txt
+        done
+        sleep 8
+        sudo killall sshpass
+        #cat /tmp/PIDS.txt
+        rm /tmp/PIDS.txt
+}
+
+
+case "$1" in
+    ON|on) swichOff
+            ;;
+
+    OFF|off)
+            swichOff
+            ;;
+    QOFF|qoff)
+            swichQOff
+            ;;
+    MON|mon)
+            swichMon
+            ;;
+
+    *)
+        swichOn
+        ;;
+esac        
