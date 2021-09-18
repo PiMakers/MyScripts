@@ -18,6 +18,8 @@ else
     TMP_DIR=/tmp
 fi
 
+echo "$ID detected"
+
 TMP_DIR=/tmp
 
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${TMP_DIR}/boot.conf
@@ -38,7 +40,7 @@ TMP_DIR=/tmp
 
         #DHCP_TIMEOUT=45000
         #DHCP_REQ_TIMEOUT=4000
-        TFTP_FILE_TIMEOUT=30000
+        #TFTP_FILE_TIMEOUT=30000
         #TFTP_IP=
         #TFTP_PREFIX=0
         SD_BOOT_MAX_RETRIES=0
