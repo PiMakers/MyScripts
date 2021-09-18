@@ -175,16 +175,16 @@ ac4939a9    e4:5f:01:1f:b7:15   192.168.10.104  e7-tenger.local                 
 
 527bf3bd	e4:5f:01:1f:b8:b3   192.168.10.161  e8-fire.local                   E8-Fire                     192.168.10.110  ether5
 
-dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  e9-fundationfilm.local          E9-FundationFilm            192.168.10.112  ether1
-ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  e9-reburial.local               E9-ReBurial                 192.168.10.111  ether7
-1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  e9-5-2a-scary.local             E9-5.2a_Scary               192.168.10.112  ether7
-6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  e9-5-3b-szobrok.local           E9-5.3b_SZOBROK             192.168.10.112  ether6
-717dca63    dc:a6:32:da:04:2d   192.168.10.194  e9-5-5b-tenkeskapitanya.local   E9-5.5b_TenkesKapitánya     192.168.10.112  ether3
-308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  e9-5-6a-marses.local            E9-5,6a_Indulók             192.168.10.112  ether4
-38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  E9-5.13b_OnPaints           192.168.10.111  ether6
-79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  e9-5-15b-memorytrees.local      E9-5.15b_MemoryTrees        192.168.10.111  ether3
-633a808b    e4:5f:01:1f:b7:2d   192.168.10.105  E9-5.16b_KurucnotaTarogato  192.168.10.111  ether8
-821e1006    e4:5f:01:1f:b7:b7   192.168.10.102  e9-5-20abszlovakruszin.local    E9-5.20ab_SK_Ruszin         192.168.10.111  ether4
+dbfc9ec4    e4:5f:01:1f:b6:ee   192.168.10.130  e9-fundationfilm.local              E9-FundationFilm            192.168.10.112  ether1
+ab276eca    e4:5f:01:1f:b9:d6   192.168.10.164  e9-reburial.local                   E9-ReBurial                 192.168.10.111  ether7
+1f8638a0    e4:5f:01:1f:b8:89   192.168.10.120  e9-5-2a-scary.local                 E9-5.2a_Scary               192.168.10.112  ether7
+6b8e0a56    e4:5f:01:1f:b7:3f   192.168.10.149  e9-5-3b-szobrok.local               E9-5.3b_SZOBROK             192.168.10.112  ether6
+717dca63    dc:a6:32:da:04:2d   192.168.10.194  e9-5-5b-tenkeskapitanya.local       E9-5.5b_TenkesKapitánya     192.168.10.112  ether3
+308e7856    e4:5f:01:1f:b6:fa   192.168.10.196  e9-5-6a-marses.local                E9-5.6a_Indulók             192.168.10.112  ether4
+38ddc958    e4:5f:01:1f:b7:21   192.168.10.153  e9-5-13b-onpaints.local             E9-5.13b_OnPaints           192.168.10.111  ether6
+79fee1e9    e4:5f:01:1f:b8:d7   192.168.10.155  e9-5-15b-memorytrees.local          E9-5.15b_MemoryTrees        192.168.10.111  ether3
+633a808b    e4:5f:01:1f:b7:2d   192.168.10.105  e9-5-16b-KurucnotaTarogato.local    E9-5.16b_KurucnotaTarogato  192.168.10.111  ether8
+821e1006    e4:5f:01:1f:b7:b7   192.168.10.102  e9-5-20abszlovakruszin.local        E9-5.20ab_SK_Ruszin         192.168.10.111  ether4
 
 ## Msys
 37c8c5c7    e4:5f:01:1f:b6:fd   192.168.10.159  E7-Mikes                    192.168.10.110  ether1
