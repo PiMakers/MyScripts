@@ -74,9 +74,10 @@ check_root() {
 
 
 truncate_img() {
-    LOOP_DEVICE=$(${SUDO} losetup -f)
-    #${SUDO} losetup $LOOP_DEVICE $1
-    ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
+    [ $1 ] || ( echo "No image selected !" && exit )
+    ## doit with gnome-disks
+    #LOOP_DEVICE=$(${SUDO} losetup -f)
+    #${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
     #${SUDO} gparted $LOOP_DEVICE
     #${SUDO} losetup -d $LOOP_DEVICE
     local END_BLOCK=$( ${SUDO} fdisk -lo "End" $1 | sed '$!d')
@@ -85,7 +86,8 @@ truncate_img() {
     # truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
     local SIZE=$(($(( ${END_BLOCK} + 1 ))*512)) && echo "SIZE = ${SIZE}"
     ${SUDO} truncate --size=${SIZE} ${1}
+    echo "DONE!"
 }
 
 check_root
-truncate_img ${1}
+truncate_img  ${1}

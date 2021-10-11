@@ -50,9 +50,10 @@ trap "cleanUp" INT
 trap "echo FuckYouToo" RETURN
 # if sourced, exit with "return"
 exit() {
-#    trap "echo FuckYou!!!" EXIT
-#    trap "echo FuckYouToo" RETURN
-    [ "${BASH_SOURCE}" == "${0}" ] || EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" 
+    echo "===================="
+    # trap "echo FuckYou!!!" EXIT
+    # trap "echo FuckYouToo" RETURN
+    [ "${BASH_SOURCE}" == "${0}" ] || ( EXIT_CMD=return && echo "EXIT_CMD=${EXIT_CMD}" )
     # if [ -z ${iSCSi} ]; then
         [ "${BASH_SOURCE}" == "${0}" ] && cleanUp
     # fi
@@ -176,7 +177,6 @@ getImg(){
     fi
 }
 
-
 resize_image() {
     RESIZED=0
     #[ ! -f "$1" ] && [ -z "$2" ] && echo "Not resized!!!!" && return
@@ -207,13 +207,18 @@ resize_image() {
 }
 
 resizeImage() {
-    local COUNT=1024
-    ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
+    local COUNT=64
+    read -t 5 -p "Do You really want to resize: \n$IMG with $(($COUNT*4)) ? :" ANSWER
+    if [  x${ANSWER} == "xY" ]; then
+        echo "Resizing..."
+        ${SUDO} bash -c "dd if=/dev/zero bs=4M count=${COUNT} >> ${IMG}"
+    fi
 }
-
+# LOOP_DEVICE=$(${SUDO} losetup -fPL --show $IMG)
 mountImage() {
-    LOOP_DEVICE=$(${SUDO} losetup -f)
-    ${SUDO} losetup -P $LOOP_DEVICE $IMG
+    #sLOOP_DEVICE=$(${SUDO} losetup -f)
+    #${SUDO} losetup -P $LOOP_DEVICE $IMG
+    LOOP_DEVICE=$(${SUDO} losetup -fPL --show $IMG)
     local mount_opt="-oro"
     if [ ${OVERLAY} != 1 ]; then
         ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
@@ -297,19 +302,20 @@ detectOS() {
     if [ -f ${ROOT_FS}/etc/os-release ]; then
         . ${ROOT_FS}/etc/os-release
         echo ::ID=${ID}
+        case $ID in
+            ubuntu)
+                echo "-----------------------Hurrah!!!!"
+                ;;
+            raspbian|debian)
+                echo "-----------------------RASPberryPi Detected!!!"
+                ID=pi
+                ;;
+            *)
+                echo ID=$ID ---------------------------
+        esac
+    else
+        [ -z $ID ] && exit
     fi
-    
-    case $ID in
-        ubuntu)
-            echo "-----------------------Hurrah!!!!"
-            ;;
-        raspbian|debian)
-            echo "-----------------------RASPberryPi Detected!!!"
-            ID=pi
-            ;;
-        *)
-            echo ID=$ID ---------------------------
-    esac
 }
 
     ## OnExportedFS:
@@ -341,8 +347,10 @@ EOF
     #KERNEL_TAG="[0-9][0-9]+"
     PI0_KERNEL_VERSION=$(ls ${ROOT_FS}/lib/modules | sed '/[0-9][0-9]+.*/!d')
     
-    ${SUDO} sed -r -i '/(cmdline=|include config)/d'  ${BOOT_FS}/config.txt
+    ${SUDO} sed -r -i '/(cmdline=|include config|mode=host)/d'  ${BOOT_FS}/config.txt
+    echo "dtoverlay=dwc2,dr_mode=host" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
     echo "cmdline=cmdline.nfsboot.${DEVICE}" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
+    
     ## pi0 starthere
     echo "include config.pi0" | ${SUDO} tee -a ${BOOT_FS}/config.txt 1>/dev/null
     cat << EOF | ${SUDO} tee ${BOOT_FS}/config.pi0 1>/dev/null
@@ -572,28 +580,30 @@ enable_ssh() {
 }
 
 create_ssh_keypair() {
-    HOSTNAME=$(hostname -s) 
-    # SUDO=sudo OT_FS=/nfs/root ID=pi
-    if [ ${OVERLAY} == 1 ]; then
-        #local ROOT_FS=${UPPER_DIR}/data
-        echo "KapdBe!"
-    fi
-        ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/${ID}/.ssh
-        ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/${ID}
-        [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
-        ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/${ID}/.ssh/authorized_keys 1>/dev/null
-        ${SUDO} chmod 600 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
-        ${SUDO} chown 1000:1000 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
+    if [ ! -f ${ROOT_FS}/home/${ID}/.ssh/authorized_keys ]; then 
+        HOSTNAME=$(hostname -s) 
+        # SUDO=sudo OT_FS=/nfs/root ID=pi
+        if [ ${OVERLAY} == 1 ]; then
+            #local ROOT_FS=${UPPER_DIR}/data
+            echo "KapdBe!"
+        fi
+            ${SUDO} mkdir -pv -m 700 ${ROOT_FS}/home/${ID}/.ssh
+            ${SUDO} chown -R 1000:1000 ${ROOT_FS}/home/${ID}
+            [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
+            ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | sudo tee ${ROOT_FS}/home/${ID}/.ssh/authorized_keys 1>/dev/null
+            ${SUDO} chmod 600 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
+            ${SUDO} chown 1000:1000 ${ROOT_FS}/home/${ID}/.ssh/authorized_keys
 
-    if [ ${OVERLAY} == 2 ]; then
-        ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
-        ${SUDO} cp -a /etc/localtime "${ROOT_FS}/etc"
-        #fi
-        #if [ -d "${ROOT_FS}/etc/default" ]; then
-            ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
-        #fi
-        #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
-            ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
+        if [ ${OVERLAY} == 2 ]; then
+            ${SUDO} cp -a /etc/timezone "${ROOT_FS}/etc"
+            ${SUDO} cp -a /etc/localtime "${ROOT_FS}/etc"
+            #fi
+            #if [ -d "${ROOT_FS}/etc/default" ]; then
+                ${SUDO} cp -a /etc/default/keyboard "${ROOT_FS}/etc/default"
+            #fi
+            #if [ -d "${ROOT_FS}/etc/console-setup" ]; then
+                ${SUDO} cp -a /etc/console-setup/cached* "${ROOT_FS}/etc/console-setup"
+        fi
     fi
 }
 
@@ -709,23 +719,23 @@ cleanUp() {
         # serials="b0c7e328 dc:a6:32:66:0a:2c"
         echo "Sourced CleanUp happend!!!"
 # fi
-#        exit
+        EXIT=1
 }
 
 runNfsBoot() {
     # check_root //movedToRoot!
     check_dependency
     getImg
-    #resizeImage
+    resizeImage
     mountImage
-    detectOS
-    prepare_cmdline
-    prepare_fstab
-    remove_dphys-swapfile
+        detectOS
+        prepare_cmdline
+        prepare_fstab
+        remove_dphys-swapfile
     #hack
     # setup options
-    enable_ssh
-    create_ssh_keypair
+        #enable_ssh
+        #create_ssh_keypair
     #createInitramfs
     #prepareDhcpcd
 
@@ -733,36 +743,38 @@ runNfsBoot() {
     # ${SUDO} rm -f ${ROOT_FS}/etc/systemd/system/multi-user.target.wants/triggerhappy.service
     #exit
 
-    configure_nfs
-    configure_dnsmasq
+        configure_nfs
+        configure_dnsmasq
 
-    ${SUDO} service rpcbind restart
-    ${SUDO} service nfs-kernel-server restart
+        ${SUDO} service rpcbind restart
+        ${SUDO} service nfs-kernel-server restart
     # ${SUDO} service dnsmasq restart
     #startRpiBoot
     trap 'echo "SIGINT traped"' INT
-
-    while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --extra-button="KeepRun" --display=${DISPLAY})
-    do
-        echo $res
-        if [ "${res}" == "Save img" ];then
-            if res=$(zenity --entry --text="Save img to different name" --entry-text=${IMG} --display=${DISPLAY}); then
-                echo "Save ${IMG} at different name: ${res}..."
-                ${SUDO} mv -v ${IMG} ${res}
-            fi
-            exit
-        elif [ "${res}" == "KeepRun" ];then
-            export -f cleanUp
-            trap 'echo "EXITED NORMAL"' EXIT
-            echo "Type 'cleanUp' to cleanUp!!!"
-            break
-        elif [ "${res}" == "ok" ];then
-            echo "Type 'OK!!!!!!!!!!!!!!!!' to ${res}!!!"
-        else cleanUp
-        fi    
-        echo "sleeping..."
-        sleep 10
-    done
+    echo "-------EXIT=$EXIT----------"
+    if [ -z $EXIT ] ;then
+        while ! res=$(zenity --question --text="Close the NFSbootserver?" --extra-button="Save img" --extra-button="KeepRun" --display=${DISPLAY})
+        do
+            echo $res
+            if [ "${res}" == "Save img" ];then
+                if res=$(zenity --entry --text="Save img to different name" --entry-text=${IMG} --display=${DISPLAY}); then
+                    echo "Save ${IMG} at different name: ${res}..."
+                    ${SUDO} mv -v ${IMG} ${res}
+                fi
+                exit
+            elif [ "${res}" == "KeepRun" ];then
+                export -f cleanUp
+                trap 'echo "EXITED NORMAL"' EXIT
+                echo "Type 'cleanUp' to cleanUp!!!"
+                break
+            elif [ "${res}" == "ok" ];then
+                echo "Type 'OK!!!!!!!!!!!!!!!!' to ${res}!!!"
+            else cleanUp
+            fi    
+            echo "sleeping..."
+            sleep 10
+        done
+    fi
 }
 #fi
 

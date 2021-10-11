@@ -10,6 +10,18 @@
 # /interface ethernet poe set ether9 poe-out=forced-on poe-voltage=high
 # /interface ethernet comment ether13 comment="F5-Teremhang"
 # /interface ethernet poe monitor ether2
+hackMSYS() {
+    device=/dev/mmcblk0
+    mkfs.ext4 -F -L msys-overlay ${device}p2
+    mkfs.ext4 -F -L msys-data ${device}p3
+    touch /var/media/msys-boot/skip
+    # mkdir -pv /var/media/msys-overlay/data/etc/init.d
+
+
+# cp -r /var/media/msys-data/modules/msm_comlayer/client/working_dir/content /media/OF/Borsi/msys_backup/e2-vizelet
+}
+
+
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
@@ -58,8 +70,9 @@ resizeImage() {
     local COUNT=2048
     ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
 }
-
+IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
 mountLE() {
+    if [ ! -z $IMG ]; then
     LOOP_DEVICE=$(${SUDO} losetup -f)
     ${SUDO} losetup -P $LOOP_DEVICE $IMG
     ${SUDO} mkdir -pv ${TFTP_DIR}
@@ -67,6 +80,12 @@ mountLE() {
     
     ${SUDO} mount -v ${LOOP_DEVICE}p2 ${STORAGE_DIR} || ( echo "error mounting ${STORAGE_DIR}" && exit )
     # read -p "Press ENTER to continue..."
+    unset IMG
+    else
+        echo "NO IMAGE SELECTED!!!"
+        exit
+    fi
+
 }
 
 netBoot() {
@@ -114,6 +133,15 @@ netBoot() {
     MAC="e4:5f:01:1f:b7:42"
     MAC="*:*:*:*:*:*"
     MAC="e4:5f:01:1f:b6:f4"
+    MAC="e4:5f:01:1f:b9:1f"     #ab8aa887   192.168.10.129  E2-Vizelet                  192.168.10.1"
+    MAC="e4:5f:01:1f:b9:1c"     #192.168.10.103  E9-5.16a_Radio              192.168.10.111  ether1"
+    MAC="e4:5f:01:1f:b8:92"     #192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5"
+    # MAC="e4:5f:01:1f:b6:fd"     #192.168.10.159  E7-Mikes                    192.168.10.110  ether1
+    # MAC="e4:5f:01:1f:b7:06"     # 192.168.10.119  E7-Hadászat                 192.168.10.1
+    # MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
+    # MAC="e4:5f:01:1f:b9:f1"     # 192.168.10.117  E8-MyHero                   192.168.10.1
+    # MAC="e4:5f:01:1f:b7:00"     # 192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
+    #MAC="*:*:*:*:*:*"
     ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
         --tftp-unique-root=mac ${DHCP_OPT} #--dhcp-reply-delay=1 --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
 }
@@ -283,7 +311,7 @@ cleanExit() {
 
 runLEnfsBoot() {
     trap 'echo "SIGINT !!!" && cleanExit ' INT
-    get_img
+    #get_img
     # resizeImage
     mountLE
     #LEversion
