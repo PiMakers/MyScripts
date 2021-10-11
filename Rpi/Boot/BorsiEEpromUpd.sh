@@ -209,6 +209,11 @@ e809ea80    dc:a6:32:f3:8d:c1
 94dbd852    e4:5f:01:1f:b7:a8
 
 
+NO USB: dc:a6:32:ea:dd:fd !!!!!!!!!!!!!!!!
+e4:5f:01:1f:b9:8e F3-Inventárium-B
+e4:5f:01:1f:b6:f4 F3-Inventarium-A
+
+
     STATION_NAME=F6-Animatik
     STATION_NAME=E9-5.5b_TenkesKapitánya
     . /flash/PiMaker.sh
