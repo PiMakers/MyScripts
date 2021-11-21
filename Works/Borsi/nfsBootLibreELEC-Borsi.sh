@@ -10,14 +10,16 @@
 # /interface ethernet poe set ether9 poe-out=forced-on poe-voltage=high
 # /interface ethernet comment ether13 comment="F5-Teremhang"
 # /interface ethernet poe monitor ether2
+# sshpass -p ${Pepe} ssh hollos@192.168.10.2 /interface ethernet poe set ether9 poe-out=forced-on poe-voltage=high
+
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
 TFTP_DIR=/tftpLE
-IMG_DIR=/mnt/LinuxData/Install/img
+IMG_DIR=/mnt/LinuxData/OF/img
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
-IMG_DIR=/media/pi
+# IMG_DIR=/media/pi
 
 
 ${SUDO} mkdir -pv -m 777 ${STORAGE_DIR}
@@ -29,7 +31,7 @@ DHCP=1
         HOST_IP=10.0.0.1
     fi
 
-IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.95.4.img
+IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
 #LibreELEC-RPi4.arm-9.2.6.img
 
 get_img(){
@@ -55,8 +57,11 @@ get_img(){
 }
 
 resizeImage() {
-    local COUNT=2048
+    local COUNT=512
     ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
+    #${SUDO} parted "$LOOP_DEVICE" u s resizepart 2 100% && \
+    #${SUDO} e2fsck -f -y -v -C 0 ${LOOP_DEVICE}p2 1>/dev/null && \
+    #${SUDO} resize2fs -p ${LOOP_DEVICE}p2 #|| ( echo "partitionERROR" && exit )
 }
 
 mountLE() {
@@ -73,7 +78,7 @@ netBoot() {
     ${SUDO} mkdir -pv ${STORAGE_DIR}
     echo "boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0" | \
         ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.LE
-    
+
     ${SUDO} sed -i '/nfsboot.LE/d' ${TFTP_DIR}/config.txt
     echo "cmdline=cmdline.nfsboot.LE" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
 
@@ -110,18 +115,52 @@ netBoot() {
     done
 
     echo ":: Wired = ${WIRED_IFACE}"
-    INTERFACE=${WIRED_IFACE}  #eth0  # enp0s25
-    MAC="e4:5f:01:1f:b7:42"
+    INTERFACE=${WIRED_IFACE}
+    TERMINAL_CMD='lxterminal -t "tftpBoot" -e '     # gnome-terminal -t "tftpBoot" -- 
+    # MAC="e4:5f:01:1f:b7:42"     # E3-Latin
+    # MAC="e4:5f:01:1f:b7:2a"     # F1-Teremhang 
+    # MAC="e4:5f:01:1f:b7:54"     # E4-Mese
+    # MAC="dc:a6:32:da:04:2d"     # E9-5.5b_TenkesKapitánya
+    # MAC="e4:5f:01:1f:b7:03"     # E7-Animatik
+    # MAC="e4:5f:01:1f:b7:a8"       # E7-Tenger
+    # MAC="e4:5f:01:1f:b7:12"     # E6-CloudsFL 192.168.10.127
+    # MAC="e4:5f:01:1f:ba:3f"     # E6-CloudsRL 192.168.10.100
+    # MAC="e4:5f:01:1f:b7:78"     # E6-CloudsRR 192.168.10.101
+
+    MAC="e4:5f:01:1f:b7:b7"     # E9-5.20ab_SK_Ruszin 192.168.10.135"
+    # MAC="e4:5f:01:1f:b7:2d"     # E9-5.16b_KurucnotaTarogato 192.168.10.118
+    MAC="e4:5f:01:1f:b7:00"   # E9-Szalagos                 192.168.10.111  ether5 192.168.10.187
+    
+    MAC="e4:5f:01:1f:b6:fa"   # 192.168.10.196  E9-5,6a_Indulók             192.168.10.112  ether4
+    MAC="e4:5f:01:1f:b9:8e"   # 192.168.10.139  F2-Priodizáció              192.168.10.2    ether1"
+    MAC="e4:5f:01:1f:b9:1c"   # E9-5.16a_Radio    192.168.10.103
+    # MAC="e4:5f:01:1f:b8:92"         # E9-5.6b_Könnyűzene    192.168.10.106
+    # MAC="e4:5f:01:1f:b9:8e"   # 192.168.10.118  f2-periodizacio.local
+    MAC="e4:5f:01:1f:b7:b7"     # 192.168.10.135  E9-5.20ab_SK_Ruszin         192.168.10.111  ether4
+    MAC="e4:5f:01:1f:b6:fd"     # E7-Mikes"   192.168.10.159
+    MAC="e4:5f:01:1f:b9:8e"   # 192.168.10.139  F2-Priodizáció "
     MAC="*:*:*:*:*:*"
-    MAC="e4:5f:01:1f:b6:f4"
-    ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
-        --tftp-unique-root=mac ${DHCP_OPT} #--dhcp-reply-delay=1 --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+    
+    #${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
+    #    --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1  --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+    # -z -b -a 192.168.10.142
+
+#    ${TERMINAL_CMD} 
+${SUDO} dnsmasq  --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
+        --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1  --dhcp-reply-delay=1 --ignore-address=192.168.10.1 ${DHCP_OPT} #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+
+}
+
+qCommand() {
+    sudo dnsmasq -z -b -a 192.168.10.142 --enable-tftp --tftp-root=/tftpLE,eth0 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=e4:5f:01:1f:b9:8e,set:piserver --tftp-unique-root=mac \
+        --pxe-prompt="Boot Raspberry Pi",1 --dhcp-reply-delay=1 --ignore-address=192.168.10.1 --dhcp-range=tag:piserver,192.168.10.142,proxy --port=0
+ sudo dnsmasq --enable-tftp --tftp-root=/tftpLE,eth0 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=e4:5f:01:1f:b9:8e,set:piserver --dhcp-reply-delay=1 --ignore-address=192.168.10.1 --dhcp-range=tag:piserver,192.168.10.142,proxy --port=0
 }
 
 LEversion() {
     # ${SUDO} 
     sudo mkdir -pv /mnt/sqfs
-    sudo mount /tftpLE/SYSTEM /mnt/sqfs -t squashfs -o loop || ( echo "error mounting /tftpLE/SYSTEM" && exit )
+    sudo mount /tftpLE/SYSTEM /mnt/sqfs -t squashfs -o loop || ( echo "error mounting /tftpLE/SYSTEM" && return )
     . /mnt/sqfs/etc/os-release
     [ "${VERSION_ID%.*}" -gt 9 ] && echo ":: Ten" || echo ":: Nine"
     sudo umount -lv /mnt/sqfs
@@ -132,12 +171,12 @@ LEversion() {
 playStartUpVideo() {
     # xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
     ${SUDO} mkdir -pv ${STORAGE_DIR}/.kodi/addons/service.autoexec
-    VERSION_ID=10
+    VERSION_ID="10.0"
     if [[ "${VERSION_ID%.*}" -lt "10" ]]; then
         echo ":: Version 9 detected"
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/autoexec.py 1>/dev/null
             import xbmc
-            xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )
+            xbmc.executebuiltin( "PlayMedia(/storage/videos/E2-7.11_Piocak.mp4)" )
             xbmc.executebuiltin( "PlayerControl(repeat)" )
 EOF
     else
@@ -145,6 +184,7 @@ EOF
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/autoexec.py 1>/dev/null
             import xbmc
             """xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )"""
+            xbmc.executebuiltin( "SetVolume(30))" )
             xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
             xbmc.executebuiltin( "PlayerControl(repeat)" )
 EOF
@@ -170,11 +210,12 @@ EOF
 }
  # ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings/oe_settings.xml - WIZZARD + HOSTNAME!!!! KODI10
 disableSplash() {
-    # mkdir -pv ${STORAGE_DIR}/.kodi/userdata/
+    ${SUDO} mkdir -pv ${STORAGE_DIR}/.kodi/userdata/
     ## Disable RpiSplash
     ${SUDO} sed -i '/disable_splash/d' ${TFTP_DIR}/config.txt
     echo "disable_splash=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt    
     ## Disable LibreELEC Splash
+    # dtparam=audio=on
     echo | sudo tee /tftpLE/oemsplash.png
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/advancedsettings.xml 1>/dev/null    
         <advancedsettings version="1.0">
@@ -195,13 +236,16 @@ EOF
 
 wizzard() {
     sudo mkdir -pv ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings
-    cat << EOF | sed 's/^.\{4\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings/oe_settings.xm 1>/dev/null    
-    xml version="1.0" ?>
+    cat << EOF | sed 's/^.\{4\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings/oe_settings.xml 1>/dev/null    
+    <?xml version="1.0" ?>
     <libreelec>
         <addon_config/>
             <settings>
                 <system>
                         <wizard_completed>True</wizard_completed>
+                        <hostname>F1-Teremhang</hostname>
+                        <KeyboardLayout1>hu</KeyboardLayout1>
+
                 </system>
                 <services>
                         <wizard_completed>True</wizard_completed>
@@ -213,7 +257,7 @@ wizzard() {
                         <wizard_completed>True</wizard_completed>
                 </libreelec>
             </settings>
-        </libreelec>
+    </libreelec>
 EOF
 }
 
@@ -221,12 +265,15 @@ createSshKey() {
         HOSTNAME=$(hostname -s)
         HOSTNAME=Borsi
         ${SUDO} mkdir -pv -m 700 ${STORAGE_DIR}/.ssh
+        ${SUDO} mkdir -pv -m 700 ${STORAGE_DIR}/.cache/services
         [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
         ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | ${SUDO} tee ${STORAGE_DIR}/.ssh/authorized_keys 1>/dev/null
         ${SUDO} chmod 600 ${STORAGE_DIR}/.ssh/authorized_keys
         ${SUDO} touch ${STORAGE_DIR}/.cache/services/sshd.conf
         echo "SSH_ARGS=-o 'PasswordAuthentication yes'" | ${SUDO} tee ${STORAGE_DIR}/.cache/services/sshd.conf
         echo "SSHD_DISABLE_PW_AUTH=false" | ${SUDO} tee -a ${STORAGE_DIR}/.cache/services/sshd.conf
+        # eval "$(ssh-agent -s)"
+        # ssh-add ~/.ssh/testkey@Borsi
 }
 
 skinHack() {
@@ -236,11 +283,11 @@ skinHack() {
             .kodi/addons/skin.estuary_Borsi/addon.xml
     fi
 }
-
+    #dtoverlay=hifiberry-dac
 scriptAddon() {
     # KODI 10
-            mkdir -pv .kodi/addons/script.button
-            cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/autoexec.py 1>/dev/null
+        #mkdir -pv .kodi/addons/script.button
+        cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/autoexec.py 1>/dev/null
             import xbmc
             """xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )"""
             xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
@@ -248,7 +295,7 @@ scriptAddon() {
 EOF
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/addon.xml 1>/dev/null
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-            <addon id="service.autoexec" name="Autoexec Service" version="1.0.0" provider-name="your username">
+            <addon id="service.autoexec" name="Autoexec Service" version="1.0.0" provider-name="PiMaker">
                 <requires>
                     <import addon="xbmc.python" version="3.0.0"/>
                 </requires>
@@ -265,11 +312,13 @@ EOF
 }
 
 cleanExit() {
+    ${SUDO} killall dnsmasq
+    read -p "Press a key.."
     # remove this script's nfs shares (lines with #libreELEC) 
     ${SUDO} sed -i '/libreELEC/d' /etc/exports
     # restart nfs server - TODO restore original sttate
-    ${SUDO} exportfs -r
-
+    ${SUDO} exportfs -ra
+    # ${SUDO} service nfs-kernel-server stop
     ${SUDO} sed -i '/nfsboot.LE/d' ${TFTP_DIR}/config.txt
     sync
     # unmount mounted img
@@ -283,14 +332,14 @@ cleanExit() {
 
 runLEnfsBoot() {
     trap 'echo "SIGINT !!!" && cleanExit ' INT
-    get_img
+    #get_img
     # resizeImage
     mountLE
-    #LEversion
+    # LEversion
     #playStartUpVideo
     #disableSplash
     #wizzard
-    createSshKey
+    #createSshKey
     netBoot
     cleanExit
 }
@@ -312,6 +361,8 @@ commands() {
     kodi-send --action="Skin.ToggleDebug()"
     kodi-send --action="DialogOK(msg="oooooo",100)"
     kodi-send --action="RunScript('/storage/.kodi/myScripts/Animatics.py')"
+    kodi-send --action="SetVolume(20)"
+    kodi-send --action="CECActivateSource"
     xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG )
 }
 
@@ -387,4 +438,23 @@ except KeyboardInterrupt:
     pwmB.stop()
     GPIO.cleanup()   
 }
+
+# TöröksípÉsTárogató
+# 14 tarogato
+# 25 Torok sip
+
+# KönnyüZene
+# 24 szürke varju
+# 23 tenkes
+# 18 cseresznye 
+# 14 pannonia
+# 15 belga
+
+#radio:
+# 8  ??? 
+
+# 15
+# 18
+# 
+# cp /media/OF/Borsi/Videos/F2-Periodizacio/F2-Periodizacio_SK_HU_EN.mp4 videos/F2-Periodizacio
 
