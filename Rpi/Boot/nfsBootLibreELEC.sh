@@ -4,12 +4,14 @@
 ## https://forum.kodi.tv/showthread.php?tid=260817
 
 # sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
+# df |sed '/mmcblk0/!d;s/p[0-9].*//'
 #!/bin/bash
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
 TFTP_DIR=/tftpLE
 IMG_DIR=/mnt/LinuxData/Install/img
+IMG_DIR=/mnt/LinuxData/OF/Borsi
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
 
@@ -22,8 +24,7 @@ DHCP=1
         HOST_IP=10.0.0.1
     fi
 
-IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.97.1.img
-#LibreELEC-RPi4.arm-9.2.6.img
+IMG=${IMG_DIR}/BorsiBase-10.0.0.img
 
 get_img(){
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
@@ -34,22 +35,26 @@ get_img(){
         fi
         echo "No img selected. Exit"; exit 1
     else 
-        echo $IMG
-        if [ ${IMG##*.}=="zip" -o ${IMG##*.}=="gz" ];then
+        echo "selected IMG = $IMG"
+        if [ ${IMG##*.} == "zip" -o ${IMG##*.} == "gz" ];then
             [ ${IMG##*.}=="gz" ] && UNZIP="gunzip" || UNZIP="unzip"
             if [ ! -f ${IMG%.*}.img ];then
                 ${UNZIP} $IMG -d ${IMG_DIR}/
             fi
             IMG=$(basename ${IMG%.*}.img)
             IMG=${IMG_DIR}/$IMG
-            echo $IMG
+            echo ---------- $IMG --------
         fi
     fi
 }
 
 resizeImage() {
-    local COUNT=6144
-    ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
+    read -p "Resize Img?" RESIZE
+    if [ -z RESIZE ]; then
+    local COUNT=$RESIZE
+    ${SUDO} bash -c "dd if=/dev/zero bs=4M count=${COUNT} >> ${IMG}"
+    echo "Resized!!!!!!!!!!!!!!!!!!!!!"
+    fi
 }
 
 mountLE() {
@@ -60,6 +65,31 @@ mountLE() {
     
     ${SUDO} mount -v ${LOOP_DEVICE}p2 ${STORAGE_DIR} || ( echo "error mounting ${STORAGE_DIR}" && exit )
     # read -p "Press ENTER to continue..."
+}
+
+detectOS() {
+    if [ -f ${ROOT_FS}/etc/os-release ]; then
+        . ${ROOT_FS}/etc/os-release
+        echo ::ID=${ID}
+    fi
+        case $ID in
+            ubuntu)
+                echo ":: HostOS Ubuntu!"
+                ;;
+            raspbian|debian)
+                echo ":: HostOS Raspios!"
+                ID=pi
+                ;;
+            libreelec)
+                echo ":: HostOS LibreELEC!"
+                BOOT_FS=/flash
+                HOME_DIR=/storage
+                ;;        
+            *)
+                echo ":: UnKnonw OS = $ID !!!"
+                [ -z $ID ] && exit
+        esac
+ 
 }
 
 # dtoverlay=dwc2,dr_mode=host
@@ -75,8 +105,9 @@ netBoot() {
     echo "cmdline=cmdline.nfsboot.LE" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
 
     ${SUDO} sed -i '/libreELEC/d' /etc/exports
-    echo "${STORAGE_DIR}      ${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
-    echo "${TFTP_DIR}   	${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
+    echo "## NfsBoot libreELEC" | ${SUDO} tee -a /etc/exports
+    echo -e "${STORAGE_DIR}\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
+    echo -e "${TFTP_DIR}\t\t\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
 
     ${SUDO} exportfs -r
     # ${SUDO} exportfs
@@ -91,7 +122,12 @@ netBoot() {
     gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
         --dhcp-reply-delay=1  ${DHCP_OPT} #--tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
     
-    read -p "Press a key to continue.."
+    read -p "Press a key to stop NFSboot.."
+}
+
+qCommand() {
+    gnome-terminal -t "tftpBoot" -- sudo dnsmasq --enable-tftp --tftp-root=/tftpLE,enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
+    gnome-terminal -t "tftpBoot" -- sudo dnsmasq --enable-tftp --tftp-root=/nfs/root/boot,enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
 }
 
 LEversion() {
@@ -105,6 +141,7 @@ LEversion() {
 playStartUpVideo() {
     # xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
     ${SUDO} mkdir -pv ${STORAGE_DIR}/.kodi/addons/service.autoexec
+    VERSION_ID="10.0"   #TODO set 10.0 if not defined
     if [[ "${VERSION_ID%.*}" -lt "10" ]]; then
         echo ":: Version 9 detected"
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/autoexec.py 1>/dev/null
@@ -118,7 +155,8 @@ EOF
             import xbmc
             """xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )"""
             xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
-            xbmc.executebuiltin( "PlayerControl(repeat)" )
+            xbmc.executebuiltin( "PlayerControl(RepeatAll)" )
+
 EOF
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/addon.xml 1>/dev/null
             <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -136,7 +174,7 @@ EOF
                 </extension>
             </addon>
 EOF
-# addon id="virtual.rpi-tools"
+    # addon id="virtual.rpi-tools"
     fi
     echo ":: VERSION_ID=${VERSION_ID}"
 }
@@ -144,28 +182,26 @@ EOF
  # ${STORAGE_DIR}/.kodi/userdata/addon_data/service.libreelec.settings/oe_settings.xml - WIZZARD + HOSTNAME!!!! KODI10
 disableSplash() {
     # mkdir -pv ${STORAGE_DIR}/.kodi/userdata/
-    ## disable RPI splash
+    ## Disable RpiSplash
     ${SUDO} sed -i '/disable_splash/d' ${TFTP_DIR}/config.txt
     echo "disable_splash=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
-
-    # Disable LibreELEC Splash
+    ## Disable LibreELEC Splash
     echo | sudo tee /tftpLE/oemsplash.png
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/advancedsettings.xml 1>/dev/null    
         <advancedsettings version="1.0">
             <services>
                 <webserver>true</webserver>
-                <webserverport>8080</<webserverport>
                 <webserverpassword>raspi</webserverpassword>
                 <webserverusername>KODI</webserverusername>
             </services>
             <splash>false</splash>
             <cache>
                 <buffermode>1</buffermode>
-                <memorysize>209715200</memorysize>
+                <memorysize>139460608</memorysize>
                 <readfactor>20</readfactor>
             </cache>
             <gui>
-                <smartredraw>true</smartredraw>
+                <smartredraw>false</smartredraw>
             </gui>
         </advancedsettings>
 EOF
@@ -197,11 +233,12 @@ EOF
 
 createSshKey() {
         HOSTNAME=$(hostname -s)
-        HOSTNAME=Borsi
+        #HOSTNAME=Borsi
         ${SUDO} mkdir -pv -m 700 ${STORAGE_DIR}/.ssh
         [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
         ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | ${SUDO} tee ${STORAGE_DIR}/.ssh/authorized_keys 1>/dev/null
         ${SUDO} chmod 600 ${STORAGE_DIR}/.ssh/authorized_keys
+        ${SUDO} mkdir -pv ${STORAGE_DIR}/.cache/services
         ${SUDO} touch ${STORAGE_DIR}/.cache/services/sshd.conf
         echo "SSH_ARGS=-o 'PasswordAuthentication yes'" | ${SUDO} tee ${STORAGE_DIR}/.cache/services/sshd.conf
         echo "SSHD_DISABLE_PW_AUTH=false" | ${SUDO} tee -a ${STORAGE_DIR}/.cache/services/sshd.conf
@@ -226,7 +263,7 @@ scriptAddon() {
             mkdir -pv .kodi/addons/script.button
             cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/autoexec.py 1>/dev/null
             import xbmc
-            """xbmc.executebuiltin( "PlayMedia(/storage/videos/E8-Fire.mp4)" )"""
+            xbmc.executebuiltin( "SetVolume(30)" )
             xbmc.executebuiltin( "PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)" )
             xbmc.executebuiltin( "PlayerControl(repeat)" )
 EOF
@@ -250,6 +287,7 @@ EOF
 
 cleanExit() {
     ${SUDO} killall dnsmasq
+    read -p "Press a key to continue.."
     if [ -d /mnt/sqfs ];then
         sudo umount -lv /mnt/sqfs
         sudo rm -r /mnt/sqfs
@@ -290,11 +328,11 @@ runLEnfsBoot() {
     # resizeImage
     mountLE
     #LEversion
-    #playStartUpVideo
-    #disableSplash
-    #wizzard
-    #createSshKey
-    #skinHack
+    playStartUpVideo
+    disableSplash
+    wizzard
+    createSshKey
+    skinHack
     netBoot
     cleanExit
 }
@@ -308,15 +346,18 @@ commands() {
     import sys
     # sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
     PATH=$PATH:/storage/.kodi/addons/script.module.kodi-six/libs/kodi_six
-    kodi-send --host=192.168.0.1 --port=9777 --action="Quit"
+    kodi-send --host=192.168.0.1 --port=9777 --action="Quit" # 
     kodi-send --action="PlayerControl(Play)"
     kodi-send --action="ReloadSkin(reload)"
     kodi-send --action="Skin.ToggleDebug()"
     kodi-send --action="DialogOK(msg="oooooo",100)"
     kodi-send --action="RunScript('/storage/.kodi/myScripts/Animatics.py')"
+    kodi-send --action="CECActivateSource"
     xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
     $INFO[Player.Title]
-    $INFO[infolabel] 
+    $INFO[infolabel]
+    #display_hdmi_rotate=-1
+    #display_lcd_rotate=-1
 
 }
 
@@ -391,4 +432,3 @@ except KeyboardInterrupt:
     pwmB.stop()
     GPIO.cleanup()   
 }
-

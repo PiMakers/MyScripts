@@ -67,7 +67,7 @@ disableScreenBlanking() {
     #xserver-command=X -s 0 -dpms
     #This will set your blanking timeout to 0 and turn off your display power management signaling.
     # desktop
-    if [ -f ${${RPI_ROOT_FS}}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
+    if [ -f ${RPI_ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart ]; then
         ${SUDO} sed -r -i '/(noblank|off|-dpms)/d' ${RPI_ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart
         cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee -a ${RPI_ROOT_FS}/etc/xdg/lxsession/LXDE-pi/autostart 1>/dev/null
             @xset s noblank
@@ -238,8 +238,7 @@ EOF
 #   ${SUDO} sed -i '/^ExecStart=/ s/--autologin pi --noclear/--skip-login --noclear --noissue --login-options "-f pi"/' /etc/systemd/system/autologin\@.service
 
    echo -e "6. Change Boot To Cli\n"
-      [ -f /etc/systemd/system/default.target ] && ${SUDO} rm /etc/systemd/system/default.target 
-      ${SUDO} ln -s /lib/systemd/system/multi-user.target /etc/systemd/system/default.target
+      [ -f ${RPI_ROOT_FS}/etc/systemd/system/default.target ] && ${SUDO} ln -fs /lib/systemd/system/multi-user.target ${RPI_ROOT_FS}/etc/systemd/system/default.target
 }
 
 #exit
@@ -413,7 +412,7 @@ updateUpgrade () {
   echo "update Done!"
 }
 
-check_root2() {
+check_root() {
     # Must be root to install the hotspot
     echo ":::"
     if [[ $EUID -eq 0 ]];then
@@ -432,9 +431,8 @@ check_root2() {
     fi
 }
 
-
 setupNew() {
-    check_root2
+    check_root
     relativeSoftLinks &
     updateUpgrade
     enable_ssh

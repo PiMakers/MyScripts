@@ -18,6 +18,8 @@ else
     TMP_DIR=/tmp
 fi
 
+echo "$ID detected"
+
 TMP_DIR=/tmp
 
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${TMP_DIR}/boot.conf
@@ -38,7 +40,7 @@ TMP_DIR=/tmp
 
         #DHCP_TIMEOUT=45000
         #DHCP_REQ_TIMEOUT=4000
-        TFTP_FILE_TIMEOUT=30000
+        #TFTP_FILE_TIMEOUT=30000
         #TFTP_IP=
         #TFTP_PREFIX=0
         SD_BOOT_MAX_RETRIES=0
@@ -205,6 +207,11 @@ ab8aa887    e4:5f:01:1f:b9:1f   192.168.10.129  E2-Vizelet                  192.
 New:
 e809ea80    dc:a6:32:f3:8d:c1
 94dbd852    e4:5f:01:1f:b7:a8
+
+
+NO USB: dc:a6:32:ea:dd:fd !!!!!!!!!!!!!!!!
+e4:5f:01:1f:b9:8e F3-Inventárium-B
+e4:5f:01:1f:b6:f4 F3-Inventarium-A
 
 
     STATION_NAME=F6-Animatik

@@ -63,8 +63,9 @@ resizeImage() {
     #${SUDO} e2fsck -f -y -v -C 0 ${LOOP_DEVICE}p2 1>/dev/null && \
     #${SUDO} resize2fs -p ${LOOP_DEVICE}p2 #|| ( echo "partitionERROR" && exit )
 }
-
+IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
 mountLE() {
+    if [ ! -z $IMG ]; then
     LOOP_DEVICE=$(${SUDO} losetup -f)
     ${SUDO} losetup -P $LOOP_DEVICE $IMG
     ${SUDO} mkdir -pv ${TFTP_DIR}
@@ -72,6 +73,12 @@ mountLE() {
     
     ${SUDO} mount -v ${LOOP_DEVICE}p2 ${STORAGE_DIR} || ( echo "error mounting ${STORAGE_DIR}" && exit )
     # read -p "Press ENTER to continue..."
+    unset IMG
+    else
+        echo "NO IMAGE SELECTED!!!"
+        exit
+    fi
+
 }
 
 netBoot() {
@@ -140,21 +147,18 @@ netBoot() {
     MAC="e4:5f:01:1f:b6:fd"     # E7-Mikes"   192.168.10.159
     MAC="e4:5f:01:1f:b9:8e"   # 192.168.10.139  F2-Priodizáció "
     MAC="*:*:*:*:*:*"
-    
-    #${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
-    #    --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1  --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
-    # -z -b -a 192.168.10.142
-
-#    ${TERMINAL_CMD} 
-${SUDO} dnsmasq  --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
-        --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1  --dhcp-reply-delay=1 --ignore-address=192.168.10.1 ${DHCP_OPT} #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
-
-}
-
-qCommand() {
-    sudo dnsmasq -z -b -a 192.168.10.142 --enable-tftp --tftp-root=/tftpLE,eth0 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=e4:5f:01:1f:b9:8e,set:piserver --tftp-unique-root=mac \
-        --pxe-prompt="Boot Raspberry Pi",1 --dhcp-reply-delay=1 --ignore-address=192.168.10.1 --dhcp-range=tag:piserver,192.168.10.142,proxy --port=0
- sudo dnsmasq --enable-tftp --tftp-root=/tftpLE,eth0 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=e4:5f:01:1f:b9:8e,set:piserver --dhcp-reply-delay=1 --ignore-address=192.168.10.1 --dhcp-range=tag:piserver,192.168.10.142,proxy --port=0
+    MAC="e4:5f:01:1f:b6:f4"
+    MAC="e4:5f:01:1f:b9:1f"     #ab8aa887   192.168.10.129  E2-Vizelet                  192.168.10.1"
+    MAC="e4:5f:01:1f:b9:1c"     #192.168.10.103  E9-5.16a_Radio              192.168.10.111  ether1"
+    MAC="e4:5f:01:1f:b8:92"     #192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5"
+    # MAC="e4:5f:01:1f:b6:fd"     #192.168.10.159  E7-Mikes                    192.168.10.110  ether1
+    # MAC="e4:5f:01:1f:b7:06"     # 192.168.10.119  E7-Hadászat                 192.168.10.1
+    # MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
+    # MAC="e4:5f:01:1f:b9:f1"     # 192.168.10.117  E8-MyHero                   192.168.10.1
+    # MAC="e4:5f:01:1f:b7:00"     # 192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
+    #MAC="*:*:*:*:*:*"
+    ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
+        --tftp-unique-root=mac ${DHCP_OPT} #--dhcp-reply-delay=1 --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
 }
 
 LEversion() {

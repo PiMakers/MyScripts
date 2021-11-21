@@ -10,7 +10,7 @@
         "**/.DS_Store": true,
         "**/obj": true
     },
-    "terminal.integrated.confirmOnExit": true,
+    "terminal.integrated.confirmOnExit": "hasChildProcesses",
     "terminal.integrated.drawBoldTextInBrightColors": false,
     "terminal.integrated.copyOnSelection": true,
     "remote.SSH.configFile": "/home/pimaker/.ssh"
