@@ -137,7 +137,7 @@ netBoot() {
     MAC="e4:5f:01:1f:b8:92"     #192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5"
     # MAC="e4:5f:01:1f:b6:fd"     #192.168.10.159  E7-Mikes                    192.168.10.110  ether1
     # MAC="e4:5f:01:1f:b7:06"     # 192.168.10.119  E7-Hadászat                 192.168.10.1
-    MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
+    # MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
     # MAC="e4:5f:01:1f:b9:f1"     # 192.168.10.117  E8-MyHero                   192.168.10.1
     # MAC="e4:5f:01:1f:b7:00"     # 192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
     #MAC="*:*:*:*:*:*"
@@ -313,9 +313,9 @@ runLEnfsBoot() {
     get_img
     # resizeImage
     mountLE
-    LEversion
-    playStartUpVideo
-    disableSplash
+    #LEversion
+    #playStartUpVideo
+    #disableSplash
     #wizzard
     createSshKey
     netBoot
