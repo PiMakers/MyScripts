@@ -1,14 +1,38 @@
 #!/bin/bash
 
-fsz="1 2 3 9 13 17 19 21"
+
+
+fsz="1 2 3 5 6 9 13 17 19 21"
+
+fsz_hosts="f1-teremhang \
+           f2-periodizacio \
+           f3-windowtopast-left \
+           f3-windowtopast-center \
+           f3-windowtopast-right \
+           f3-inventarium-a \
+           f3-inventarium-b \
+           f5-teremhang \
+           f6-animatik \
+           f6-teremhang"
+
+
 
 swichOn(){
     for port in ${fsz}
         do
             echo "Switching on ROUTER 2 port: ${port}"
-            /home/pi/MyScripts/MikroTik.sh ON 143 2 ${port}
+            /home/pi/MyScripts/MikroTik.sh ON 2 ${port}
         done
 }
+
+swichOff(){
+    for host in ${fsz_hosts}
+        do
+            echo "Switching OFF: ${host}"
+            ssh root@${host}.local 'shutdown now'
+        done
+}
+
 
 swichQOff(){
     for port in ${fsz}
@@ -34,7 +58,7 @@ swichMon(){
 
 
 case "$1" in
-    ON|on) swichOff
+    ON|on) swichOn
             ;;
 
     OFF|off)

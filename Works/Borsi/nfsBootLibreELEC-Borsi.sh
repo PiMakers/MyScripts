@@ -41,8 +41,7 @@ DHCP=1
         HOST_IP=10.0.0.1
     fi
 
-IMG=${IMG_DIR}/LibreELEC-RPi4.arm-9.95.4.img
-#LibreELEC-RPi4.arm-9.2.6.img
+IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
 
 get_img(){
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
@@ -70,7 +69,7 @@ resizeImage() {
     local COUNT=2048
     ${SUDO} bash -c "dd if=/dev/zero bs=1M count=${COUNT} >> ${IMG}"
 }
-IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
+
 mountLE() {
     if [ ! -z $IMG ]; then
     LOOP_DEVICE=$(${SUDO} losetup -f)
@@ -138,7 +137,7 @@ netBoot() {
     MAC="e4:5f:01:1f:b8:92"     #192.168.10.106  E9-5.6b_Könnyűzene          192.168.10.112  ether5"
     # MAC="e4:5f:01:1f:b6:fd"     #192.168.10.159  E7-Mikes                    192.168.10.110  ether1
     # MAC="e4:5f:01:1f:b7:06"     # 192.168.10.119  E7-Hadászat                 192.168.10.1
-    # MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
+    MAC="e4:5f:01:1f:b8:5f"     # 192.168.10.124  E1-Heraldika                --------------  ------
     # MAC="e4:5f:01:1f:b9:f1"     # 192.168.10.117  E8-MyHero                   192.168.10.1
     # MAC="e4:5f:01:1f:b7:00"     # 192.168.10.187  E9-Szalagos                 192.168.10.111  ether5
     #MAC="*:*:*:*:*:*"
@@ -311,12 +310,12 @@ cleanExit() {
 
 runLEnfsBoot() {
     trap 'echo "SIGINT !!!" && cleanExit ' INT
-    #get_img
+    get_img
     # resizeImage
     mountLE
-    #LEversion
-    #playStartUpVideo
-    #disableSplash
+    LEversion
+    playStartUpVideo
+    disableSplash
     #wizzard
     createSshKey
     netBoot
