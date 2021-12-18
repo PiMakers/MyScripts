@@ -3,10 +3,12 @@
 # fszt={1..8}
 
 ## MAIN:
-POEswitch1="1 2 3 0 5 6 7 0 9 0 0 0 13 0 0 0 17 0 19 0 21 0 0 0"
-
+## E2-Piócák=4; E2-Vizelet=5; -SERVER=7;-E9-BAL???=10;E3-latin=11; E8-MyHero=12; E4-Bolcso=13; -???=14; E7-Hadászat=15; E7-Animatik=16;
+## E6-CloudsRL=17; E6-CloudsFL=18; E6-Clouds_RR=19; -???=20; E1-Heraldika (<- AP122 <- AP121 2)=ether23; E4-Mese=24
+POEswitch1="25 0 0 4 5 0 0 0 0 0 11 12 13 0 15 16 17 18 19 0 0 0 25 24"
+POEswitch1="25 0 0 4 0 0 0 0 0 0 11  0 13 0  0 16 17 18 19 0 0 0 23 24" #-5;
 ## FSZT:
-POEswitch2="1 2 3 0 5 6 7 0 9 0 0 0 13 0 0 0 17 0 19 0 21 0 0 0"
+POEswitch2="1 2 3 0 5 6 0 0 9 0 0 0 13 0 0 0 17 0 19 0 21 0 0 0"
 
 ## E7-Mikes=1; E2-Teremhang = 2; E8-Fire=5; E7/tenger=8:
 POEswitch110="1 2 0 0 5 0 0 8"
@@ -20,7 +22,10 @@ POEswitch112="1 0 3 4 5 6 7 8"
 ## E6-CloudsFR=2; E6_Animatik=4;
 POEswitch113="0 2 0 4 0 0 0 0"
 
-POEswitches="2 110 111 112 113"
+## E1-Heraldika
+POEswitch121="0 2"
+
+POEswitches="1 2 110 111 112 113 121"
 
 fsz_hosts="f1-teremhang \
            f2-periodizacio \
@@ -32,21 +37,21 @@ fsz_hosts="f1-teremhang \
            f5-teremhang \
            f6-animatik \
            f6-teremhang"
-## Switch1  Switch110 Switch111 Switch112 Switch113
-emelet_hosts="#e1-heraldika \
+
+emelet_hosts="e1-heraldika \
               e2-teremhang \
-              #e2-piocak \
-              #e2-vizelet \
+              e2-piocak \
+              e2-vizelet \
               e3-latin \
               e4-bolcso \
-              #e4-mese \
+              e4-mese \
               e6-cloudsfl \
               e6-cloudsfr \
               e6-cloudsrl \
               e6-cloudsrr \
               e6-animatik \
               e7-animatik \
-              #e7-hadaszat \
+              e7-hadaszat \
               e7-tenger \
               e7-mikes \
               e8-fire \
@@ -65,24 +70,26 @@ emelet_hosts="#e1-heraldika \
               e9-5-20abszlovakruszin \
               e9-Szalagos"
 
+hosts="${fsz_hosts} ${emelet_hosts}"
+
 switchOn(){
-    routers="2 110 111 112 113"
-    for router in ${routers}
+#    POEswitches="1 2 110 111 112 113 121"
+    for POEswitch in ${POEswitches}
         do
-            /home/pi/MyScripts/MikroTik.sh MON ${router}
+            /home/pi/MyScripts/MikroTik.sh MON ${POEswitch}
             local i=1
-            local tmp="POEswitch${router}"
+            local tmp="POEswitch${POEswitch}"
             ports="${!tmp}"
             echo "****************PORTS = $ports"
             for port in ${ports}
                 do
                     local SW=ON
-                    [[ ${port} == $i ]] || SW=QOFF
-                    echo "Switching ${SW} ROUTER ${router} port: ${i}"
-                    /home/pi/MyScripts/MikroTik.sh ${SW} ${router} ${i} &
+                    # [[ ${port} == $i ]] || SW=QOFF
+                    # echo "Switching ${SW} POEswitch ${POEswitch} port: ${i}"
+                    [[ ${port} == $i ]] && echo "Switching ${SW} POEswitch ${POEswitch} port: ${i}" && /home/pi/MyScripts/MikroTik.sh ${SW} ${POEswitch} ${i} &
                     i=$(($i+1))
                 done
-            /home/pi/MyScripts/MikroTik.sh MON ${router}
+            /home/pi/MyScripts/MikroTik.sh MON ${POEswitch}
         done
 }
 
@@ -95,12 +102,10 @@ switchOff(){
         done
 }
 
-hosts="${fsz_hosts} ${emelet_hosts}"
-
 switch() {
     for host in ${hosts}
         do
-            case $1 in
+            case ${1^^} in
               on|ON)
                     echo "TEST ON: ${host}"
                     ;;
@@ -109,26 +114,27 @@ switch() {
                     ssh root@${host}.local 'shutdown now' & #|| continue
                     ;;
            
-           qoff|QOFF)
-                        routers="2 110 111 112 113"
-                        for router in ${routers}
+                QOFF)
+#                        POEswitches="1 2 110 111 112 113 121"
+                        for POEswitch in ${POEswitches}
                             do
-                                /home/pi/MyScripts/MikroTik.sh MON ${router}
+                                /home/pi/MyScripts/MikroTik.sh MON ${POEswitch}
                                 local i=1
-                                local tmp="POEswitch${router}"
+                                local tmp="POEswitch${POEswitch}"
                                 ports="${!tmp}"
                                 echo "****************PORTS = $ports"
                                 for port in ${ports}
                                     do
                                         local SW=QOFF
-                                        #[[ ${port} == $i ]] || SW=QOFF
-                                        echo "Switching ${SW} ROUTER ${router} port: ${i}"
-                                        /home/pi/MyScripts/MikroTik.sh ${SW} ${router} ${i} &
+                                        [[ ${port} == [$i,0] ]] || SW=QOFF
+                                        echo "Switching ${SW} POEswitch ${POEswitch} port: ${i}"
+                                        /home/pi/MyScripts/MikroTik.sh ${SW} ${POEswitch} ${i} &
                                         i=$(($i+1))
                                     done
-                                /home/pi/MyScripts/MikroTik.sh MON ${router}
+                                /home/pi/MyScripts/MikroTik.sh MON ${POEswitch} &
                             done
-                            ;;
+                        return
+                        ;;
 
        reboot|REBOOT)
                     echo "TEST REBOOT: ${host}"
@@ -149,7 +155,7 @@ switchQOff(){
     local POEswitch=110
     for port in {1..8} #${fsz}
         do
-            echo "Switching qOFF ROUTER ${POEswitch} port: ${port}"
+            echo "Switching qOFF POEswitch ${POEswitch} port: ${port}"
             /home/pi/MyScripts/MikroTik.sh QOFF ${POEswitch} ${port} &
         done
 }
@@ -157,7 +163,7 @@ switchQOff(){
 switchMon(){
     for POEswitch in ${POEswitches}
         do
-            echo "Monitoring ROUTER ${POEswitch}:"
+            echo "Monitoring POEswitch ${POEswitch}:"
             /home/pi/MyScripts/MikroTik.sh MON ${POEswitch}
             echo "=========================================="
         done
