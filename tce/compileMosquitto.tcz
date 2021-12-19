@@ -1,0 +1,48 @@
+#!/bin/sh
+
+DEV_DIR=/mnt/LinuxData/OF/TCE
+DEV_DIR=/opt
+GIT=True
+
+# [[$GIT ]] && git clone https://github.com/eclipse/mosquitto.git /opt/mosquitto || \
+wget https://mosquitto.org/files/source/mosquitto-2.0.14.tar.gz -P /tmp
+tar -vxf  /opt/mosquitto-2.0.14.tar.gz -C ${DEV_DIR}
+# cd /opt/mosquitto-2.0.14
+## tce-load compiletc
+tce-load -wi make gcc isl mpc openssl-dev
+
+git clone https://github.com/DaveGamble/cJSON.git ${DEV_DIR}/cjson
+
+make -C ${DEV_DIR}/cjson
+make -C /opt/mosquitto-2.0.14 CFLAGS="-I${DEV_DIR}" LDFLAGS="-L${DEV_DIR}/cjson" WITH_DOCS=no
+
+
+
+## subscriber:
+MOSQUITTO_DIR=/opt/mosquitto-2.0.14
+
+LD_LIBRARY_PATH=${MOSQUITTO_DIR}/lib ${MOSQUITTO_DIR}/client/mosquitto_sub -t 'test/topic' -v
+## publisher
+DEVICENAME=`hostname`
+TOPIC="homeassistant/sensor/${DEVICENAME}/"
+TOPIC1="${TOPIC}/${DEVICENAME}Temp/config
+MSG1="{ \"name\": ${DEVICENAME}Temperature, \"state_topic\": ${TOPIC}/state, \"unit_of_measurement\": "°C", \"value_template\": \"{{ value_json.temperature}}\" }, qos=1, retain=True"
+MSG2=client.publish(topic="${TOPIC}/${DEVICENAME}DiskUse/config", payload='{ "name": "'+ deviceName +'DiskUse", "state_topic": "homeassistant/sensor/'+ deviceName +'/state", "unit_of_measurement": "%", "value_template": "{{ value_json.disk_use}}" }', qos=1, retain=True)
+MSG3=client.publish(topic="homeassistant/sensor/"+ deviceName +"/"+ deviceName +"MemoryUse/config", payload='{ "name": "'+ deviceName +'MemoryUse", "state_topic": "homeassistant/sensor/'+ deviceName +'/state", "unit_of_measurement": "%", "value_template": "{{ value_json.memory_use}}" }', qos=1, retain=True)
+MSG4=client.publish(topic="homeassistant/sensor/"+ deviceName +"/"+ deviceName +"CpuUsage/config", payload='{ "name": "'+ deviceName +'CpuUsage", "state_topic": "homeassistant/sensor/'+ deviceName +'/state", "unit_of_measurement": "%", "value_template": "{{ value_json.cpu_usage}}" }', qos=1, retain=True)
+MSG5=client.publish(topic="homeassistant/sensor/"+ deviceName +"/"+ deviceName +"PowerStatus/config", payload='{ "name": "'+ deviceName +'PowerStatus", "state_topic": "homeassistant/sensor/'+ deviceName +'/state", "value_template": "{{ value_json.power_status}}" }', qos=1, retain=True)
+MSG6=client.publish(topic="homeassistant/sensor/"+ deviceName +"/"+ deviceName +"LastBoot/config", payload='{ "device_class": "timestamp", "name": "'+ deviceName +'LastBoot", "state_topic": "homeassistant/sensor/'+ deviceName +'/state", "value_template": "{{ value_json.last_boot}}" }', qos=1, retain=True)
+    
+M_PUB() {
+    LD_LIBRARY_PATH="${MOSQUITTO_DIR}/cjson;${MOSQUITTO_DIR}/lib" ${MOSQUITTO_DIR}/client/mosquitto_pub -t $1 -m $2
+}
+
+openHABtry() {
+
+while :
+do
+LD_LIBRARY_PATH="${MOSQUITTO_DIR}/cjson;${MOSQUITTO_DIR}/lib" ${MOSQUITTO_DIR}/client/mosquitto_pub -t 'test/topic' -m \
+"{\"light\": $RANDOM, \"moisture\": $RANDOM, \"temperature\": $RANDOM.$(($RANDOM%100)), \"conductivity\": $RANDOM, \"battery\": $RANDOM}"
+sleep 10
+done
+}
