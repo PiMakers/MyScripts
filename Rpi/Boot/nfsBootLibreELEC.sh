@@ -4,14 +4,15 @@
 ## https://forum.kodi.tv/showthread.php?tid=260817
 
 # sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
-# df |sed '/mmcblk0/!d;s/p[0-9].*//'
+# umount $(df |sed '/mmcblk0/!d;s/p[0-9].*//')
 #!/bin/bash
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
+HOST_OS=
 TFTP_DIR=/tftpLE
 IMG_DIR=/mnt/LinuxData/Install/img
-IMG_DIR=/mnt/LinuxData/OF/Borsi
+#IMG_DIR=/mnt/LinuxData/OF/Borsi
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
 
@@ -25,6 +26,7 @@ DHCP=1
     fi
 
 IMG=${IMG_DIR}/BorsiBase-10.0.0.img
+IMG=/mnt/LinuxData/Install/zip/piCore64-13.1.zip
 
 get_img(){
     if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
@@ -35,31 +37,57 @@ get_img(){
         fi
         echo "No img selected. Exit"; exit 1
     else 
-        echo "selected IMG = $IMG"
-        if [ ${IMG##*.} == "zip" -o ${IMG##*.} == "gz" ];then
-            [ ${IMG##*.}=="gz" ] && UNZIP="gunzip" || UNZIP="unzip"
+        echo ":: selected IMG = $IMG"
+        IMG_EXT=${IMG##*.} 
+        case ${IMG##*.} in
+            zip)
+                echo :: ${IMG##*.}
+                # test unzip $IMG -d ${IMG_DIR}/
+                ;;
+            gz)
+                echo :: ${IMG##*.}
+                gunzip -k $IMG
+                IMG=${IMG##*/} && IMG=${IMG%.*}
+                IMG=${IMG_DIR}/${IMG}
+                echo ":: extracted IMG = $IMG"
+                ;;
+            *)
+                echo "What a Fuck???"
+                ;;
+        esac
+        if [ ${IMG##*.} == "zip" ];then
             if [ ! -f ${IMG%.*}.img ];then
-                ${UNZIP} $IMG -d ${IMG_DIR}/
+                unzip $IMG -d ${IMG_DIR}/
+                IMG=$(basename ${IMG%.*}.img)
+                IMG=${IMG_DIR}/$IMG
             fi
-            IMG=$(basename ${IMG%.*}.img)
-            IMG=${IMG_DIR}/$IMG
-            echo ---------- $IMG --------
         fi
+            echo ":: ---------- $IMG --------"
     fi
 }
 
 resizeImage() {
-    read -p "Resize Img?" RESIZE
-    if [ -z RESIZE ]; then
+    read -p "Resize Img with (*4MB)? :" RESIZE
+    if [ ! -z $RESIZE ]; then
     local COUNT=$RESIZE
-    ${SUDO} bash -c "dd if=/dev/zero bs=4M count=${COUNT} >> ${IMG}"
-    echo "Resized!!!!!!!!!!!!!!!!!!!!!"
+    ${SUDO} bash -c "dd if=/dev/zero bs=4M count=${COUNT} >> ${IMG}" || ! echo ":::::::::::::: $?" || exit 10
+    RESIZED=1
     fi
 }
 
 mountLE() {
-    LOOP_DEVICE=$(${SUDO} losetup -f)
-    ${SUDO} losetup -P $LOOP_DEVICE $IMG
+    echo "Mounting ${IMG} ..."
+    #LOOP_DEVICE=$(${SUDO} losetup -f)
+    LOOP_DEVICE=$(${SUDO} losetup -fPL --show $IMG) || exit 11
+    #${SUDO} losetup -P $LOOP_DEVICE $IMG || exit 11
+    if [ $RESIZED ] ; then
+        ${SUDO} parted -s -m ${LOOP_DEVICE} resizepart 2 100%
+        ${SUDO} e2fsck -f -p ${LOOP_DEVICE}p2
+        ${SUDO} resize2fs ${LOOP_DEVICE}p2
+        echo "Resized!!!!!!!!!!!!!!!!!!!!!"
+        RESIZED=0
+    fi
+
     ${SUDO} mkdir -pv ${TFTP_DIR}
     ${SUDO} mount -v ${LOOP_DEVICE}p1 ${TFTP_DIR} || ( echo "error mounting ${TFTP_DIR}" && exit )
     
@@ -68,20 +96,24 @@ mountLE() {
 }
 
 detectOS() {
+    ROOT_FS=${STORAGE_DIR}
     if [ -f ${ROOT_FS}/etc/os-release ]; then
         . ${ROOT_FS}/etc/os-release
         echo ::ID=${ID}
-    fi
+    
         case $ID in
             ubuntu)
-                echo ":: HostOS Ubuntu!"
+                # echo ":: HostOS Ubuntu!"
+                HOST_OS="Ubuntu"
                 ;;
             raspbian|debian)
-                echo ":: HostOS Raspios!"
+                # echo ":: HostOS Raspios!"
+                HOST_OS="Raspios"
                 ID=pi
                 ;;
             libreelec)
-                echo ":: HostOS LibreELEC!"
+                # echo ":: HostOS LibreELEC!"
+                HOST_OS="LibreELEC"
                 BOOT_FS=/flash
                 HOME_DIR=/storage
                 ;;        
@@ -89,25 +121,56 @@ detectOS() {
                 echo ":: UnKnonw OS = $ID !!!"
                 [ -z $ID ] && exit
         esac
- 
+    
+    elif [ -d ${STORAGE_DIR}/tce ]; then
+        # echo ":: HostOS piCore!"
+        HOST_OS=piCore
+        HOME_DIR=tc
+    elif [[ `readlink /dev/disk/by-label/LIBREELEC` = "../../${LOOP_DEVICE##*/}p1" ]]; then
+        HOST_OS="LibreELEC"
+        HOME_DIR=${STORAGE_DIR}
+    else
+        echo ":: UnKnonw OS!!! Exit!"
+    fi
+    echo ":: HostOS ${HOST_OS} (ID=$ID)!"
 }
 
 # dtoverlay=dwc2,dr_mode=host
 netBoot() {
     ${SUDO} mkdir -pv ${STORAGE_DIR}
-    echo "boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0" | \
-        ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.LE
+    detectOS
+    case ${HOST_OS} in
+        piCore) 
+                echo "zswap.compressor=lz4 zswap.zpool=z3fold console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 consoleblank=0 noembed nfsmount=${HOST_IP}:${STORAGE_DIR}:nolock,defaults host=picore-pim" | \
+                ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
+
+                # piCoreplayer
+                #echo "dwc_otg.fiq_fsm_mask=0xF host=pCP dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 noembed smsc95xx.turbo_mode=N noswap consoleblank=0 waitusb=2 nfsmount=${HOST_IP}:${STORAGE_DIR}:nolock,defaults" | \
+                #${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
+                ;;
+     LibreELEC)
+                echo "boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0" | \
+                ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
+                ;;
+        
+            *)
+                cleanExit
+                ;;
+    esac
     
     ${SUDO} sed -i '/disable_splash/d' ${TFTP_DIR}/config.txt
     echo "disable_splash=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
 
-    ${SUDO} sed -i '/nfsboot.LE/d' ${TFTP_DIR}/config.txt
-    echo "cmdline=cmdline.nfsboot.LE" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
+    ${SUDO} sed -i '/otg_mode/d' ${TFTP_DIR}/config.txt
+    echo "otg_mode=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
 
-    ${SUDO} sed -i '/libreELEC/d' /etc/exports
-    echo "## NfsBoot libreELEC" | ${SUDO} tee -a /etc/exports
-    echo -e "${STORAGE_DIR}\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports
-    echo -e "${TFTP_DIR}\t\t\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #libreELEC" | ${SUDO} tee -a /etc/exports 
+    ${SUDO} sed -i "/nfsboot.${HOST_OS}/d" ${TFTP_DIR}/config.txt
+    echo "cmdline=cmdline.nfsboot.${HOST_OS}" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
+
+    ${SUDO} sed -i "/${HOST_OS}/d" /etc/exports
+    echo "## NfsBoot ${HOST_OS}" | ${SUDO} tee -a /etc/exports
+    echo -e "${STORAGE_DIR}\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports
+    echo -e "${TFTP_DIR}\t\t\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports 
 
     ${SUDO} exportfs -r
     # ${SUDO} exportfs
@@ -119,15 +182,41 @@ netBoot() {
     else
         DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h --listen-address=127.0.0.1,10.0.0.1 --port=5300"
     fi
-    gnome-terminal -t "tftpBoot" -- ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" \
+
+    TERMINAL_CMD=
+    which lx-terminal >/dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
+    which gnome-terminal >/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
+echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
+
+    for m in $(ls /sys/class/net)
+        do
+            case $m in
+                w*)
+                    WIFI_IFACE=$m
+                    ;;
+                e*)
+                    WIRED_IFACE=$m
+                    ;;
+                *)
+                    if [ $m != lo ]; then
+                        OTHER_IFACE=$m
+                    fi
+                    ;;
+            esac
+        done
+
+    echo ":: Wired = ${WIRED_IFACE}"
+    INTERFACE=${WIRED_IFACE}
+
+    ${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" \
         --dhcp-reply-delay=1  ${DHCP_OPT} #--tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
     
     read -p "Press a key to stop NFSboot.."
 }
 
 qCommand() {
-    gnome-terminal -t "tftpBoot" -- sudo dnsmasq --enable-tftp --tftp-root=/tftpLE,enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
-    gnome-terminal -t "tftpBoot" -- sudo dnsmasq --enable-tftp --tftp-root=/nfs/root/boot,enp0s25 -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
+    ${TERMINAL_CMD} sudo dnsmasq --enable-tftp --tftp-root=/tftpLE,${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
+    ${TERMINAL_CMD} sudo dnsmasq --enable-tftp --tftp-root=/nfs/root/boot,${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-reply-delay=1 --dhcp-range=192.168.1.20,proxy --port=0
 }
 
 LEversion() {
@@ -185,12 +274,14 @@ disableSplash() {
     ## Disable RpiSplash
     ${SUDO} sed -i '/disable_splash/d' ${TFTP_DIR}/config.txt
     echo "disable_splash=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
+    
     ## Disable LibreELEC Splash
-    echo | sudo tee /tftpLE/oemsplash.png
+    sudo touch /tftpLE/oemsplash.png
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/userdata/advancedsettings.xml 1>/dev/null    
         <advancedsettings version="1.0">
             <services>
                 <webserver>true</webserver>
+                <!-- webserverport>8080</<webserverport -->
                 <webserverpassword>raspi</webserverpassword>
                 <webserverusername>KODI</webserverusername>
             </services>
@@ -233,7 +324,7 @@ EOF
 
 createSshKey() {
         HOSTNAME=$(hostname -s)
-        #HOSTNAME=Borsi
+        HOSTNAME=Borsi
         ${SUDO} mkdir -pv -m 700 ${STORAGE_DIR}/.ssh
         [ -f ~/.ssh/testkey@${HOSTNAME} ] || ${SUDO} ssh-keygen -q -N Pepe374189 -C testKey -f ~/.ssh/testkey@${HOSTNAME}
         ${SUDO} cat ~/.ssh/testkey@${HOSTNAME}.pub | ${SUDO} tee ${STORAGE_DIR}/.ssh/authorized_keys 1>/dev/null
@@ -260,7 +351,7 @@ skinHack() {
 
 scriptAddon() {
     # KODI 10
-            mkdir -pv .kodi/addons/script.button
+    # mkdir -pv .kodi/addons/script.button
             cat << EOF | sed 's/^.\{12\}//' | ${SUDO} tee ${STORAGE_DIR}/.kodi/addons/service.autoexec/autoexec.py 1>/dev/null
             import xbmc
             xbmc.executebuiltin( "SetVolume(30)" )
@@ -293,17 +384,20 @@ cleanExit() {
         sudo rm -r /mnt/sqfs
     fi
     # remove this script's nfs shares (lines with #libreELEC) 
-    ${SUDO} sed -i '/libreELEC/d' /etc/exports
+    ${SUDO} sed -i "/${HOST_OS}/d" /etc/exports
+    
     # restart nfs server - TODO restore original sttate
     ${SUDO} service nfs-kernel-server restart
     # exportfs -r
 
-    ${SUDO} sed -i '/nfsboot.LE/d' ${TFTP_DIR}/config.txt
+    ${SUDO} sed -i "/cmdline=/d" ${TFTP_DIR}/config.txt
+    sync
     # unmount mounted img
     mountpoint ${TFTP_DIR} && ${SUDO} umount -lv ${TFTP_DIR}
     mountpoint ${STORAGE_DIR} && ${SUDO} umount -lv ${STORAGE_DIR}
     ${SUDO} rm -r ${TFTP_DIR}
     # remove loopdevice
+    ##losetup -l | sed '/piCore64-13.0.img/!d;s/ .*//'
     ${SUDO} losetup -d ${LOOP_DEVICE}
     exit 0
 }
@@ -325,110 +419,49 @@ fs-resize() {
 runLEnfsBoot() {
     trap 'echo "SIGINT !!!" && cleanExit ' INT
     get_img
-    # resizeImage
+    resizeImage
     mountLE
     #LEversion
-    playStartUpVideo
-    disableSplash
-    wizzard
-    createSshKey
-    skinHack
+    detectOS
+    case ${HOST_OS} in
+        *)
+            echo "HOST_OS = ${HOST_OS} -------------- Do specific SetUp steps Here."
+            ;;
+    esac
+
+    if [ ${HOST_OS}x == piCorex ]; then
+        echo ":: Do piCore specific tasks here..."
+    elif [ ${HOST_OS}x == "LibreELECx" ]; then  # if libreELEC in this case.)
+        echo ":: Do libreELEC specific tasks here..."
+        $SETUP == 1 || ! echo ":: Skipping SetUp" || continue
+        playStartUpVideo
+        wizzard
+        skinHack
+        disableSplash
+        createSshKey
+    fi
     netBoot
     cleanExit
 }
-
-
 
 [ "${BASH_SOURCE}" == "${0}" ] && runLEnfsBoot
 
 
 commands() {
-    import sys
+    # import sys
     # sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
     PATH=$PATH:/storage/.kodi/addons/script.module.kodi-six/libs/kodi_six
-    kodi-send --host=192.168.0.1 --port=9777 --action="Quit" # 
+    kodi-send --host=192.168.1.4 --port=9777 --action="reboot" # 
     kodi-send --action="PlayerControl(Play)"
     kodi-send --action="ReloadSkin(reload)"
     kodi-send --action="Skin.ToggleDebug()"
     kodi-send --action="DialogOK(msg="oooooo",100)"
     kodi-send --action="RunScript('/storage/.kodi/myScripts/Animatics.py')"
     kodi-send --action="CECActivateSource"
-    xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
+    #xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
     $INFO[Player.Title]
     $INFO[infolabel]
     #display_hdmi_rotate=-1
     #display_lcd_rotate=-1
 
-}
-
-others() {
-   # Set RGB color
-
-import sys
-sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
-# sys.path.append('/storage/.kodi/mySripts')
-
-import RPi.GPIO as GPIO
-import time
-# import random
-import xbmc
-
-button  = 14
-P_RED   = 15     # adapt to your wiring
-P_GREEN = 18   # ditto
-P_BLUE  = 23    # ditto
-fPWM = 50      # Hz (not higher with software PWM)
-
-def setup():
-    global pwmR, pwmG, pwmB
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(P_RED, GPIO.OUT)
-    GPIO.setup(P_GREEN, GPIO.OUT)
-    GPIO.setup(P_BLUE, GPIO.OUT)
-    pwmR = GPIO.PWM(P_RED, fPWM)
-    pwmG = GPIO.PWM(P_GREEN, fPWM)
-    pwmB = GPIO.PWM(P_BLUE, fPWM)
-    pwmR.start(0)
-    pwmG.start(0)
-    pwmB.start(0)
- 
-def setColor(r, g, b):
-    pwmR.ChangeDutyCycle(int(r / 255 * 100))
-    pwmG.ChangeDutyCycle(int(g / 255 * 100))
-    pwmB.ChangeDutyCycle(int(b / 255 * 100))
-def setRed():
-    pwmR.ChangeDutyCycle(100)
-    pwmG.ChangeDutyCycle(0)
-    pwmB.ChangeDutyCycle(0)
-def setBlue():
-    setColor(0,0,255)
-
-print ("starting")
-setup()
-
-try:
-    while True:
-        button_state = GPIO.input(button)
-        if  button_state == False:
-            #print (r, g, b)
-            setRed()
-            print('Button Pressed...')
-            xbmc.executebuiltin( "PlayerControl(Play)" )
-            xbmc.executebuiltin( "PlayerControl(Next)" )
-            while GPIO.input(button) == False:
-                    setBlue()
-                    time.sleep(0.2)
-        else:
-            setColor(0,100,0)
-            time.sleep(1.0)
-            setBlue()
-            setBlue()
-
-except KeyboardInterrupt:
-    print ("CleaningUp...")
-    pwmR.stop()
-    pwmG.stop()
-    pwmB.stop()
-    GPIO.cleanup()   
 }
