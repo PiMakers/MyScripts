@@ -77,7 +77,9 @@ truncate_img() {
     [ $1 ] || ( echo "No image selected !" && exit )
     ## doit with gnome-disks
     #LOOP_DEVICE=$(${SUDO} losetup -f)
-    #${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
+    LOOP_DEVICE=$(${SUDO} losetup -fPL --show ${1})
+    ${SUDO} partprobe $LOOP_DEVICE 	|| echo "error partprobe $LOOP_DEVICE"
+    ${SUDO} gnome-disks 
     #${SUDO} gparted $LOOP_DEVICE
     #${SUDO} losetup -d $LOOP_DEVICE
     local END_BLOCK=$( ${SUDO} fdisk -lo "End" $1 | sed '$!d')
