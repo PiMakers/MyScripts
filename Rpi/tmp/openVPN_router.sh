@@ -4,4 +4,7 @@
 #!/bin/bash
 
 
-curl https://raw.githubusercontent.com/Angristan/OpenVPN-install/master/openvpn-install.sh | sudo bash -s
+# curl https://raw.githubusercontent.com/Angristan/OpenVPN-install/master/openvpn-install.sh | sudo bash -s
+
+
+sudo apt update && sudo apt install openvpn

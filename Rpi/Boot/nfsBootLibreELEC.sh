@@ -16,7 +16,7 @@ IMG_DIR=/mnt/LinuxData/Install/img
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
 
-mkdir -pv ${STORAGE_DIR}
+# mkdir -pv ${STORAGE_DIR}
 
 DHCP=1
     if [ $DHCP -eq 1 ]; then
@@ -46,9 +46,9 @@ get_img(){
                 ;;
             gz)
                 echo :: ${IMG##*.}
-                gunzip -k $IMG
-                IMG=${IMG##*/} && IMG=${IMG%.*}
-                IMG=${IMG_DIR}/${IMG}
+                DST_IMG=${IMG##*/} && DST_IMG=${DST_IMG%%.gz}
+                gunzip -ck < $IMG > ${IMG_DIR}/${DST_IMG}                
+                IMG=${IMG_DIR}/${DST_IMG}
                 echo ":: extracted IMG = $IMG"
                 ;;
             *)
@@ -88,7 +88,7 @@ mountLE() {
         RESIZED=0
     fi
 
-    ${SUDO} mkdir -pv ${TFTP_DIR}
+    ${SUDO} mkdir -pv ${TFTP_DIR} ${STORAGE_DIR}
     ${SUDO} mount -v ${LOOP_DEVICE}p1 ${TFTP_DIR} || ( echo "error mounting ${TFTP_DIR}" && exit )
     
     ${SUDO} mount -v ${LOOP_DEVICE}p2 ${STORAGE_DIR} || ( echo "error mounting ${STORAGE_DIR}" && exit )
@@ -141,22 +141,29 @@ netBoot() {
     detectOS
     case ${HOST_OS} in
         piCore) 
-                echo "zswap.compressor=lz4 zswap.zpool=z3fold console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 consoleblank=0 noembed nfsmount=${HOST_IP}:${STORAGE_DIR}:nolock,defaults host=picore-pim" | \
-                ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
+                CMDLINE_TXT="zswap.compressor=lz4 zswap.zpool=z3fold console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 consoleblank=0 noembed nfsmount=${HOST_IP}:${STORAGE_DIR}:nolock,defaults host=CoreBase"
 
                 # piCoreplayer
                 #echo "dwc_otg.fiq_fsm_mask=0xF host=pCP dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 noembed smsc95xx.turbo_mode=N noswap consoleblank=0 waitusb=2 nfsmount=${HOST_IP}:${STORAGE_DIR}:nolock,defaults" | \
                 #${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
                 ;;
      LibreELEC)
-                echo "boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0" | \
-                ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
+                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0"
                 ;;
-        
-            *)
+       Raspios)
+                sudo mount --bind ${TFTP_DIR} ${STORAGE_DIR}/boot
+                local NFS_BOOT_TAG="/root,vers=4.1,proto=tcp,port=2049,nolock"
+                CMDLINE_TXT="dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=/dev/nfs nfsroot=${HOST_IP}:${STORAGE_DIR},vers=4.1,proto=tcp,port=2049,nolock rw ip=dhcp \
+                elevator=deadline rootwait # plymouth.ignore-serial-consoles noswap"
+
+                ${SUDO} sed -i 's/PARTUUID/#PARTUUID/g' ${STORAGE_DIR}/etc/fstab
+                ;;
+             *)
                 cleanExit
                 ;;
     esac
+    
+    echo "${CMDLINE_TXT}" | ${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}    
     
     ${SUDO} sed -i '/disable_splash/d' ${TFTP_DIR}/config.txt
     echo "disable_splash=1" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
@@ -177,16 +184,16 @@ netBoot() {
     ${SUDO} service dnsmasq stop
     
     if [ $DHCP -eq 1 ]; then      
-        DHCP_OPT="--dhcp-range=${HOST_IP},proxy --port=0"
+        DHCP_OPT="--dhcp-range=tag:piserver,${HOST_IP},proxy --port=0"
         echo "::DHCP = 1 !!!!!!"
     else
-        DHCP_OPT="--dhcp-range=${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h --listen-address=127.0.0.1,10.0.0.1 --port=5300"
+        DHCP_OPT="--dhcp-range=tag:piserver,${HOST_IP%.*}.2,${HOST_IP%.*}.10,12h --listen-address=127.0.0.1,10.0.0.1 --port=5300"
     fi
 
     TERMINAL_CMD=
-    which lx-terminal >/dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
+    which lxterminal >/dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
     which gnome-terminal >/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
-echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
+    echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
 
     for m in $(ls /sys/class/net)
         do
@@ -208,8 +215,17 @@ echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
     echo ":: Wired = ${WIRED_IFACE}"
     INTERFACE=${WIRED_IFACE}
 
+    MAC="*:*:*:*:*:*"
+    
+    #${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" --dhcp-host=${MAC},set:piserver \
+    #    --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1  --dhcp-reply-delay=1 ${DHCP_OPT} #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+    # -z -b -a 192.168.10.142
+
     ${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" \
-        --dhcp-reply-delay=1  ${DHCP_OPT} #--tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+        --dhcp-host=${MAC2},set:piserver --dhcp-reply-delay=1 ${DHCP_OPT} --dhcp-host=${MAC},set:piserver --tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 --ignore-address=192.168.10.1 #--dhcp-reply-delay=1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
+
+    #${TERMINAL_CMD} ${SUDO} dnsmasq --enable-tftp --tftp-root=${TFTP_DIR},${INTERFACE} -d --pxe-service=0,"Raspberry Pi Boot" \
+    #    --dhcp-reply-delay=1  ${DHCP_OPT} #--tftp-unique-root=mac --pxe-prompt="Boot Raspberry Pi",1 --dhcp-host=e4:5f:01:1f:b7:54,set:piserver tag:piserver,
     
     read -p "Press a key to stop NFSboot.."
 }
@@ -385,6 +401,7 @@ cleanExit() {
     fi
     # remove this script's nfs shares (lines with #libreELEC) 
     ${SUDO} sed -i "/${HOST_OS}/d" /etc/exports
+    ${SUDO} sed -i 's/#PARTUUID/PARTUUID/g' ${STORAGE_DIR}/etc/fstab
     
     # restart nfs server - TODO restore original sttate
     ${SUDO} service nfs-kernel-server restart
@@ -395,7 +412,7 @@ cleanExit() {
     # unmount mounted img
     mountpoint ${TFTP_DIR} && ${SUDO} umount -lv ${TFTP_DIR}
     mountpoint ${STORAGE_DIR} && ${SUDO} umount -lv ${STORAGE_DIR}
-    ${SUDO} rm -r ${TFTP_DIR}
+    ${SUDO} rm -r ${TFTP_DIR} ${STORAGE_DIR}
     # remove loopdevice
     ##losetup -l | sed '/piCore64-13.0.img/!d;s/ .*//'
     ${SUDO} losetup -d ${LOOP_DEVICE}
@@ -433,12 +450,13 @@ runLEnfsBoot() {
         echo ":: Do piCore specific tasks here..."
     elif [ ${HOST_OS}x == "LibreELECx" ]; then  # if libreELEC in this case.)
         echo ":: Do libreELEC specific tasks here..."
-        $SETUP == 1 || ! echo ":: Skipping SetUp" || continue
-        playStartUpVideo
-        wizzard
-        skinHack
-        disableSplash
+        SETUP=1
         createSshKey
+        [ $SETUP == 1 ] || echo ":: Skipping SetUp"
+        [ $SETUP == 1 ] || playStartUpVideo
+        [ $SETUP == 1 ] || wizzard
+        [ $SETUP == 1 ] || skinHack
+        [ $SETUP == 1 ] || disableSplash
     fi
     netBoot
     cleanExit

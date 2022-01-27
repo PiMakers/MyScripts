@@ -49,30 +49,62 @@ tmp2() {
 
 
 setwebapp() {
+    sudo mkdir -pv /mnt/LinuxData/OF
+    df | grep -q /mnt/LinuxData/OF || sudo mount -onolock,defaults NUC:/mnt/LinuxData/OF /mnt/LinuxData/OF
+
+
+    tce-load -wi node.js nss atk at-spi2-atk gtk3 libasound libcups Xorg #dbus #dbus-glib dbus-python3.8
     # /usr/local/etc/fonts/fonts.conf -> /tmp/tcloop/fontconfig/usr/local/etc/fonts/fonts.conf
     # create link!!?? /usr/local/etc/init.d/dbus status -> /tmp/tcloop/dbus/usr/local/etc/init.d/dbus status START!!!
-    [ df| grep -q /mnt/LinuxData/OF ] || sudo mount -onolock,defaults NUC:/mnt/LinuxData/OF /mnt/LinuxData/OF
-    cp -r /mnt/LinuxData/OF/myGitHub/Borsi/webapps /opt
-    npm i --prefix=/opt/webapps/hadaszat
     export FONTCONFIG_PATH=/usr/local/etc/fonts
-    tce-load -wi node.js nss atk at-spi2-atk gtk3 libasound libcups Xorg #dbus #dbus-glib dbus-python3.8
+    cp -r /mnt/LinuxData/OF/myGitHub/Borsi/webapps /opt
+
     # tce-load -wi Xorg glib2
     filetool.sh -b
     #flwm aterm wbar
     sed -i '/dbus start/d' /opt/bootlocal.sh
     echo /usr/local/etc/init.d/dbus start >> /opt/bootlocal.sh
+    
     ## FONTCONFIG_PATH=/usr/local/etc/fonts DISPLAY=:0 dbus-launch npm start --prefix=/opt/webapps/hadaszat
-        npm i --prefix=/opt/webapps/hadaszat
-    # DISPLAY=:0 npm start --prefix=/opt/webapps/hadaszat
+    DISPLAY=:0 npm start --prefix=/usr/share/webapps/vizeletvizsgalat
+    npm i --prefix=/opt/webapps/hadaszat
+    #npm update
+
+    mv /opt/webapps/hadaszat/node_modules /opt/webapps
+    for WEB_APP in $(ls /opt/webapps)
+        do
+        [ "${WEB_APP}" == "common/" -o "${WEB_APP}" == "fonts/" -o ${WEB_APP} == "node_modules/" ] && continue
+            # [ -l /opt/webapps/${WEB_APP}node_modules ] || True
+            ln -fs ../node_modules /opt/webapps/${WEB_APP}node_modules
+            # cp -r /opt/webapps/hadaszat/main.js /opt/webapps/${WEB_APP}main.js
+            la /opt/webapps/${WEB_APP}node_modules
+            #FONTCONFIG_PATH=/usr/local/etc/fonts DISPLAY=:0 npm start --prefix=/opt/webapps/${WEB_APP} #>/dev/null
+        done
+    filetool.sh -b
+    reboot
+    # DISPLAY=:0 npm start --prefix=/opt/webapps/${WEB_APP}
     npm start --prefix=/opt/webapps/hadaszat
     # sudo chmod -R 777 /mnt/LinuxData/OF/myGitHub/Borsi/webapps
-    # tce-load -ciw Xorg nss node.js
     # vt.global_cursor_default=0 > cmdline.txt
     # [CM4]         > config.txt
     # otg_mode=1    > config.txt
-    #/usr/local/bin/Xorg -nocursor -nolisten tcp & > $HOME/.xsession
+    ------------
+    sed '/FONTCONFIG_PATH/!d' .profile
+    echo 'export FONTCONFIG_PATH=/usr/local/etc/fonts' >> ~/.profile
 
-    cat << EOF sudo tee /usr/local/share/X11/xorg.conf.d/20-noblank.conf
+    # remove box to default hostname tce logo 
+    # /usr/bin/sethostname ${HOSTNAME}
+    sed -i '/box/d' /opt/bootsync.sh
+    echo "sed -i '/\$\$\$/!d' /etc/motd /opt/bootsync.sh"
+    
+    ## Xorg 
+    # -br create root window with black background
+    # -nocursor              disable the cursor
+    # -dpms                  disables VESA DPMS monitor control
+    sed -i 's/ -nocursor//;s/ -br//;s/ -dpms//' .xsession
+    sed -i 's/Xorg -nolisten/Xorg -nocursor -br -dpms -nolisten/' .xsession
+
+    cat << 'EOF' | sed 's/^.\{4\}//' | tee /usr/local/share/X11/xorg.conf.d/20-noblank.conf
     Section "ServerFlags"
         Option          "BlankTime" "0"
         Option          "StandbyTime" "0"
@@ -126,4 +158,13 @@ tmpSH() {
         IMG=$IMG_DIR/${IMG##*/}
 
     fi
+}
+
+createTCZ() {
+    TCZ_NAME='webapps'
+    tce-load -iw squashfs-tools
+    sudo mkdir -pv /tmp/extension/usr/share/
+    # prepare or mv files here
+    cd /tmp
+    mksquashfs extension ${TCZ_NAME}.tcz
 }

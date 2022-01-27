@@ -6,7 +6,7 @@ GIT=True
 
 # [[$GIT ]] && git clone https://github.com/eclipse/mosquitto.git /opt/mosquitto || \
 wget https://mosquitto.org/files/source/mosquitto-2.0.14.tar.gz -P /tmp
-tar -vxf  /opt/mosquitto-2.0.14.tar.gz -C ${DEV_DIR}
+tar -vxf  /tmp/mosquitto-2.0.14.tar.gz -C ${DEV_DIR}
 # cd /opt/mosquitto-2.0.14
 ## tce-load compiletc
 tce-load -wi make gcc isl mpc openssl-dev

@@ -3,9 +3,10 @@
 #!/bin/bash
 
 #set -e
-
-DOWNLOAD_DIR='/mnt/LinuxData/Install/zip'
-IMG_FOLDER='/mnt/LinuxData/Install/img'
+DEV_DIR=/mnt/LinuxData/OF
+DOWNLOAD_DIR="${DEV_DIR}/../Install/zip"
+IMG_FOLDER="${DEV_DIR}/../Install/img"
+IMG_FOLDER="${DEV_DIR}/Borsi"
 TIMEOUT=5
 WARNING_TIMEOUT=3
 LATEST_VERSION=
@@ -18,7 +19,7 @@ IMG_ARCH="armhf"                               # armhf | arm64
 OS_TYPE=""                                     # lite | full | ""
 OS_VERS="latest"                               # by_date | latest 
 
-check_root3() {
+check_root() {
     # Must be root to install the hotspot
     echo ":::"
     if [[ $EUID -eq 0 ]];then
@@ -170,7 +171,8 @@ extractImg() {
     if [ ${IMG##*.}=="zip" ];then
         #if [ ! -f ${IMG_FOLDER}/${IMG%.*}.img ];then
             mkdir -pv ${IMG_FOLDER}
-            ${SUDO} unzip $IMG -d ${IMG_FOLDER}/ || ( ${SUDO} rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
+            # ${SUDO} 
+            unzip $IMG -d ${IMG_FOLDER}/ || ( ${SUDO} rm $IMG && echo -e "\n***Damaged zip file!!!***\n***Redownload it!***\n" &&\
             dl_raspbian && exit )
 
         #fi
@@ -223,7 +225,7 @@ chrootRaspbian() {
 # Program start here
 
 runDlRaspbian() {
-check_root3
+check_root
 dl_raspbian
 extractImg
 }
