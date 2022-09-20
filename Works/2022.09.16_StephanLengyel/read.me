@@ -1,0 +1,19 @@
+# cat ~/.ssh/id_rsa.pub | ssh username@remote_host "mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && chmod -R go= ~/.ssh && cat >> ~/.ssh/authorized_keys"
+# ssh-copy-id username@remote_host
+# eval $(ssh-agent)
+# key-add
+#ssh root@192.168.167.8 'systemctl restart kodi'
+
+for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then ssh root@192.168.167.$i hostname;fi;done
+
+192.168.167.5 - TrefflerMate-Speaker
+192.168.167.7 - TakacsBori-Speaker
+192.168.167.8 - VekonyAnna-Speaker
+192.168.167.9 - PatakiZsolt-ID56
+192.168.167.11 - MadaraszRita-Speaker
+192.168.167.12 - RidegRebeka-Speaker
+192.168.167.13 - LammLenke-Silent
+192.168.167.14 - NagyTamasMate-Silent
+192.168.167.16 - TajtiVirag-HeadPhone
+192.168.167.17 - HodovanMaria-HeadPhone
+192.168.167.18 - FeherZsofia-HeadPhone
