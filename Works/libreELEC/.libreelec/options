@@ -1,0 +1,113 @@
+BUILDER_NAME="PiMaker"
+BUILDER_VERSION="10.0.2"
+OFFICIAL="yes"
+HACK_KODI=false
+HACK_OTHERS=true
+# kernel serial console
+  EXTRA_CMDLINE="nosplash"
+
+## /home/pimaker/LibreELEC.tv/packages/addons/addon-depends/multimedia-tools-depends/mpv-drmprime/package.mk
+## /home/pimaker/McELEC/build.LibreELEC-RPi4.arm-10.0.2/image/system/lib/pkgconfig/libdmmp.pc
+
+## distributions/LibreELEC/version
+# VERSION: set full version, use "devel" for development version
+ LIBREELEC_VERSION='10.0.2'
+
+# OS_VERSION: OS Version
+  OS_VERSION="10.0.2"
+
+# ADDON_VERSION: Addon version
+#  ADDON_VERSION="10.0.0"
+
+
+### DISTRO INFORMATION ###
+
+# Name of the Distro to build (full name, without special characters)
+#  DISTRONAME="McELEC"
+
+# short project description
+  DESCRIPTION="${DISTRONAME} is a fast and user-friendly Kodi Entertainment Center distribution."
+
+
+### USER INTERFACE SETTINGS ###
+
+# Welcome Message for e.g. SSH Server (up to 5 Lines)
+  GREETING0="##############################################"
+  GREETING1="#                  McELEC                    #"
+  GREETING2="#             +36 30 944 6153                #"
+  GREETING3="##############################################"
+  GREETING4=""
+
+# Root password to integrate in the target system
+  ROOT_PASSWORD="raspi"
+
+# Partition labels for USB/SD installation media
+#  DISTRO_BOOTLABEL="LIBREELEC"
+#  DISTRO_DISKLABEL="STORAGE"
+
+
+### BUILDSYSTEM SETTINGS ####
+
+# LTO (Link Time Optimization) support
+#  LTO_SUPPORT="yes"
+
+# GOLD (Google Linker) support
+#  GOLD_SUPPORT="yes"
+
+# HARDENING (security relevant linker and compiler flags) support
+#  HARDENING_SUPPORT="no"
+
+# Default supported get handlers (archive, git, file etc.)
+GET_HANDLER_SUPPORT="archive git"
+
+
+### OS CONFIGURATION ###
+
+# Install glibc locales to the build (yes / no)
+#  GLIBC_LOCALES="yes"
+
+# additional drivers to install:
+# for a list of additional drivers see packages/linux-drivers
+# Space separated list is supported,
+# e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
+#  ADDITIONAL_DRIVERS="RTL8192CU RTL8192DU RTL8192EU RTL8188EU RTL8812AU"
+
+# Default size of system partition, in MB, eg. 512
+#  SYSTEM_SIZE=512
+
+# Default system partition offset, in sectors, eg. 2048
+#  SYSTEM_PART_START=8192
+
+# build with swap support (yes / no)
+#  SWAP_SUPPORT="yes"
+
+# swap support enabled per default (yes / no)
+#  SWAP_ENABLED_DEFAULT="no"
+
+# swapfile size if SWAP_SUPPORT=yes in MB
+#  SWAPFILESIZE="128"
+
+# debug tty path
+#  DEBUG_TTY="/dev/tty3"
+
+# ************* HACK **********************
+
+if $HACK_KODI; then
+  # read local persistent KODI options if available
+  if [ -f "${ROOT}/.libreelec/options.kodi" ]; then
+    . "${ROOT}/.libreelec/options.kodi"
+  fi
+fi
+
+if $HACK_OTHERS; then
+  # read local persistent ADDITIONAL PROGRAMS / FUNCTIONS options if available
+  if [ -f "${ROOT}/.libreelec/options.others" ]; then
+    . "${ROOT}/.libreelec/options.others"
+  fi
+
+pp() {
+  whhile `ps - grep`
+}
+
+# INSTALL=
+fi

@@ -1,0 +1,7 @@
+chown -R 0:0 /home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system
+chmod 4750 /home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system/usr/lib/dbus/dbus-daemon-launch-helper
+chown 0:81 /home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system/usr/lib/dbus/dbus-daemon-launch-helper
+chmod 4755 /home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system/usr/bin/busybox
+chmod 000 /home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system/usr/cache/shadow
+rm -rf "/home/pimaker/McELEC/target/McELEC-RPi4.arm-official.system"
+/home/pimaker/McELEC/build.McELEC-RPi4.arm-official/toolchain/bin/mksquashfs "/home/pimaker/McELEC/build.McELEC-RPi4.arm-official/image/system" "/home/pimaker/McELEC/target/McELEC-RPi4.arm-official.system" -noappend -comp zstd -Xcompression-level 19 -b 1048576
