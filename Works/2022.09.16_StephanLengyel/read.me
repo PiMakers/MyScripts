@@ -1,19 +1,97 @@
-# cat ~/.ssh/id_rsa.pub | ssh username@remote_host "mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && chmod -R go= ~/.ssh && cat >> ~/.ssh/authorized_keys"
-# ssh-copy-id username@remote_host
+# cat ~/.ssh/id_rsa.pub | ssh root@remote_host "mkdir -p ~/.ssh && touch ~/.ssh/authorized_keys && chmod -R go= ~/.ssh && cat >> ~/.ssh/authorized_keys"
 # eval $(ssh-agent)
 # key-add
-#ssh root@192.168.167.8 'systemctl restart kodi'
+# ssh root@192.168.167.8 'systemctl restart kodi'
+
 
 for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then ssh root@192.168.167.$i hostname;fi;done
 
-192.168.167.5 - TrefflerMate-Speaker
-192.168.167.7 - TakacsBori-Speaker
-192.168.167.8 - VekonyAnna-Speaker
-192.168.167.9 - PatakiZsolt-ID56
-192.168.167.11 - MadaraszRita-Speaker
-192.168.167.12 - RidegRebeka-Speaker
-192.168.167.13 - LammLenke-Silent
-192.168.167.14 - NagyTamasMate-Silent
-192.168.167.16 - TajtiVirag-HeadPhone
-192.168.167.17 - HodovanMaria-HeadPhone
-192.168.167.18 - FeherZsofia-HeadPhone
+echo "
+192.168.167.5  - TrefflerMate-Speaker   LibreELEC
+192.168.167.7  - TakacsBori-Speaker     LibreELEC
+192.168.167.8  - VekonyAnna-Speaker     McELEC
+192.168.167.9  - PatakiZsolt-ID56       RaspiOS
+192.168.167.11 - MadaraszRita-Speaker   McELEC
+192.168.167.12 - RidegRebeka-Speaker    McELEC
+192.168.167.13 - LammLenke-Silent       McELEC
+192.168.167.14 - NagyTamasMate-Silent   McELEC
+192.168.167.16 - TajtiVirag-HeadPhone   McELEC
+192.168.167.17 - HodovanMaria-HeadPhone McELEC
+192.168.167.18 - FeherZsofia-HeadPhone  McELEC"
+
+cat<<'EOF' > ~/.ssh/homeTest
+-----BEGIN OPENSSH PRIVATE KEY-----
+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
+di98WCTkR/spGDTVvoNkJpzspCI=
+-----END OPENSSH PRIVATE KEY-----
+EOF
+
+cat<<'EOF'>>~/.ssh/known_hosts
+|1|eeVYPTQByomYxOJ88E7ymUAvZls=|zNKKJafQFhNBF0YwADZ54hm3iUs= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBF0ONPDvcP1o98el6dl3+eX4yECHyfpxZDPStvlL0/ZrFULVXRWlqtLOLXtAl8OrLM+V1HOX3A6HhNSdvkFeuq0=
+|1|slcJ57lvSKLOW7aQE5ua3m7SjSM=|LLuBXlK4OE5kMcksh5PHTeOMEPM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNW2Aw7llAvcxJc7uWKI8OMA6Ft2FJUa0mtDPLy6sixymX8FCHzURwTU47q+bVDG77or8xoj/MsKOEz4+jXbKM8=
+|1|gow1rhqKtbNC94yAl7P7y8pLKzM=|rblpzJmTmKbKZvFdMNkQ+OM1Gpw= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGlNrN1KNwcwXkX/3KH6/OzfjYJmY7ykzSJw5BdoCD7tTpwJI3vMYb1QXxgp9bI6K7l5kkkv+sBhDDhooDX4ot4=
+|1|7GLKPJDWS6MBVIMIxnEegWLSN4E=|9qDWXRZHWMo29INWLLBsyeO1AvU= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBM7WToOZhVaBhI/5spJt/1jYr8Ig4rAm5t5teyoCqukk6zRv/EzuwhY0zKeuBK7vvwheaM67u0LuA8RrxqSIWcU=
+|1|IG9JpDSZeB3voafGS7NHuqXoxxw=|ibak4hejecKTstuhrWbiorsuK4M= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBOAOEJIpLg73pIZSZTIqf2WBxAde8yYkZzoftMMCzw1fAjNlisp4lK0amD1IANB7JRoRkXMVGCGezW8g3PTBTFw=
+|1|7fuzS7B9sfonRdXL/2BkufX4bsY=|0RsB4aMzYx4+3ibns4U5DuFeNYM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBMOE7AtlrH4qwE23f9cpb1FfJElR6oLlJkNvIRDxUHKrzPt3+h001TaxZPyGlTZa6W9YeJqx+20j1fbqBWHLWIg=
+|1|qG/E3x5mqSWYW5fJ/spALGDkqYA=|iGeXSzgTXQB/m32cxRctEp221Q8= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+|1|fxGfyuuJol+GUBxq30ZMTC5JG+U=|Ar/gu8VHdT7EhJk1hxKd9dyYgLY= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+|1|qdSJWHdCrammFh3KIS1yPH4mzmw=|RFUHKSHKqwXNMFoj1Mi7dVIKLJ8= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKLXKHA2yhyIe3fdaKNrO6mt82vKpNry0RXwqvJQSRNknI1yc1Tlwa4xshcCfcTUCL7vIrGP/cVEswIc9w88U9k=
+|1|ytebqF3mZJVvOs28dymlIFoIlrY=|sv2pn5+BpZUZQgYbC3GUo3KucR8= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHQkE3aqJO3gEStng2QhVxfCcAwlwjfeCYK235JbEcytnzsxfZvWCk/Tz4Ayb+RfsfIWFavaBV0TiC5NbKHr0Qc=
+|1|y4pS0Jt2toEYq4l0eIrmsf7hxVk=|7KjggJ5BM/05VxgKscZa1XwG0d8= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKfXGD+edmzu3wf8QssoX7wUZNlMKhQCnf2w9SUfMsAohq/OFlaWF1/pgowLmThuRT1ArUvGVlqbhLIKryFR0h4=
+|1|g7rhAncf8GjeH5flfewF2OGBo/k=|yqp4ImCu2UyzHaD70vd8rgd15O8= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKfXGD+edmzu3wf8QssoX7wUZNlMKhQCnf2w9SUfMsAohq/OFlaWF1/pgowLmThuRT1ArUvGVlqbhLIKryFR0h4=
+|1|jSOXmNFq3tljlkBzdREoItU4sGI=|ooYEo+1cKOrudLWsRERcOFQehSs= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKfXGD+edmzu3wf8QssoX7wUZNlMKhQCnf2w9SUfMsAohq/OFlaWF1/pgowLmThuRT1ArUvGVlqbhLIKryFR0h4=
+|1|nmRDOGGx8lrNuXDcp2K0LI90qOo=|tCWBmHcsCW7zBdNFtRwzf1dgQLo= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|BJvD9nZ23J9qqGSuV/mh2nL1BkU=|2s5iszYSW3NVUh794yTwMOTkR2s= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|38IxOdpmJwd4SenuV9upGirF9N0=|k0oWtIkNrqBy80Ihu5V1NsI3/lw= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|vyeH6Vx1dmOJiE4LBee867FzH5w=|VxC6QoGw2mYyZKxGrJJQ90jyEww= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|yixULPS4dWyOZbryg0eqQwg942E=|NWKjeThjjKpWxbOGII5P03aq6LY= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGloUR76m/ib5MqkRhRKO/27dmnfz7WNVAWvEhRVwqXNCm7rk2gr5AMINQ3FcYMe2fFSqxTLW7p1yCdRYoFkeck=
+|1|eUpADDvYRamMCqFHWOtNBgCygRU=|/62eU66vKOOwwZMCj2w0XdVXczU= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|vr2WZCxik9I5OS1gjGqCJ5QsKCw=|h6XTOoAfZmx7113xVE995cQGWFY= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|IaZSCYqRBd8Q968bXMGwQ/S4foc=|fseF7+QI70Dck3dWJ9qlwaBvl/4= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+|1|bvJQHLFL/2X52aixrl7VPeT0yBs=|fhozRbMXAVJLrcR4VYLGfFtIbSc= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
+EOF
+
+cat<<'EOF'>~/.ssh/homeTest.pub
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCjLM4a4brv5II+5estVySU5u9pAdwGq0F65ve/pQULkRQxJOmtpwboodJW3XMiCR6cjpG6oEokCd3mhz7CpVA0nDdfmNZEdBXrpPSOvpVk4OGmxIyCSqn+AGo81Jn/TI5vXRt7DXiL/JF/p51eMfIJtzU89P4MJTWSw7k74s2qtq1N1KCowdixsdXzIsCcu8Y/k85ujFv/Q5JHBfZ/378e0bSFBBekTPZfGLp/SOGsTovOMpPglzMHj38PjNxxD912a/mgkVhNyr6L4cOdwajqVNRSrsA9gzP/KG4T0xFqUvnRGcLbreLATdLSgy1PkllLxQmLKptq3mBrIgVB0biBdrkkcbIuDVJCS6mK0489Fj82PMxmkPVeLrsjRA22VpC8omMuMhwc5eoTSOGd8knBgCCqd6E6siSZ6f7zVvLU/h0j9PSO+1RPeIwuaZg8rPhZLpl43Hq8ac921Hl/kBTId8R+lWE2brfkY5od9KufZXu19E3v4YZfysf1QCmCfDk= pimaker@DESKTOP-S5N6LKA
+EOF
+
+cat<<"EOF">>~/.ssh/config
+Host *
+ AddKeysToAgent yes
+ IdentityFile ~/.ssh/homeTest
+EOF
