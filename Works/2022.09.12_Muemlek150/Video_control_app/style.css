@@ -1,0 +1,40 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+html {
+  overflow: hidden;
+}
+
+body {
+  background-image: url(src/bg.jpg);
+  background-size: cover;
+}
+
+#button-wrapper {
+  height: 100vh;
+  display: flex;
+  margin-left: 192.5px;
+}
+
+.button {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  width: 109.9px;
+}
+
+.play-button {
+  opacity: 0;
+  margin-bottom: 142px;
+  height: 61px;
+  transition: 0.2s;
+}
+
+.playing {
+  opacity: 1;
+}
