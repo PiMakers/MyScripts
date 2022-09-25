@@ -4,7 +4,6 @@
 # key-add
 # ssh root@192.168.167.8 'systemctl restart kodi'
 
-
 for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then echo -n "192.168.167.$i - " && ssh root@192.168.167.$i hostname;fi;done
 
 echo "
