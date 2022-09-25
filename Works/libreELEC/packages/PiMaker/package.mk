@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright (C) 2018-present Team LibreELEC (https://libreelec.tv)
+# to packages/PiMaker
 # PROJECT=RPi ARCH=arm DEVICE=RPi4 make image
 # sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
 # cp  /home/pimaker/McELEC/target/LibreELEC-RPi4.arm-10.0.2.img.gz /mnt/LinuxData/OF/XLibreELEC-RPi4.arm-10.0.2.img.gz
