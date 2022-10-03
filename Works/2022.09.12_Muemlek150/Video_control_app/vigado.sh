@@ -19,5 +19,5 @@ xinput map-to-output $two HDMI-2
 
 # cd ~/Documents/Video_control_app && npm start &
 # cd ~/Videos && mpv vid_FHD_H264.mp4 -screen=1 --fs --idle --loop --no-osc --no-audio --input-ipc-server=/tmp/mpvsocket &
-mpv $pathToVideo -screen=1 --fs --idle --loop --no-osc --no-audio --input-ipc-server=/tmp/mpvsocket &
+mpv $pathToVideo --screen=1 --fs --idle --loop --no-osc --no-audio --input-ipc-server=/tmp/mpvsocket &
 npm start --prefix=$pathToApp
