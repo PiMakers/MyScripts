@@ -34,11 +34,11 @@ IMG_DIR=/media/pi
 
 ${SUDO} mkdir -pv -m 777 ${STORAGE_DIR}
 
-DHCP=1
+DHCP=0
     if [ $DHCP -eq 1 ]; then
         HOST_IP=$(hostname -I | sed 's/ .*//')
     else
-        HOST_IP=10.0.0.1
+        HOST_IP=10.120.136.100
     fi
 
 IMG=/mnt/LinuxData/OF/Borsi/BorsiBase-10.0.0.img
