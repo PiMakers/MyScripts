@@ -1,0 +1,43 @@
+HOSTS="
+01-PopCorn              192.168.0.80
+02-Kredenc-Window.local 192.168.0.81
+02-Kredenc              192.168.0.86 
+03-Tomato.local         192.168.0.74
+04-Kitchen              192.168.0.73
+
+07-Fa                   192.168.0.91
+"
+
+
+05-Vasaló 00:e0:4c:36:05:bb 192.168.0.94  wlan 192.168.0.96
+
+connmanctl scan wifi
+connmanctl services
+
+
+"
+
+IP="192.168.0.73 192.168.0.74 192.168.0.80 192.168.0.81"
+PORTS="73 74 80 81 86 91"
+
+for m in $PORTS
+do
+echo $m
+#cat ~/.ssh/testkey@Godot.pub | ssh pimaker@$m 'mkdir -pv .ssh && cat > /home/pimaker/.ssh/athorized_keys'
+ssh -i ~/.ssh/testkey@Godot  192.168.0.$m 'echo "OK" && hostname && sudo shutdown now'
+done
+
+
+PORTS="73 74 80 81 86"
+
+cmd="shutdown now"
+for m in $PORTS; do echo -n $m && hostname
+ssh -i ~/.ssh/testkey@Godot  192.168.0.$m $cmd; done
+
+
+
+sudo service lightdm restart
+pgrep mpv
+
+eval $(ssh-agent -s)
+ssh-add ~/.ssh/testkey@Godot
