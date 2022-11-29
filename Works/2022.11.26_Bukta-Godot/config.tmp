@@ -1,0 +1,14 @@
+01-popcorn.local            192.168.0.80
+02-Kredenc-Window.local     192.168.0.81
+03-tomato.local             192.168.0.74
+04-Kitchen                  192.168.0.73
+
+06-vasalo  (LAN 192.168.0.88)
+ZIK-server                      192.168.0.78
+
+list="73 74 81 80"
+for m in $list
+do
+echo "192.168.0.$m"
+ssh "192.168.0.$m" sudo shutdown now"
+done
