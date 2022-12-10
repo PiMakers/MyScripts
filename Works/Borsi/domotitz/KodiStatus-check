@@ -1,0 +1,87 @@
+return {
+	on = {
+		devices = {
+			'F3-WindowToPast-left',
+			'F3-WindowToPast-center',
+			'F3-WindowToPast-right',
+			'F6-Animatik',
+			'E7-Tenger',
+			'E7-Animatik',
+		},
+		shellCommandResponses = {
+			'*-KodiState', -- must match with the callback passed to the executeShellCommand
+			'*-MonitorState'
+		},
+	},
+	logging = {
+		level = domoticz.LOG_INFO,
+		marker = 'kodi-state',
+	},
+	execute = function(domoticz, item)
+        local newCmd="/home/pi/Borsi-Scripts/tests/MikroTik2.sh "
+        local repair = "ssh root@"
+		
+		if (item.isDevice) then
+			domoticz.executeShellCommand({
+				command = "ssh root@" .. item.name .. ".local 'systemctl -l status kodi'",   -- just an example
+				callback = item.name .. '-KodiState', -- see shellCommandResponses above.
+				timeout = 50, -- Max runtime 50 seconds
+			})
+
+			domoticz.executeShellCommand({
+				command = "ssh root@" .. item.name .. ".local cec-ctl -Ss",   -- just an example
+				callback = item.name .. '-MonitorState', -- see shellCommandResponses above.
+				timeout = 50, -- Max runtime 50 seconds
+			})
+		end
+
+		if (item.isShellCommandResponse) then
+			if (item.statusCode==0) then
+                if item.hasLines then
+			        local lines = item.lines
+                    for index,line in pairs(lines) do
+                        if (item.trigger:match 'KodiState') then
+                            if line:match 'Failed' then
+                                domoticz.log('::  KODI FAILED!!! --> index = '..index ..' line ='.. line, domoticz.LOG_ERROR)
+                                    ---[[
+                                    if os.execute(newCmd .. " " .. item.trigger:gsub('-KodiState',"") .. ' &') then
+                                        print(':: Swictch ' .. item.trigger:gsub('-KodiState',"") .. ' SUCCCESS!!!')
+                                    else
+                                        print(':: Swictch ' .. item.trigger:gsub('-KodiState',"") .. ' FAILED!!!')
+                                    end
+                                    --]]
+                                break
+                            else
+                                domoticz.log('::  .. XXXXXXXXXXXXXXXXXXXXXXXXXXX ..  !!!!! '.. item.trigger:gsub('-KodiState',""), domoticz.LOG_ERROR)
+                            end
+                        elseif (item.trigger:match 'MonitorState') then
+                            if line:match 'Power Status' then
+                                if line:match 'On' then
+                                    domoticz.log(':: ' .. item.trigger .. ' -- ' .. item.trigger:gsub('-MonitorState',"") .. "----------" .. line, domoticz.LOG_INFO)
+                                    break
+                                elseif line:match 'Standby' then
+                                    domoticz.log(':: ' .. item.trigger .. ' !!!!! '.. line, domoticz.LOG_ERROR)
+                                    domoticz.log(':::: itemNAME' .. item.trigger:gsub('-MonitorState',"") .. line, domoticz.LOG_ERROR)
+                                    break
+                                else
+                                    domoticz.log(':: ' .. item.trigger .. ' !!!!! '.. line, domoticz.LOG_ERROR)
+                                    
+                                end
+                            else
+                                domoticz.log(':: ' .. item.trigger .. ' !!!!! '.. line, domoticz.LOG_ERROR)
+                            end
+                        end
+                    end
+--				    domoticz.log('TRIGGER =' .. item.trigger, domoticz.LOG_ERROR)
+				else
+				    domoticz.log('ERROR --> NO_LINES!!!!!! =' .. item.trigger, domoticz.LOG_ERROR)
+				end
+			else
+				domoticz.log('There was a problem handling the request', domoticz.LOG_ERROR)
+				domoticz.log(item, domoticz.LOG_ERROR)
+			end
+
+		end
+
+	end
+}

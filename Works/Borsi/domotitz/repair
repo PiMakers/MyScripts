@@ -1,0 +1,93 @@
+--
+-- Domoticz passes information to scripts through a number of global tables
+--
+-- device changed contains state and svalues for the device that changed.
+--   devicechanged['yourdevicename'] = state 
+--   devicechanged['svalues'] = svalues string 
+--
+-- otherdevices, otherdevices_lastupdate and otherdevices_svalues are arrays for all devices: 
+--   otherdevices['yourotherdevicename'] = "On"
+--   otherdevices_lastupdate['yourotherdevicename'] = "2015-12-27 14:26:40"
+--   otherdevices_svalues['yourotherthermometer'] = string of svalues
+--
+-- uservariables and uservariables_lastupdate are arrays for all user variables: 
+--   uservariables['yourvariablename'] = 'Test Value'
+--   uservariables_lastupdate['yourvariablename'] = '2015-12-27 11:19:22'
+--
+-- other useful details are contained in the timeofday table
+--   timeofday['Nighttime'] = true or false
+--   timeofday['SunriseInMinutes'] = number
+--   timeofday['Daytime'] = true or false
+--   timeofday['SunsetInMinutes'] = number
+--   globalvariables['Security'] = 'Disarmed', 'Armed Home' or 'Armed Away'
+--
+-- To see examples of commands see: http://www.domoticz.com/wiki/LUA_commands#General
+-- To get a list of available values see: http://www.domoticz.com/wiki/LUA_commands#Function_to_dump_all_variables_supplied_to_the_script
+--
+-- Based on your logic, fill the commandArray with device commands. Device name is case sensitive. 
+--
+
+local POEswitch1='3,4,10,11,12,14,15,16,17,18,22,23'
+
+
+local cmd = "/home/pi/Borsi-Scripts/MikroTik.sh all "
+local newCmd="/home/pi/Borsi-Scripts/tests/MikroTik2.sh"
+local ELANcmd = "/home/pi/Borsi-Scripts/SwitchElan.sh"
+local action = nil
+
+commandArray = {}
+if otherdevices['E7-Tenger'] == 'Video' then
+    print(':: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' .. otherdevices['E7-Tenger'] )
+end
+
+if otherdevices_scenesgroups['All'] == 'Mixed' then
+    for deviceName,deviceValue in pairs(otherdevices) do
+        if deviceName:match("[%a][%d][%-]") then
+            if deviceValue == "Off" then
+                print(deviceName ..' is Off')
+                if otherdevices['TestButton'] == "On" then
+                    print(':: ACTION SET TO on +++++' .. otherdevices['TestButton'] )
+                    action = 'on'
+                    if os.execute(newCmd .. " " .. action .. " " .. deviceName) then
+                        print(':: ' .. newCmd .. " " .. action .. " " .. deviceName .. ' SUCCCESS!!!')
+                        --action = 'nil'
+                    end
+                elseif otherdevices['TestButton'] == "Off" then
+                    print(':: ACTION SET TO off +++++' .. otherdevices['TestButton'] )
+                    os.execute('/home/pi/Borsi-Scripts/MikroTik.sh off ' ..  deviceName)
+                    action = 'nil'
+                end
+            else
+            --if deviceValue == "On" then
+                if otherdevices['TestButton'] == "Off" then
+                    otherdevices[deviceName] = "Off"
+                    print(deviceName ..' switching off')
+                    action = 'off'
+                else
+                action = 'nil'
+                end
+            end
+        elseif deviceName:match("BASIC") or deviceName:match("DEKOR") or deviceName:match("INSTALL") then
+            if (deviceName ~= 'F1_1_DEKOR') and  (deviceName ~= 'F3_1_BASIC') and (deviceName ~= 'F6_1_BASIC') then
+                -- print(deviceName ..' CAPTURED status: ' ..  otherdevices[deviceName])
+                if (otherdevices[deviceName] == "Off" and otherdevices['TestButton'] == "On") then
+                    print(' SWITCHING ON: ' .. deviceName)
+                    if os.execute(ELANcmd .. " " .. deviceName .. " " .. "true") then
+                        print(':: SWITCHING ON: ' .. deviceName .. ' SUCCCESS!!!')
+                    end
+                else
+                    print(' is ON: ' .. deviceName)
+                end
+            end
+        end
+    end
+        if action ~= 'nil' then
+            if os.execute(cmd .. " " .. action) then
+                print(':: Swictch ' .. action .. ' SUCCCESS!!!')
+            else
+                print(':: Swictch ' .. action .. ' FAILED!!!')
+            end
+        end
+end    
+        
+return commandArray

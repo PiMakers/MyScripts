@@ -1,0 +1,81 @@
+--
+-- Domoticz passes information to scripts through a number of global tables
+--
+-- otherdevices, otherdevices_lastupdate and otherdevices_svalues are arrays for all devices: 
+--   otherdevices['yourotherdevicename'] = "On"
+--   otherdevices_lastupdate['yourotherdevicename'] = "2015-12-27 14:26:40"
+--   otherdevices_svalues['yourotherthermometer'] = string of svalues
+--
+-- uservariables and uservariables_lastupdate are arrays for all user variables: 
+--   uservariables['yourvariablename'] = 'Test Value'
+--   uservariables_lastupdate['yourvariablename'] = '2015-12-27 11:19:22'
+--
+-- other useful details are contained in the timeofday table
+--   timeofday['Nighttime'] = true or false
+--   timeofday['SunriseInMinutes'] = number
+--   timeofday['Daytime'] = true or false
+--   timeofday['SunsetInMinutes'] = number
+--   globalvariables['Security'] = 'Disarmed', 'Armed Home' or 'Armed Away'
+--
+-- To see examples of commands see: http://www.domoticz.com/wiki/LUA_commands#General
+-- To get a list of available values see: http://www.domoticz.com/wiki/LUA_commands#Function_to_dump_all_variables_supplied_to_the_script
+--
+-- Based on your logic, fill the commandArray with device commands. Device name is case sensitive. 
+--
+
+commandArray={}
+
+debug=false
+debug = true
+prefixe="(PING) "
+
+local ping={}
+local ping_success
+local newCmd="/home/pi/Borsi-Scripts/tests/MikroTik2.sh "
+--local bt_success
+
+ping[1]={'f3-inventarium-a', 'F3-inventarium-a', 'f3-inventarium-a', 'nil', 5}
+ping[2]={'f3-inventarium-b', 'F3-Inventarium-b', 'f3-inventarium-b', 'nil', 5}
+ping[3]={'e1-heraldika', 'E1-Heraldika', 'e1-heraldika', 'nil', 5}
+--ping[4]={'e2-vizelet', 'E2-Vizelet', 'e2-vizelet', 'nil', 5}
+ping[5]={'e7-hadaszat', 'E7-Hadaszat', 'e7-hadaszat', 'nil', 5}
+ping[6]={'e8-myhero', 'E8-myHero', 'e8-myhero', 'nil', 5}
+ping[7]={'e9-szalagos', 'e9-szalagos', 'e9-szalagos', 'nil', 5}
+
+--if otherdevices['TestButton'] == "On" then
+    -- print(prefixe .. 'TestButton is ' .. otherdevices['TestButton'])
+    for ip = 1, #ping do
+      if ping[ip][4] == 'nil' then
+    --    bt_success=false
+        ping_success=os.execute('ping -c 1 -w 1 '.. ping[ip][1] .. '.local')
+      end
+      if ping_success then
+        if (debug==true) then
+          print(prefixe.."ping success ".. ping[ip][2])
+        end
+        if (otherdevices[ping[ip][2]]=='Off') then
+          commandArray[ping[ip][2]]='On'
+        end
+        if (uservariables[ping[ip][3]]) ~= 1 then
+          commandArray['Variable:'..ping[ip][3]]= tostring(1)
+        end
+      else
+        if (debug==true) then
+            print(prefixe.."ping fail "..ping[ip][2])
+                if otherdevices['TestButton'] == "On" then
+                    os.execute(newCmd .. ' on ' .. ping[ip][1])
+                else
+                    os.execute(newCmd .. ' off ' .. ping[ip][1])
+                end
+        end
+        if (otherdevices[ping[ip][2]]=='On') then
+          if (uservariables[ping[ip][3]])==ping[ip][5] then
+            commandArray[ping[ip][2]]='Off'
+          else
+            commandArray['Variable:'..ping[ip][3]]= tostring((uservariables[ping[ip][3]]) + 1)
+          end
+        end
+      end
+    end
+--end
+return commandArray
