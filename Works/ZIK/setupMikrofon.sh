@@ -31,3 +31,5 @@ dtoverlay=wm8960-soundcard
 dtparam i2c_arm=on
 modprobe i2c-dev
 dtoverlay wm8960-soundcard
+
+/etc/wm8960-soundcard/
