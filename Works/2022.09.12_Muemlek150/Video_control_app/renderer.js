@@ -1,28 +1,13 @@
-//const { spawn } = require('child_process');
-//const fs = require('fs');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
-//let frames;
-
-//frames = fs.readFileSync('src/frames.txt', 'utf-8').split('\n');
-let frames = [ "0", "1250", "1550", "2550","3250","3500","4125","4875","5550","6175","6675","7175","7425","7675","8425"];
-
-function send(command, ...args) {
-  console.log(`Sending command: ${command} params: ${args}`);
-  //if (useNotifications()) {
-  //  audioLoad();
-  //}
-  const path = ['api', command, ...args].join('/');
-
-  const request = new XMLHttpRequest();
-  request.open("post", path);
-
-  request.send(null);
-  // Kick off a refresh quickly in response to user input.
-  //refreshStatus(100);
-}
+let frames;
+    DEBUG = false;
+    settings = {"disableNotifications": false}
+    command = 'set_position'
 
 
-const seekToFrame = (frame) => {
+const seekToFrameOld = (frame) => {
 
   //const sender = spawn('echo', ['{ "command": ["set_property", "time-pos", ' + frame / 25 + '] }']);
 
@@ -35,6 +20,20 @@ const seekToFrame = (frame) => {
   // socat.stdout.on('data', (data) => {
   //   console.log(data.toString());
   // })
+}
+
+function seekToFrame(frame) {
+  frame = frame/25
+  DEBUG && console.log(`Sending command: ${command} params: ${frame}`);
+
+  const path = ['api', command, ...frame].join('/');
+
+  const request = new XMLHttpRequest();
+  request.open("post", path);
+
+  request.send(null);
+  // Kick off a refresh quickly in response to user input.
+  // refreshStatus(100);  
 }
 
 let buttons = document.querySelectorAll('.button')
