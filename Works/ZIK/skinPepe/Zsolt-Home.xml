@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol>9000</defaultcontrol>
+    <backgroundcolor>background</backgroundcolor>
+    <controls>
+        <!-- Background -->
+        <include>DefaultBackground</include>
+
+        <!-- Fanart -->
+        <control type="multiimage">
+            <depth>DepthBackground</depth>
+            <include>FullScreenDimensions</include>
+            <aspectratio>scale</aspectratio>
+            <fadetime>600</fadetime>
+            <animation effect="zoom" center="auto" end="102,102" time="0" condition="Integer.IsGreater(System.StereoscopicMode,0)">conditional</animation>
+            <animation effect="fade" start="0" end="100" time="400">WindowOpen</animation>
+            <animation effect="fade" start="100" end="0" time="300">WindowClose</animation>
+            <animation effect="fade" time="400">VisibleChange</animation>
+            <imagepath background="true" colordiffuse="bg_overlay">$VAR[HomeFanartVar]</imagepath>
+            <visible>!Player.HasMedia</visible>
+        </control>
+        
+        <!-- Main Content -->
+        <control type="group">
+            <animation effect="fade" start="100" end="0" time="200" tween="sine" condition="$EXP[infodialog_active]">Conditional</animation>
+            <control type="group" id="2000">
+                <left>0</left><!-- 462 -->
+                <animation type="Conditional" condition="Control.IsVisible(20000)" reversible="false">
+                        <effect type="slide" end="0,20" time="60" tween="sine" />
+                        <effect type="slide" end="0,-20" time="180" tween="sine" delay="80" />
+                </animation>
+                <animation type="Conditional" condition="Control.IsVisible(20001)" reversible="false">
+                        <effect type="slide" end="0,-20" time="60" tween="sine" />
+                        <effect type="slide" end="0,20" time="180" tween="sine" delay="80" />
+                </animation>
+                <include>OpenClose_Right</include>
+
+                <!-- ZIK 9990000 -->
+                <control type="group" id="9990000">
+                    <description>ZIK Main</description>
+                    <left>0</left>
+                    <top>0</top>
+                    <width>100%</width>
+                    <height>100%</height>
+                    <defaultcontrol>9995000</defaultcontrol>
+                    <visible>true</visible>
+                    <!--onup></onup-->
+                    <!--ondown></ondown-->
+                    <!--onleft></onleft-->
+                    <!--onright></onright-->
+                    <control type="label" id="9991001">
+                        <description>Label EN</description>
+                        <left>0</left>
+                        <top>0</top>
+                        <width>100%</width>
+                        <height>15%</height>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <visible>false</visible>
+                        <label fallback="Classic Rock">Classic Rock</label>
+                        <font>font14</font>
+                        <textcolor>FFFFFF00</textcolor>
+                        <wrapmultiline>false</wrapmultiline>
+                    </control>
+                    <control type="label" id="9991002">
+                        <description>Label HU</description>
+                        <left>0</left>
+                        <top>0</top>
+                        <width>100%</width>
+                        <height>15%</height>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <visible>true</visible>
+                        <label fallback="Klasszikus Rock">Klasszius Rock</label>
+                        <font>font14</font>
+                        <textcolor>FFFFFF00</textcolor>
+                        <wrapmultiline>false</wrapmultiline>
+                    </control>
+                    <control type="textbox" id="9992001">
+                        <description>Text EN</description>
+                        <left>5%</left>
+                        <top>15%</top>
+                        <width>90%</width>
+                        <height>35%</height>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <visible>false</visible>
+                        <font>font13</font>
+                        <textcolor>FFFFFF00</textcolor>
+                        <label>The seventies were not only about easy-to-dance, easy-to-listen-to pop songs, but also brought vigorous flourishes on the rock front. Two rock band also managed to set off on the "track of the stars": Locomotiv GT achieved success in Great Britain and the United States, but the after a promising start, they were forced to stop, while Omega managed to make an international breakthrough primarily in the German-speaking area, where In 1973, they signed a three-year contract with Bellaphon, and during that time the band became the West German company's biggest box-office success grew up. At the time of the tube phenomenon and the conquest of hard rock (see next block), the repeatedly reformed Generál, Demjén, which split off from Bergendy Ferenc's new formation, V'Moto-Rock and Phonograph formed on the ruins of Illés, poured out the emblematic songs.</label>
+                    </control>
+                    <control type="textbox" id="9992002">
+                        <description>Text EN</description>
+                        <left>5%</left>
+                        <top>15%</top>
+                        <width>90%</width>
+                        <height>35%</height>
+                        <align>center</align>
+                        <aligny>center</aligny>
+                        <visible>true</visible>
+                        <font>font13</font>
+                        <textcolor>FFFFFF00</textcolor>
+                        <label>A hetvenes évek nemcsak a jól táncolható, könnyen befogadható, kellemes popdalokról szólt, hanem rockfronton is életerős virágzásokat hozott. Két rockzenekarnak is sikerült elindulnia a "csillagok útján": a Locomotiv GT Nagy-Britanniában és az Egyesült Államokban aratott sikereket, de az ígéretes indulást követően kényszerűen megtorpantak, míg az Omegának elsősorban német nyelvterületen sikerült a nemzetközi áttörés, ahol 1973-ban hároméves szerződést kötöttek a Bellaphonnal, és a zenekar ezalatt a nyugatnémet cég legnagyobb kasszasikereket arató együttesévé nőtte ki magát. A csöves jelenség és a kemény rock hódítása idején (lásd következő blokk) a többször megújult Generál, a Bergendyből kivált Demjén Ferenc új formációja, a V'Moto-Rock és az Illés romjain alakult Fonográf ontotta az emblematikus dalokat.</label>
+                    </control>
+                    <control type="panel" id="9993000">
+                        <left>10%</left>
+                        <include>ZIK_Numbers</include>
+                        <include>ZIK_Numbers_Left</include>
+                    </control>
+                    <control type="panel" id="9994000">
+                        <left>52%</left>
+                        <include>ZIK_Numbers</include>
+                        <include>ZIK_Numbers_Right</include>
+                    </control>
+                </control>
+            </control>
+        
+            <!-- Left Menu -->
+            <control type="group">
+                <depth>DepthContentPanel</depth>
+                <include>OpenClose_Left</include>
+                <include content="ContentPanel">
+                        <param name="width" value="0" /><!-- 522 -->
+                </include>
+                <control type="grouplist" id="700">
+                    <orientation>horizontal</orientation>
+                    <itemgap>0</itemgap>
+                    <left>-8</left>
+                    <width>480</width>
+                    <height>110</height>
+                    <top>0</top>
+                    <onup>SetFocus(9000,99,absolute)</onup>
+                    <ondown>SetFocus(9000,0,absolute)</ondown>
+                    <onright>2000</onright>
+                    <align>justify</align>
+                    <!-- OFF 
+                    <include content="IconButton">
+                        <param name="control_id" value="804" />
+                        <param name="onclick" value="ActivateWindow(shutdownmenu)" />
+                        <param name="icon" value="icons/power.png" />
+                        <param name="label" value="$LOCALIZE[33060]" />
+                    </include>
+
+                    Settings
+                    <include content="IconButton">
+                        <param name="control_id" value="802" />
+                        <param name="onclick" value="ActivateWindow(settings)" />
+                        <param name="icon" value="icons/settings.png" />
+                        <param name="label" value="$LOCALIZE[21417]" />
+                    </include>
+-->
+                    <!-- EN -->
+                    <include content="IconButton">
+                            <param name="control_id" value="804" />
+                            <param name="onclick" value="ActivateWindow(1150)" />
+                            <param name="icon" value="windows/subtitles/flags/en.png" />
+                            <param name="label" value="English" />
+                            <param name="visible" value="true" />
+                    </include>
+                    <!-- HU -->
+                    <include content="IconButton">
+                            <param name="control_id" value="805" />
+                            <param name="onclick" value="PlayMedia(/storage/videos/2331-03-Zoran.mp4)" />
+                            <param name="icon" value="windows/subtitles/flags/hu.png" />
+                            <param name="label" value="Magyar" />
+                            <param name="visible" value="true" />
+                    </include>
+                    <!-- Fullscreen -->
+                    <!--include content="IconButton">
+                            <param name="control_id" value="803" />
+                            <param name="onclick" value="Fullscreen" />
+                            <param name="icon" value="icons/now-playing/fullscreen.png" />
+                            <param name="label" value="$LOCALIZE[31000]" />
+                            <param name="visible" value="Player.HasMedia" />
+                    </include-->
+                </control>
+            </control>
+        </control>
+    </controls>
+</window>

@@ -3,15 +3,50 @@ gpasswd -a dietpi tty
 
 
 arm_64bit=1
-initial_turbo=60
+# Enable DRM VC4 V3D drive
+dtoverlay=vc4-kms-v3d,cma-512
 hdmi_enable_4kp60=1
-over_voltage=15
-arm_freq_min=100
-arm_freq=2350
-gpu_freq=750
-gpu_mem=512
 
-# /etc/lightdm/lightdm.conf
+# Disable Bluetooth
+dtoverlay=disable-bt
+dtoverlay=disable-wifi
+max_framebuffers=2
+disable_splash=1
+
+# overlock
+[cm4]
+dtoverlay=dwc2,dr_mode=host
+over_voltage=10
+arm_freq_min=100
+initial_turbo=60
+arm_freq=2100
+gpu_freq=700
+gpu_mem=256
+
+
+sudo systemctl disable hciuart.service
+sudo systemctl disable bluealsa.service
+sudo systemctl disable bluetooth.service
+sudo apt-get purge bluez -y
+sudo apt-get autoremove -y
+
+dtoverlay=disable-wifi
+systemctl disable wpa_supplicant
+
+#sudo ln -s ../node_modules   /home/pi/webapps/inventarium/node_modules
+# sudo nano /etc/xdg/lxsession/LXDE-pi/autostart
+#@lxpanel --profile LXDE-pi
+#@pcmanfm --desktop --profile LXDE-pi
+#@xscreensaver -no-splash
+@xset s noblank
+@xset s off
+@xset -dpms
+#@xset dpms 0 0 0
+#/usr/bin/npm start --prefix /home/pi/webapps/szalagos
+#/usr/bin/npm start --prefix /home/pi/webapps/vizeletvizsgalat
+/usr/bin/npm start --prefix /home/pi/webapps/inventarium-Full
+
+# /etc/lightdm/lightdm.conf - in [Seat:*]
 xserver-command=X -nocursor
 # xf86OpenConsole: Cannot open virtual console NOT WORKS!!!
 sudo sed '/needs_root_rights=yes/!d' /etc/X11/Xwrapper.config
