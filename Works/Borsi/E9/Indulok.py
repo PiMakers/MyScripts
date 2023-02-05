@@ -18,14 +18,14 @@ class ButtonPlayer(xbmc.Player):
 
     self.started = True
     self.ended = True
-    self.debug = False
+    self.debug = True
 
     self.SeekTime = float(0.0)
     self.modCurrent = 0
 
-    xbmc.executebuiltin('PlayMedia(/storage/.kodi/userdata/playlists/video/Borsi.m3u)')
+    xbmc.executebuiltin('PlayMedia(/storage/.kodi/userdata/playlists/video/zik.m3u)')
     xbmc.executebuiltin('PlayerControl(RepeatAll)')
-    xbmc.executebuiltin('ActivateWindow(VideoOSD.xml)')
+    # xbmc.executebuiltin('ActivateWindow(VideoOSD.xml)')
 
     monitor = xbmc.Monitor()
 

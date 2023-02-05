@@ -2,23 +2,26 @@
 
 
 setUpDT() {
+
+systemctl stop kodi
 # remove Parent directory:
 ## <setting id="filelists.showparentdiritems">false</setting>
 sed -i s'/showparentdiritems" default="true">true/showparentdiritems">false/' /storage/.kodi/userdata/guisettings.xml
 
 # DontSho extensions:
-<setting id="filelists.showextensions">false</setting>
+# <setting id="filelists.showextensions">false</setting>
 sed -i s'/showextensions" default="true">true/showextensions" default="true">false/' /storage/.kodi/userdata/guisettings.xml
 ## Skin preparation:
 
 # set to orange:
-<setting id="lookandfeel.skincolors">orange</setting>
+# <setting id="lookandfeel.skincolors">orange</setting>
 sed -i s'/skincolors" default="true">SKINDEFAULT/skincolors" default="true">orange/' /storage/.kodi/userdata/guisettings.xml
 
 # set startupfolder To pictures (10002)
 sed -i s'/10000/10002/' /storage/.kodi/userdata/guisettings.xml
 
 # Update addon.xml version to higher
-sed -i ...
-
+# sed -i ...
+# clear: DialogContextMenu.xml
+systemctl start kodi
 }
