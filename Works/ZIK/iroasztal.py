@@ -18,7 +18,7 @@ def setUpGPIO():
   GPIO.add_event_detect(SENSOR_PIN , GPIO.RISING, callback=my_callback)
 
 class PIMplayer(xbmc.Player):
-  global PAUSED
+  global PAUSED, DEBUG
   def __init__( self, *args ):
     pass
 
@@ -51,7 +51,6 @@ def my_callback(channel):
   try:
     if player.PAUSED:
       xbmc.log(msg='::: Player isPAUSED!', level=xbmc.LOGINFO)
-      xbmc.log(msg='::: isPAUSED 2!', level=xbmc.LOGINFO)
       #player.play()
       xbmc.executebuiltin('PlayerControl(Play)')
       player.PAUSED = False
