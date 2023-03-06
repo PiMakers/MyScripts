@@ -13,8 +13,8 @@ SUDO=sudo
 #DEV_DIR=/mnt/LinuxData
 HOST_OS=
 TFTP_DIR=/tftpLE
-IMG_DIR=/mnt/LinuxData/Install/img
-IMG_DIR=/mnt/LinuxData/OF
+IMG_DIR=/mnt/LinuxData/Install/zip
+# IMG_DIR=/mnt/LinuxData/OF
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
 
@@ -34,7 +34,7 @@ IMG=/mnt/LinuxData/Install/zip/piCore64-13.1.zip
 IMG=${IMG_DIR}/LibreELEC-RPi4.arm-10.0.2.img.gz
 
 get_img(){
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --display=$DISPLAY --filename=${IMG} 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz *.xz" --display=$DISPLAY --filename=${IMG} 2>/dev/null); then
         # TODO download script
         if [ $(zenity --question --display=$DISPLAY --text="Download latest image?") ];then
             echo "Downloding latest image... (not implemented yet)"
@@ -43,16 +43,22 @@ get_img(){
         echo "No img selected. Exit"; exit 1
     else 
         echo ":: selected IMG = $IMG"
-        IMG_EXT=${IMG##*.} 
+        IMG_EXT=${IMG##*.}
+        echo :: ${IMG##*.}
         case ${IMG##*.} in
             zip)
                 echo :: ${IMG##*.}
                 # test unzip $IMG -d ${IMG_DIR}/
                 ;;
             gz)
-                echo :: ${IMG##*.}
                 DST_IMG=${IMG##*/} && DST_IMG=${DST_IMG%%.gz}
                 gunzip -ck < $IMG > ${IMG_DIR}/${DST_IMG}                
+                IMG=${IMG_DIR}/${DST_IMG}
+                echo ":: extracted IMG = $IMG"
+                ;;
+            xz)
+                DST_IMG=${IMG##*/} && DST_IMG=${DST_IMG%%.xz}
+                xz -kd < $IMG > ${IMG_DIR}/${DST_IMG}
                 IMG=${IMG_DIR}/${DST_IMG}
                 echo ":: extracted IMG = $IMG"
                 ;;
@@ -153,7 +159,7 @@ netBoot() {
                 #${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
                 ;;
      LibreELEC)
-                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet nosplash ssh live toram host=MaciLaci"   
+                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet nosplash ssh host=MaciLaci"
                 ;;
        Raspios)
                 sudo mount --bind ${TFTP_DIR} ${STORAGE_DIR}/boot
@@ -208,8 +214,8 @@ netBoot() {
     fi
 
     TERMINAL_CMD=
-    which lxterminal >/dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
-    which gnome-terminal >/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
+    which lxterminal 2> /dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
+    which gnome-terminal 2>/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
     echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
 
     for m in $(ls /sys/class/net)
@@ -432,7 +438,7 @@ cleanExit() {
     ${SUDO} rm -r ${TFTP_DIR} ${STORAGE_DIR}
     # remove loopdevice
     ##losetup -l | sed '/piCore64-13.0.img/!d;s/ .*//'
-    ${SUDO} losetup -d ${LOOP_DEVICE}
+    [ -z ${LOOP_DEVICE} ] ||  ${SUDO} losetup -d ${LOOP_DEVICE}
     exit 0
 }
 

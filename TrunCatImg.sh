@@ -83,7 +83,7 @@ truncate_img() {
     #${SUDO} gparted $LOOP_DEVICE
     #${SUDO} losetup -d $LOOP_DEVICE
     local END_BLOCK=$( ${SUDO} fdisk -lo "End" $1 | sed '$!d')
-    local END_SIZE=$( ${SUDO} fdisk -s --bytes -lo "Size" $1 )
+    local END_SIZE=$( ${SUDO} fdisk -s --bytes -lo "Size" $1 | sed '$!d')
     echo -e "END_BLOCK = ${END_BLOCK}\nEND_SIZE = ${END_SIZE}"
     # truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
     local SIZE=$(($(( ${END_BLOCK} + 1 ))*512)) && echo "SIZE = ${SIZE}"

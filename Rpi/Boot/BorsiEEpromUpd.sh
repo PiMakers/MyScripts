@@ -20,8 +20,6 @@ fi
 
 echo "$ID detected"
 
-TMP_DIR=/tmp
-
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${TMP_DIR}/boot.conf
         [all]
         BOOT_UART=0
