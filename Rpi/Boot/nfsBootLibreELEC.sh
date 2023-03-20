@@ -121,6 +121,8 @@ detectOS() {
                 # echo ":: HostOS Raspios!"
                 HOST_OS="Raspios"
                 ID=pi
+                echo "pimaker:`echo 'raspi' | openssl passwd -6 -stdin`"| ${SUDO} tee ${TFTP_DIR}/userconf
+                sudo touch ${TFTP_DIR}/ssh
                 ;;
             libreelec)
                 # echo ":: HostOS LibreELEC!"
@@ -159,7 +161,7 @@ netBoot() {
                 #${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
                 ;;
      LibreELEC)
-                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet nosplash ssh host=MaciLaci"
+                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet nosplash ssh host=Test"
                 ;;
        Raspios)
                 sudo mount --bind ${TFTP_DIR} ${STORAGE_DIR}/boot
