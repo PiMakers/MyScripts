@@ -3,8 +3,38 @@
 SUDO=sudo
 IMG=/mnt/LinuxData/Install/img/piCore64-13.1.img
 # cd /tmp && wget https://distro.ibiblio.org/tinycorelinux/13.x/aarch64/releases/RPi/piCore64-13.1.zip
+# kernelheaders Linux 5.10.77 https://github.com/raspberrypi/linux/archive/09df347cfd189774130f8ae8267324b97aaf868e.zip
+# https://github.com/raspberrypi/linux/archive/refs/tags/stable_20211118.zip
 
 
+compileWM8960(){
+    # piCore 13.1
+    # deps:
+    # tce-load -iw compiletc openssl-dev
+    # /tmp/tcloop/module-init-tools/usr/local/sbin/modinfo
+    # sudo  modprobe configs
+    # zcat /proc/config.gz .config
+    cd
+    git clone --depth=1 --branch stable_20211118 https://github.com/raspberrypi/linux
+    cd linux
+    KERNEL=kernel8
+    ARCH=`uname -m`
+    make bcm2711_defconfig
+    make Image modules dtbs
+    # crosscompile:
+    # make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bcm2711_defconfig
+    # make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs
+
+    cd
+    wget https://github.com/waveshare/WM8960-Audio-HAT/archive/4abfcf3263fe8aa8bcc4187f6269dc7582df3ad3.zip
+    unzip 4abfcf3263fe8aa8bcc4187f6269dc7582df3ad3.zip
+    mv WM8960-Audio-HAT-4abfcf3263fe8aa8bcc4187f6269dc7582df3ad3 WM8960-Audio-HAT
+    cd WM8960-Audio-HAT
+    sed -i '/modules:/d' Makefile
+    sed -i '/linux/d' Makefile
+    echo -e "\nmodules:\n\tmake -C $HOME/linux M=\$(PWD) modules" >> Makefile
+
+}
 
 mountImg() {
     [ -z $1 ] || IMG=$1
