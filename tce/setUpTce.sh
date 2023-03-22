@@ -10,14 +10,18 @@ IMG=/mnt/LinuxData/Install/img/piCore64-13.1.img
 compileWM8960(){
     # piCore 13.1
     # deps:
-    # tce-load -iw compiletc openssl-dev
+    # tce-load -iw compiletc openssl-dev bc perl5 
     # /tmp/tcloop/module-init-tools/usr/local/sbin/modinfo
     # sudo  modprobe configs
     # zcat /proc/config.gz .config
-    cd
-    git clone --depth=1 --branch stable_20211118 https://github.com/raspberrypi/linux
-    cd linux
-    KERNEL=kernel8
+    BASE_DIR=/mnt/LininuxData/OF
+    TCE_DIR=${BASE_DIR}/tce.remote
+    BUILD_DIR=${TCE_DIR}/build
+
+    cd ${TCE_DIR}
+    # git clone --depth=1 --branch stable_20211118 https://github.com/raspberrypi/linux
+    # cd linux
+    # KERNEL=kernel8
     ARCH=`uname -m`
     make bcm2711_defconfig
     make Image modules dtbs
@@ -25,6 +29,19 @@ compileWM8960(){
     # make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bcm2711_defconfig
     # make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs
 
+    BASE_DIR=/mnt/LinuxData/OF
+    TCE_DIR=${BASE_DIR}/tce.remote
+    BUILD_DIR=${TCE_DIR}/build
+
+    cd ${TCE_DIR}
+    [ -f linux-5.10.77.tar.xz ] || wget https://distro.ibiblio.org/tinycorelinux/13.x/aarch64/releases/RPi/src/kernel/linux-5.10.77.tar.xz
+    tar  -vxf linux-5.10.77.tar.xz
+    [ -f 5.10.77-piCore-v8_.config ] || wget https://distro.ibiblio.org/tinycorelinux/13.x/aarch64/releases/RPi/src/kernel/5.10.77-piCore-v8_.config -O\
+        linux-5.10.77/arch/arm64/configs
+        #/lib/modules/5.10.77-piCore-v8/build/.config
+    wget https://distro.ibiblio.org/tinycorelinux/13.x/aarch64/releases/RPi/src/kernel/modules-5.10.77-piCore-v8.tar.xz
+
+ 
     cd
     wget https://github.com/waveshare/WM8960-Audio-HAT/archive/4abfcf3263fe8aa8bcc4187f6269dc7582df3ad3.zip
     unzip 4abfcf3263fe8aa8bcc4187f6269dc7582df3ad3.zip
@@ -35,6 +52,9 @@ compileWM8960(){
     echo -e "\nmodules:\n\tmake -C $HOME/linux M=\$(PWD) modules" >> Makefile
 
 }
+
+    # reaper:
+    tce-load -iw Xorg libasound alsa-modules-5.10.77-piCore-v8
 
 mountImg() {
     [ -z $1 ] || IMG=$1
