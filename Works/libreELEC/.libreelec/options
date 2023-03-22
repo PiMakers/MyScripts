@@ -1,20 +1,20 @@
-BUILDER_NAME="PiMaker"
-BUILDER_VERSION="10.0.2"
+# BUILDER_NAME="PiMaker"
+#BUILDER_VERSION="10.0.2"
 OFFICIAL="yes"
 HACK_KODI=false
-HACK_OTHERS=true
+HACK_OTHERS=false
 # kernel serial console
-  EXTRA_CMDLINE="nosplash"
+EXTRA_CMDLINE="nosplash ssh"
 
 ## /home/pimaker/LibreELEC.tv/packages/addons/addon-depends/multimedia-tools-depends/mpv-drmprime/package.mk
 ## /home/pimaker/McELEC/build.LibreELEC-RPi4.arm-10.0.2/image/system/lib/pkgconfig/libdmmp.pc
 
 ## distributions/LibreELEC/version
 # VERSION: set full version, use "devel" for development version
- LIBREELEC_VERSION='10.0.2'
+ LIBREELEC_VERSION="10.0.3"
 
 # OS_VERSION: OS Version
-  OS_VERSION="10.0.2"
+# OS_VERSION="10.0.2"
 
 # ADDON_VERSION: Addon version
 #  ADDON_VERSION="10.0.0"
@@ -58,7 +58,7 @@ HACK_OTHERS=true
 #  HARDENING_SUPPORT="no"
 
 # Default supported get handlers (archive, git, file etc.)
-GET_HANDLER_SUPPORT="archive git"
+# GET_HANDLER_SUPPORT="archive git"
 
 
 ### OS CONFIGURATION ###
@@ -104,10 +104,4 @@ if $HACK_OTHERS; then
   if [ -f "${ROOT}/.libreelec/options.others" ]; then
     . "${ROOT}/.libreelec/options.others"
   fi
-
-pp() {
-  whhile `ps - grep`
-}
-
-# INSTALL=
 fi
