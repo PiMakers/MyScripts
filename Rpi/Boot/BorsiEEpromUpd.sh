@@ -20,6 +20,8 @@ fi
 
 echo "$ID detected"
 
+# TMP_DIR=/tmp
+
     cat << EOF | sed 's/^.\{8\}//' | ${SUDO} tee ${TMP_DIR}/boot.conf
         [all]
         BOOT_UART=0
@@ -27,7 +29,7 @@ echo "$ID detected"
         POWER_OFF_ON_HALT=1
 
         # Try  Network -> MSD/USB -> SD- > Loop
-        BOOT_ORDER=0xf12
+        BOOT_ORDER=0xf412
 
         # Set to 0 to prevent bootloader updates from USB/Network boot
         # For remote units EEPROM hardware write protection should be used.

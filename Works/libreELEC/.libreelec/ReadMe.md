@@ -20,6 +20,11 @@ d    /storage/.cache/services            0600 root root - -
 f    /storage/.cache/services/sshd.conf  0600 root root - -
 EOF
 
+cat << EOF > sudo tee /etc/wsl.conf
+[interop]
+  enabled=false # enable launch of Windows binaries appendWindowsPath=false # append Windows path to $PATH variable
+EOF
+
 # disable kodisplash:
 # add to <splash>true</splash> to projects/RPi/kodi/advancedsettings.xml
 

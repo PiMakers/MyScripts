@@ -1,0 +1,36 @@
+ssh admin@10.120.136.252
+
+ena
+show arp
+show mac
+show addr
+show mac address-table address e45f.019f.f3d8
+
+ki-be kapcs (switch):
+ena
+term shell;
+conf t; interface Gi2/0/16; shut; sleep 5; no shut; end
+
+Csoportos:
+
+term shell;
+conf t; interface range Gi1/0/2-48;  shut; sleep 5; no shut; end
+conf t; interface range Gi2/0/1-48;  shut; sleep 5; no shut; end
+
+sh ip interface brief
+***********************************
+for m in
+
+AssociativArray(){
+#!/bin/bash
+
+declare -A animals=( [dog]=Four-legged [cat]=Four-legged [robin]=Two-legged [human]=Two-legged )
+
+# ------------!-----------
+for legs in ${!animals[@]}
+do
+  if [ ${animals[$legs]} == "Two-legged" ]; then 
+    echo ${legs}
+  fi
+done
+}
