@@ -112,3 +112,7 @@ runUtils() {
 check_root
 defaultDirs
 [ "${BASH_SOURCE}" == "${0}" ] && runUtils
+
+return || exit
+
+parted -s -m $DISK resizepart 2 1

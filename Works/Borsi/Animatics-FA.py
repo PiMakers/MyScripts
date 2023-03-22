@@ -1,11 +1,12 @@
 # Borsi Animatics
 
 import sys
-sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
+# sys.path.append('/storage/.kodi/addons/virtual.rpi-tools/lib')
 
-import xbmc
-import xbmcgui
+import xbmc, xbmcgui
 import RPi.GPIO as GPIO
+
+playList = '/storage/.kodi/userdata/playlists/video/Borsi.m3u'
 
 class ButtonPlayer(xbmc.Player):  
   def __init__(self):
@@ -32,11 +33,12 @@ class ButtonPlayer(xbmc.Player):
     self.initVideo()
 
     monitor = xbmc.Monitor()
-    while not monitor.abortRequested():
-      if monitor.waitForAbort(1):
-        GPIO.cleanup()
-      else:
-        self.playVideo()
+    try:
+      while not monitor.abortRequested():
+          self.playVideo()
+          monitor.waitForAbort(1)
+    except SystemExit:
+      GPIO.cleanup([self.button, self.red, self.green, self.blue])
 
   def initGPIO(self):
     GPIO.setwarnings(False)
@@ -56,7 +58,7 @@ class ButtonPlayer(xbmc.Player):
     self.started = False
     while not self.isPlaying():
       xbmc.sleep(100)
-    xbmc.executebuiltin('ActivateWindow(VideoFullScreen.xml)')
+    # xbmc.executebuiltin('ActivateWindow(VideoFullScreen.xml)')
     xbmc.sleep(1700)
     if not self.started:
       xbmc.executebuiltin('PlayerControl(Play)')

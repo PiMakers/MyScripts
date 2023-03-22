@@ -50,14 +50,16 @@ tmp2() {
 
 setwebapp() {
     sudo mkdir -pv /mnt/LinuxData/OF
-    df | grep -q /mnt/LinuxData/OF || sudo mount -onolock,defaults NUC:/mnt/LinuxData/OF /mnt/LinuxData/OF
-
+    df | grep -q /mnt/LinuxData/OF || sudo mount -onolock,defaults 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
+/mnt/LinuxData/OF/myGitHub/Borsi/webapps/inventarium-Full
 
     tce-load -wi node.js nss atk at-spi2-atk gtk3 libasound libcups Xorg #dbus #dbus-glib dbus-python3.8
     # /usr/local/etc/fonts/fonts.conf -> /tmp/tcloop/fontconfig/usr/local/etc/fonts/fonts.conf
     # create link!!?? /usr/local/etc/init.d/dbus status -> /tmp/tcloop/dbus/usr/local/etc/init.d/dbus status START!!!
     export FONTCONFIG_PATH=/usr/local/etc/fonts
     cp -r /mnt/LinuxData/OF/myGitHub/Borsi/webapps /opt
+    cd 
+    cp -r /mnt/LinuxData/OF/myGitHub/Borsi/webapps/common
 
     # tce-load -wi Xorg glib2
     filetool.sh -b
@@ -126,8 +128,9 @@ createSshKey() {
 }
 
 mountOF() {
-    [ df|/mnt/LinuxData/OF ] || sudo mkdir -pv -m 777 /mnt/LinuxData/OF
-    [ df|grep -q  /mnt/LinuxData/OF ] || sudo mount -onolock,defaults NUC:/mnt/LinuxData/OF /mnt/LinuxData/OF
+    tce-load -wi nfs-utils
+    [ df|grep -q /mnt/LinuxData/OF ] || sudo mkdir -pv -m 777 /mnt/LinuxData/OF
+    [ df|grep -q /mnt/LinuxData/OF ] || sudo mount -onolock,defaults 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
     cp -r  /mnt/LinuxData/OF/myGitHub/Borsi/webapps /opt
 }
 
@@ -168,3 +171,4 @@ createTCZ() {
     cd /tmp
     mksquashfs extension ${TCZ_NAME}.tcz
 }
+

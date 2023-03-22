@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../GitHub"
+		},
+		{
+			"path": "../../.."
+		}
+	],
+	"settings": {
+		"git.confirmSync": false,
+		"terminal.integrated.confirmOnExit": "hasChildProcesses",
+		"terminal.integrated.drawBoldTextInBrightColors": false,
+		"terminal.integrated.copyOnSelection": true
+	}
+}

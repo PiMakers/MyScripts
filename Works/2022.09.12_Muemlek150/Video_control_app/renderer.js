@@ -6,17 +6,16 @@ let frames;
     settings = {"disableNotifications": false}
     command = 'set_position'
 
-frames = fs.readFileSync('src/frames.txt', 'utf-8').split('\n');
 
 const seekToFrameOld = (frame) => {
 
-  const sender = spawn('echo', ['{ "command": ["set_property", "time-pos", ' + frame / 25 + '] }']);
+  //const sender = spawn('echo', ['{ "command": ["set_property", "time-pos", ' + frame / 25 + '] }']);
 
-  const socat = spawn('socat', ['-', '/tmp/mpvsocket'])
+  //const socat = spawn('socat', ['-', '/tmp/mpvsocket'])
 
-  sender.stdout.on('data', data => {
-    socat.stdin.write(data);
-  })
+  //sender.stdout.on('data', data => {
+    //socat.stdin.write(data);
+  //})
 
   // socat.stdout.on('data', (data) => {
   //   console.log(data.toString());
@@ -45,12 +44,13 @@ buttons.forEach(el => {
     el.childNodes[1].classList.add("playing")
     const serial = el.dataset.serial;
     const idx = serial - 1;
-    const frame = frames[idx];
+    const frame = frames[idx]/25;
     if (frame == undefined) {
       throw `${idx} is out of bounds!`;
     }
     console.log(`Seeked to frame ${frame}`)
-    seekToFrame(frame)
+    send('set_position',frame)
+    //seekToFrame(frame)
     setTimeout(() => {
       el.childNodes[1].classList.remove("playing")
     }, 10000);

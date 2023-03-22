@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window id="1111">
+<!-- A test miatt itt adom meg a stringet. Ez beleirja a  /storage/.kodi/userdata/addon_data/skin.x/settings.xml -be -->
+	<onload>Skin.SetString(btn01,kuŰŐúóöéá
+ihzokihnljodjpolajmp9uispojdcpojcpxpojapojprjjkljljoipokiokokpkőpkőáláéláélüőöö
+o9öoőpkípys
+hhhhhháűéűéűáxghhhhhhhhhhhhőúéőéúéúőéúőéúőéúőúúőéúőé
+fsfydsayaagga
+fdaaaafa
+éo)</onload>
+<setting id="filelists.showparentdiritems">false</setting>
+	<defaultcontrol always="true">50</defaultcontrol>
+	<backgroundcolor>background</backgroundcolor>
+	<!-- <views>50,51,52,53,54,55,500,501,502</views> -->
+	<menucontrol>9000</menucontrol>
+	<controls>
+		<!-- <include>DefaultBackground</include> -->
+		<include>View_DalokTere</include>
+        <control type="textbox" id="2">
+            <description>My first text box control</description>
+            <left>250</left>
+            <top>160</top>
+            <width>1500</width>
+            <height>auto</height>
+            <visible>true</visible>
+            <colordiffuse>FFFFFFFF</colordiffuse>
+            <font>font13</font>
+            <monofont>mono30</monofont>
+            <textcolor>FFFFFF00</textcolor>
+            <pulseonselect></pulseonselect>
+            <pagecontrol>13</pagecontrol>
+            <scrolltime>200</scrolltime>
+            <autoscroll delay="3000" time="1000" repeat="10000">!Control.HasFocus(13)</autoscroll>
+ <!-- És itt hivom meg -->
+            <label>$INFO[Skin.String(btn01)] next line...</label>
+            <align>center</align>
+		</control>
+		<control type="group">
+			<animation effect="fade" start="100" end="0" time="200" tween="sine" condition="$EXP[infodialog_active]">Conditional</animation>
+			<include>View_50_List</include>
+			<!-- <include>View_51_Poster</include> -->
+			<!-- <include>View_52_IconWall</include> -->
+			<include>View_53_Shift</include>
+			<!-- <include>View_54_InfoWall</include> -->
+			<include>View_55_WideList</include>
+			<!-- <include>View_500_Wall</include> -->
+			<!-- <include>View_501_Banner</include> -->
+			<!-- <include>View_502_FanArt</include>
+-->
+			<include>CommonScrollbars</include>
+			<include>MediaMenuMouseOverlay</include>
+
+		</control>
+		<control type="gruop" > 
+			<control type="button" id="2">
+				<label>OMEGA</label>
+				<left>300</left>
+				<top>800</top>
+				<width>250</width>
+				<height>200</height>
+				
+                <align>center</align>
+			</control>
+			<control type="image" id="3">
+			    <description>My first image control</description>
+			    <left>80</left>
+			    <top>60</top>
+			    <width>250</width>
+			    <height>200</height>
+			    <visible>true</visible>
+			    <colordiffuse>FFFFFFFF</colordiffuse>
+			    <fadetime>200</fadetime>
+<!--			<texture border="5" flipy="true" flipx="false">resources/icon.png</texture>
+			    <bordertexture border="5" infill="false">resources/icon.png</bordertexture> -->
+			    <bordersize>5</bordersize>
+			    <aspectratio>keep</aspectratio>
+			</control>
+            <control type="button" id="1">
+                <description>My first button control</description>
+                <left>80</left>
+                <top>60</top>
+                <width>250</width>
+                <height>200</height>
+                <visible>true</visible>
+                <colordiffuse>FFFFFF00</colordiffuse>
+                <!--
+                <texturefocus colordiffuse="FFFFAAFF">myfocustexture.png</texturefocus>
+                <texturenofocus colordiffuse="FFFFAAFF">mynormaltexture.png</texturenofocus>
+                -->
+                <label>Omega</label>
+                <wrapmultiline>true</wrapmultiline>
+                <font>font12</font>
+                <textcolor>FFFFFFFF</textcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <disabledcolor>80FFFFFF</disabledcolor>
+                <invalidcolor>FFFFFFFF</invalidcolor>
+                <align></align>
+                <aligny></aligny>
+                <textoffsetx></textoffsetx>
+                <textoffsety></textoffsety>
+                <pulseonselect></pulseonselect>
+                <onclick>ActivateWindow(MyVideos)</onclick>
+                <onfocus></onfocus>
+                <onunfocus></onunfocus>
+                <onup>2</onup>
+                <ondown>3</ondown>
+                <onleft>1</onleft>
+                <onright>1</onright>
+            </control>
+        </control>
+    </controls>
+</window>

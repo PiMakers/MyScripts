@@ -5,14 +5,16 @@
 
 # sudo mount 192.168.1.20:/mnt/LinuxData/OF /mnt/LinuxData/OF
 # umount $(df |sed '/mmcblk0/!d;s/p[0-9].*//')
+# mkdir -pv /media/OF && mount -onolock 192.168.1.20:/mnt/LinuxData/OF
+
 #!/bin/bash
 SUDO=sudo
 
 #DEV_DIR=/mnt/LinuxData
 HOST_OS=
 TFTP_DIR=/tftpLE
-IMG_DIR=/mnt/LinuxData/Install/img
-#IMG_DIR=/mnt/LinuxData/OF/Borsi
+IMG_DIR=/mnt/LinuxData/Install/zip
+# IMG_DIR=/mnt/LinuxData/OF
 STORAGE_DIR=/mnt/media/storage
 # STORAGE_DIR=/media/pimaker/STORAGE
 
@@ -25,29 +27,38 @@ DHCP=1
         HOST_IP=10.0.0.1
     fi
 
-IMG=${IMG_DIR}/BorsiBase-10.0.0.img
+# dtoverlay=hifiberry-dacplus
+
+IMG=${IMG_DIR}/BorsiBase-10.0.2.img
 IMG=/mnt/LinuxData/Install/zip/piCore64-13.1.zip
+IMG=${IMG_DIR}/LibreELEC-RPi4.arm-10.0.2.img.gz
 
 get_img(){
-    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz" --filename=${IMG} 2>/dev/null); then
+    if ! IMG=$(zenity --file-selection --file-filter="*.img *.zip *.gz *.xz" --display=$DISPLAY --filename=${IMG} 2>/dev/null); then
         # TODO download script
-        if [ $(zenity --question --text="Download latest image?") ];then
+        if [ $(zenity --question --display=$DISPLAY --text="Download latest image?") ];then
             echo "Downloding latest image... (not implemented yet)"
             RASPBIAN_TYPE=lite
         fi
         echo "No img selected. Exit"; exit 1
     else 
         echo ":: selected IMG = $IMG"
-        IMG_EXT=${IMG##*.} 
+        IMG_EXT=${IMG##*.}
+        echo :: ${IMG##*.}
         case ${IMG##*.} in
             zip)
                 echo :: ${IMG##*.}
                 # test unzip $IMG -d ${IMG_DIR}/
                 ;;
             gz)
-                echo :: ${IMG##*.}
                 DST_IMG=${IMG##*/} && DST_IMG=${DST_IMG%%.gz}
                 gunzip -ck < $IMG > ${IMG_DIR}/${DST_IMG}                
+                IMG=${IMG_DIR}/${DST_IMG}
+                echo ":: extracted IMG = $IMG"
+                ;;
+            xz)
+                DST_IMG=${IMG##*/} && DST_IMG=${DST_IMG%%.xz}
+                xz -kd < $IMG > ${IMG_DIR}/${DST_IMG}
                 IMG=${IMG_DIR}/${DST_IMG}
                 echo ":: extracted IMG = $IMG"
                 ;;
@@ -119,7 +130,7 @@ detectOS() {
                 ;;        
             *)
                 echo ":: UnKnonw OS = $ID !!!"
-                [ -z $ID ] && exit
+                #[ -z $ID ] && exit
         esac
     
     elif [ -d ${STORAGE_DIR}/tce ]; then
@@ -148,7 +159,7 @@ netBoot() {
                 #${SUDO} tee ${TFTP_DIR}/cmdline.nfsboot.${HOST_OS}
                 ;;
      LibreELEC)
-                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet systemd.show_status=0"
+                CMDLINE_TXT="boot=NFS=${HOST_IP}:${TFTP_DIR} morequiet disk=NFS=${HOST_IP}:${STORAGE_DIR} rw ip=dhcp rootwait quiet nosplash ssh host=MaciLaci"
                 ;;
        Raspios)
                 sudo mount --bind ${TFTP_DIR} ${STORAGE_DIR}/boot
@@ -174,11 +185,23 @@ netBoot() {
     ${SUDO} sed -i "/nfsboot.${HOST_OS}/d" ${TFTP_DIR}/config.txt
     echo "cmdline=cmdline.nfsboot.${HOST_OS}" | ${SUDO} tee -a ${TFTP_DIR}/config.txt
 
-    ${SUDO} sed -i "/${HOST_OS}/d" /etc/exports
-    echo "## NfsBoot ${HOST_OS}" | ${SUDO} tee -a /etc/exports
-    echo -e "${STORAGE_DIR}\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports
-    echo -e "${TFTP_DIR}\t\t\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports 
-
+    if [ -f /etc/exports ]; then
+        ${SUDO} sed -i "/${HOST_OS}/d" /etc/exports
+        echo "## NfsBoot ${HOST_OS}" | ${SUDO} tee -a /etc/exports
+        echo -e "${STORAGE_DIR}\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports
+        echo -e "${TFTP_DIR}\t\t\t${HOST_IP%.*}.0/24(rw,sync,no_subtree_check,insecure,no_root_squash,crossmnt,anonuid=0,anongid=0) #${HOST_OS}" | ${SUDO} tee -a /etc/exports 
+    else
+        while [ $YESNO != "Y" || $YESNO != "N" ]
+        do 
+            read -p "do you want to install nfs-kernel-server? (Y/N)" YESNO
+        done
+        
+        if [ "$YESNO" == "Y" || $YESNO == "y" ];then
+            sudo apt install nfs-kernel-server
+        else
+            exit 1
+        fi 
+    fi
     ${SUDO} exportfs -r
     # ${SUDO} exportfs
     ${SUDO} service dnsmasq stop
@@ -191,8 +214,8 @@ netBoot() {
     fi
 
     TERMINAL_CMD=
-    which lxterminal >/dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
-    which gnome-terminal >/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
+    which lxterminal 2> /dev/null && TERMINAL_CMD='lxterminal -t "tftpBoot" -e'
+    which gnome-terminal 2>/dev/null && TERMINAL_CMD='gnome-terminal -t "tftpBoot" --'
     echo ":: TERMINAL_CMD = ${TERMINAL_CMD}"
 
     for m in $(ls /sys/class/net)
@@ -415,7 +438,7 @@ cleanExit() {
     ${SUDO} rm -r ${TFTP_DIR} ${STORAGE_DIR}
     # remove loopdevice
     ##losetup -l | sed '/piCore64-13.0.img/!d;s/ .*//'
-    ${SUDO} losetup -d ${LOOP_DEVICE}
+    [ -z ${LOOP_DEVICE} ] ||  ${SUDO} losetup -d ${LOOP_DEVICE}
     exit 0
 }
 
@@ -450,7 +473,7 @@ runLEnfsBoot() {
         echo ":: Do piCore specific tasks here..."
     elif [ ${HOST_OS}x == "LibreELECx" ]; then  # if libreELEC in this case.)
         echo ":: Do libreELEC specific tasks here..."
-        SETUP=1
+        SETUP=0
         createSshKey
         [ $SETUP == 1 ] || echo ":: Skipping SetUp"
         [ $SETUP == 1 ] || playStartUpVideo
@@ -472,8 +495,9 @@ commands() {
     kodi-send --host=192.168.1.4 --port=9777 --action="reboot" # 
     kodi-send --action="PlayerControl(Play)"
     kodi-send --action="ReloadSkin(reload)"
+    kodi-send --action="ToggleDebug"
     kodi-send --action="Skin.ToggleDebug()"
-    kodi-send --action="DialogOK(msg="oooooo",100)"
+    kodi-send --action="Notification(header,msg,1000)"  # Notification(header,message[,time(ms),image])
     kodi-send --action="RunScript('/storage/.kodi/myScripts/Animatics.py')"
     kodi-send --action="CECActivateSource"
     #xbmc.log( msg='This is a test string.', level=xbmc.LOGDEBUG)
@@ -481,5 +505,18 @@ commands() {
     $INFO[infolabel]
     #display_hdmi_rotate=-1
     #display_lcd_rotate=-1
-
+    kodi-send --action="EnableAddon(skin.estuary-modded)"
+    kodi-send --action="SendClick(yesnodialog,11)"
+    kodi-send --action="EnableAddon(virtual.rpi-tools)"
+    kodi-send --action="SendClick(yesnodialog,11)"
+    kodi-send --action="EnableAddon(service.autoexec)"
+    kodi-send --action="SendClick(yesnodialog,11)"
+    PY_PATH=/storage/.kodi/addons/service.autoexec: \
+            /usr/share/kodi/addons/script.module.pil/lib: \
+            /usr/share/kodi/addons/script.module.pycryptodome/lib: \
+            /usr/share/kodi/addons/virtual.rpi-tools/lib/: \
+            /usr/lib/python38.zip: \
+            /usr/lib/python3.8: \
+            /usr/lib/python3.8/lib-dynload: \
+            /usr/lib/python3.8/site-packages
 }

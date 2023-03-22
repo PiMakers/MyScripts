@@ -4,7 +4,7 @@
 
 #!/bin/bash
 
-set -e
+#set -e
 
 readme() {
     #getImageName () {
@@ -31,22 +31,22 @@ readme() {
     # sudo gparted /dev/loop0
     sudo losetup -d /dev/loop0
     fdisk -l $IMAGE_NAME
-    Note two things in the output:
+    #Note two things in the output:
     # The partition ends on block 9181183 (shown under End)
     # The block-size is 512 bytes (shown as sectors of 1 * 512)
     # We will use these numbers in the rest of the example. The block-size (512) is often the same, but the ending 
     # block (9181183) will differ for you.
-    The numbers mean that the parition ends on byte 9181183*512 of the file.
-    After that byte comes the unallocated-part. Only the first 9181183*512 bytes will be useful for our image.
+    #The numbers mean that the parition ends on byte 9181183*512 of the file.
+    #After that byte comes the unallocated-part. Only the first 9181183*512 bytes will be useful for our image.
 
-    Next we shrink the image-file to a size that can just contain the partition.
+    #Next we shrink the image-file to a size that can just contain the partition.
     #For this we will use the truncate command (thanks uggla!).
-    With the truncate command need to supply the size of the file in bytes.
+    #With the truncate command need to supply the size of the file in bytes.
     #The last block was 9181183 and block-numbers start at 0. That means we need (9181183+1)*512 bytes.
-    This is important, else the partition will not fit the image. So now we use truncate with the calculations:
+    #This is important, else the partition will not fit the image. So now we use truncate with the calculations:
 
-    $ truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
-    Now copy the new image over to your phone, where it should act exactly the same as the old/big image.
+    #truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
+    #Now copy the new image over to your phone, where it should act exactly the same as the old/big image.
 
 }
 
@@ -56,7 +56,7 @@ readme() {
 check_root() {
     # Must be root to install the hotspot
     echo ":::"
-    if [[ $EUID -eq 0 ]];then
+    if [ $EUID -eq 0 ];then
         echo "::: You are root - OK"
     else
         echo "::: sudo will be used for the install."
@@ -83,13 +83,13 @@ truncate_img() {
     #${SUDO} gparted $LOOP_DEVICE
     #${SUDO} losetup -d $LOOP_DEVICE
     local END_BLOCK=$( ${SUDO} fdisk -lo "End" $1 | sed '$!d')
-    local END_SIZE=$( ${SUDO} fdisk -s --bytes -lo "Size" $1 )
+    local END_SIZE=$( ${SUDO} fdisk -s --bytes -lo "Size" $1 | sed '$!d')
     echo -e "END_BLOCK = ${END_BLOCK}\nEND_SIZE = ${END_SIZE}"
     # truncate --size=$[(14336000+1)*512] '/dev/loop0 /home/pimaker/Desktop/StretchDev(2018.04.11).img'
     local SIZE=$(($(( ${END_BLOCK} + 1 ))*512)) && echo "SIZE = ${SIZE}"
     ${SUDO} truncate --size=${SIZE} ${1}
     echo "DONE!"
 }
-
-check_root
+# no dpkg-query in libreELEC
+# [ -d /flash ] || check_root
 truncate_img  ${1}
