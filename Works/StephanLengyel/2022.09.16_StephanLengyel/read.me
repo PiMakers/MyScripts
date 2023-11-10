@@ -4,43 +4,36 @@
 # key-add
 # ssh root@192.168.167.8 'systemctl restart kodi'
 
-for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then echo -n "192.168.167.$i - " && ssh root@192.168.167.$i "hostname | tr '\n' ' ' && cat /proc/cpuinfo | grep Serial | awk -F ': ' '{print $2}' | tail -c 9";fi;done
+for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then echo -n "192.168.167.$i - " && \
+ssh root@192.168.167.$i "hostname | tr '\n' ' ' && cat /proc/cpuinfo | grep Serial | awk -F ': ' '{print $2}' | tail -c 9";fi;done
 
 cmd='echo "echo > /dev/.update_disabled" > /storage/.config/autostart.sh && chmod +x /storage/.config/autostart.sh'
 cmd='systemctl status kodi'
 
-for i in {5..18}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then echo -n "192.168.167.$i - " && ssh root@192.168.167.$i "$cmd";fi;done
+for i in {6..19}; do if ping -c 1 -w 1 192.168.167.$i >/dev/null 2>&1;then echo -n "192.168.167.$i - " && ssh root@192.168.167.$i "$cmd";fi;done
 
 tmp {
 echo "
-192.168.167.5  - TrefflerMate-Speaker   LibreELEC   
-192.168.167.7  - TakacsBori-Speaker     LibreELEC
-192.168.167.8  - VekonyAnna-Speaker     McELEC
-192.168.167.9  - PatakiZsolt-ID56       RaspiOS
+192.168.167.6  - PilbakPetra-Headphone      McELEC   
+192.168.167.7  - NagyDorottya-HeadPhone     LibreELEC
+192.168.167.8  - BikiViktoria-HeadPhone     McELEC
 
-192.168.167.5 - TrefflerMate-Speaker 775c6c35
-192.168.167.7 - TakacsBori-Speaker 08c72e8f
-192.168.167.8 - VekonyAnna-Speaker d985c145
-192.168.167.9 - ID56 dcbf2356
-192.168.167.11 - MadaraszRita-Speaker d0cf5c25
-192.168.167.12 - RidegRebeka-Speaker 99a4a8c5
-192.168.167.13 - LammLenke-Silent 70be6dfd
-192.168.167.14 - NagyTamasMate-Silent b6d4135e
-192.168.167.16 - TajtiVirag-HeadPhone f478da6b
-192.168.167.17 - HodovanMaria-HeadPhone 47cba645
-192.168.167.18 - FeherZsofia-HeadPhone 177b3502
+# 192.168.167.9  - kiosk       RaspiOS
 
-192.168.167.11 - MadaraszRita-Speaker   McELEC
-192.168.167.12 - RidegRebeka-Speaker    McELEC
-192.168.167.13 - LammLenke-Silent       McELEC
-192.168.167.14 - NagyTamasMate-Silent   McELEC
-192.168.167.16 - TajtiVirag-HeadPhone   McELEC
-192.168.167.17 - HodovanMaria-HeadPhone McELEC
-192.168.167.18 - FeherZsofia-HeadPhone  McELEC
+192.168.167.11 - VighVioletta-Headphone d0cf5c25
+192.168.167.12 - HorvathJulia-HeadPhone 99a4a8c5
+192.168.167.13 - VekonyAnna-HeadPhone 70be6dfd
+
+192.168.167.14 - KissBalazsAgoston-Silent b6d4135e
+
+### 192.168.167.16 - TajtiVirag-HeadPhone f478da6b
+
+192.168.167.17 - TothHeynMate-HeadPhone 47cba645
+192.168.167.19 - SarkoziTamas 177b3502
 "
 }
 
-cat<<'EOF' > ~/.ssh/homeTest
+cat<<'EOF' > ~/.ssh/SL2023
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0AAAAGAAAABDtYT4yIi
 K/7dp5zo6i3xnpAAAAEAAAAAEAAAGXAAAAB3NzaC1yc2EAAAADAQABAAABgQCjLM4a4brv
@@ -107,12 +100,12 @@ cat<<'EOF'>>~/.ssh/known_hosts
 |1|bvJQHLFL/2X52aixrl7VPeT0yBs=|fhozRbMXAVJLrcR4VYLGfFtIbSc= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBIsBrNjmg7uIZrS/pU0FZyYYM+4a+0/ln2mRVc4D/kld8Q0RYP2j3+ud5nDAmhqSBOTI6CierPn9YsDuALeHuEY=
 EOF
 
-cat<<'EOF'>~/.ssh/homeTest.pub
+cat<<'EOF'>~/.ssh/SL2023.pub
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCjLM4a4brv5II+5estVySU5u9pAdwGq0F65ve/pQULkRQxJOmtpwboodJW3XMiCR6cjpG6oEokCd3mhz7CpVA0nDdfmNZEdBXrpPSOvpVk4OGmxIyCSqn+AGo81Jn/TI5vXRt7DXiL/JF/p51eMfIJtzU89P4MJTWSw7k74s2qtq1N1KCowdixsdXzIsCcu8Y/k85ujFv/Q5JHBfZ/378e0bSFBBekTPZfGLp/SOGsTovOMpPglzMHj38PjNxxD912a/mgkVhNyr6L4cOdwajqVNRSrsA9gzP/KG4T0xFqUvnRGcLbreLATdLSgy1PkllLxQmLKptq3mBrIgVB0biBdrkkcbIuDVJCS6mK0489Fj82PMxmkPVeLrsjRA22VpC8omMuMhwc5eoTSOGd8knBgCCqd6E6siSZ6f7zVvLU/h0j9PSO+1RPeIwuaZg8rPhZLpl43Hq8ac921Hl/kBTId8R+lWE2brfkY5od9KufZXu19E3v4YZfysf1QCmCfDk= pimaker@DESKTOP-S5N6LKA
 EOF
 
 cat<<"EOF">>~/.ssh/config
-Host *
+Host 192.168.167.*
  AddKeysToAgent yes
- IdentityFile ~/.ssh/homeTest
+ IdentityFile ~/.ssh/SL2023
 EOF

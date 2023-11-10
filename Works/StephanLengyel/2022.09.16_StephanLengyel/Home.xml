@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+	<defaultcontrol>9000</defaultcontrol>
+	<backgroundcolor>background</backgroundcolor>
+	<controls>
+		<control type="image" id="0">
+		      <description>My first image control</description>
+		      <left>0</left>
+		      <top>0</top>
+		      <width>1920</width>
+		      <height>1080</height>
+		      <visible>true</visible>
+		      <colordiffuse>FFFFFFFF</colordiffuse>
+		      <fadetime>200</fadetime>
+		      <texture border="5" flipy="false" flipx="false">bg-text.jpg</texture>
+		      <bordersize></bordersize>
+		      <aspectratio>keep</aspectratio>
+		</control>
+		<control type="button" id="1">
+		      <description>button1</description>
+		      <left>173</left>
+		      <top>754</top>
+		      <width>277</width>
+		      <height>191</height>
+		      <visible>true</visible>
+		      <colordiffuse>FFFFFFFF</colordiffuse>
+		      <texturefocus colordiffuse="FFFFAAFF">gomb_1.png</texturefocus>
+		      <texturenofocus colordiffuse="FFFFFFFF">gomb_1.png</texturenofocus>
+                      <onclick>PlayMedia(/storage/videos/1.mp4)</onclick>
+		      <onleft>4</onleft>
+		      <onright>2</onright>
+		</control>
+                <control type="button" id="2">
+                      <description>button2</description>
+                      <left>605</left>
+                      <top>754</top>
+                      <width>277</width>
+                      <height>191</height>
+                      <visible>true</visible>
+                      <colordiffuse>FFFFFFFF</colordiffuse>
+                      <texturefocus colordiffuse="FFFFAAFF">gomb_2.png</texturefocus>
+                      <texturenofocus colordiffuse="FFFFFFFF">gomb_2.png</texturenofocus>
+                      <label></label>
+                      <onclick>PlayMedia(/storage/videos/2.mp4)</onclick>
+                      <onleft>1</onleft>
+                      <onright>3</onright>
+                </control>
+                <control type="button" id="3">
+                      <description>button3</description>
+                      <left>1040</left>
+                      <top>754</top>
+                      <width>277</width>
+                      <height>191</height>
+                      <visible>true</visible>
+                      <colordiffuse>FFFFFFFF</colordiffuse>
+                      <texturefocus colordiffuse="FFFFAAFF">gomb_3.png</texturefocus>
+                      <texturenofocus colordiffuse="FFFFFFFF">gomb_3.png</texturenofocus>
+                      <label></label>
+                      <onclick>PlayMedia(/storage/videos/3.mp4)</onclick>
+                      <onleft>2</onleft>
+                      <onright>4</onright>
+                </control>
+                <control type="button" id="4">
+                      <description>button4</description>
+                      <right>177</right>
+                      <top>754</top>
+                      <width>277</width>
+                      <height>191</height>
+                      <visible>true</visible>
+                      <colordiffuse>FFFFFFFF</colordiffuse>
+                      <texturefocus colordiffuse="FFFFAAFF">gomb_4.png</texturefocus>
+                      <texturenofocus colordiffuse="FFFFFFFF">gomb_4.png</texturenofocus>
+                      <label></label>
+                      <onclick>PlayMedia(/storage/videos/4.mp4)</onclick>
+                      <onleft>3</onleft>
+                      <onright>1</onright>
+                 </control>
+	</controls>
+</window>
