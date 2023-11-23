@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SUDO=sudo
-IMG=/mnt/LinuxData/Install/img/piCore64-13.1.img
+IMG=/mnt/LinuxData/Install/img/piCore64-14.1.img
 # cd /tmp && wget https://distro.ibiblio.org/tinycorelinux/13.x/aarch64/releases/RPi/piCore64-13.1.zip
 # kernelheaders Linux 5.10.77 https://github.com/raspberrypi/linux/archive/09df347cfd189774130f8ae8267324b97aaf868e.zip
 # https://github.com/raspberrypi/linux/archive/refs/tags/stable_20211118.zip
@@ -9,7 +9,7 @@ IMG=/mnt/LinuxData/Install/img/piCore64-13.1.img
 
 compileWM8960(){
     # piCore 13.1
-    # deps:
+    # deps: c03131
     # tce-load -iw compiletc openssl-dev bc perl5 
     # /tmp/tcloop/module-init-tools/usr/local/sbin/modinfo
     # sudo  modprobe configs
@@ -56,6 +56,10 @@ compileWM8960(){
     # reaper:
     tce-load -iw Xorg libasound alsa-modules-5.10.77-piCore-v8
 
+1061
+dtoverlay=fbtft,spi0-0,ili9341,bgr,reset_pin=23,dc_pin=24,led_pin=18,rotate=270
+1125
+4541
 mountImg() {
     [ -z $1 ] || IMG=$1
     [ -f $IMG ] && echo ":: selected IMG = $IMG" || exit
@@ -153,7 +157,7 @@ setwebapp() {
     # -br create root window with black background
     # -nocursor              disable the cursor
     # -dpms                  disables VESA DPMS monitor control
-    sed -i 's/ -nocursor//;s/ -br//;s/ -dpms//' .xsession
+    sed -i 's/ -nocursor//;s/ -br//;s/ -s 0 -dpms//' .xsession
     sed -i 's/Xorg -nolisten/Xorg -nocursor -br -dpms -nolisten/' .xsession
 
     cat << 'EOF' | sed 's/^.\{4\}//' | tee /usr/local/share/X11/xorg.conf.d/20-noblank.conf
